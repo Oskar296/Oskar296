@@ -1,9 +1,10 @@
 # 🔬 XENOSCOPE — Specimen Protocol
 
 A sleek, single-organism xenobiology game. **One** alien cell drifts under your
-bio-scope. Command gives you an order — **cultivate** it or **neutralize** it —
-but it arrives *unidentified*. First you read its biology; then you use the
-medium and its own internal **virus/symbiont** to decide its fate.
+bio-scope — it can belong to any of the **five kingdoms**, and each arrives
+*unidentified*. Command hands you one of **eight** assignments. You read the
+organism's biology, then use the medium and its own internal **virus / symbiont**
+to carry the order out.
 
 No grids, no build step, no dependencies. One `index.html`, one living cell.
 
@@ -16,54 +17,65 @@ cd xenoscope
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
+## The five kingdoms
+
+Every specimen is generated fresh, with anatomy that also tells you how it lives:
+
+| Kingdom | Tell-tale anatomy |
+|---|---|
+| **Monera** (prokaryote) | No true nucleus — a bare **nucleoid**, plus **plasmid** rings, a **flagellum**, capsule wall. |
+| **Protista** | Nucleus, a pulsing **contractile vacuole**, **cilia**, food vacuoles, amoeboid membrane. |
+| **Fungi** | Nucleus, thick **chitin wall**, a large vacuole, **spore bodies**, mitochondria. |
+| **Plantae** | Rigid **cellulose wall**, a dominant **central vacuole**, stacked-granum **chloroplasts**. |
+| **Animalia** | No wall (flexible membrane), many **mitochondria** with cristae, **lysosomes**, **centrioles**. |
+
+Seeing **chloroplasts** means the organism is an **autotroph** — feed it Nutrient α
+(photonic/mineral). No plastids means **heterotroph** — feed it Nutrient β (organic).
+The wrong nutrient is a poison, so read the organelles before you feed.
+
+## The eight assignments
+
+| # | Task | Win condition |
+|---|------|---------------|
+| 1 | **Cultivate** | Raise Vitality to 100% |
+| 2 | **Neutralize** | Reduce Vitality to 0% (any method) |
+| 3 | **Induce Lysis** | Rupture the membrane (Integrity → 0) — you must *burst* it, not starve it |
+| 4 | **Stabilize** | Hold Vitality 40–70% for 6s (a balancing act) |
+| 5 | **Force Bloom** | Reach & hold Vitality ≥90% for 5s |
+| 6 | **Cure Infection** | Suppress an active lytic phage while keeping the host alive |
+| 7 | **Quarantine** | Hold it subdued (<35%) for 7s without killing it |
+| 8 | **Establish Symbiosis** | Nurture an endosymbiont to full integration while the host thrives |
+
+Tasks are only assigned when the specimen's biology makes them possible — e.g.
+*Cure* and *Symbiosis* require the right kind of passenger, *Induce Lysis*
+requires an exploitable weakness or a lytic phage.
+
 ## The loop: probe → read → decide
 
-1. **Probe.** Click the specimen's structures and the fluid around it. Each click
-   scans a layer and fills your dossier:
-   - **Nucleus / Genome** → identifies the species & its metabolic class
-   - **Cytoplasm** → detects a dormant **virus or symbiont** inside (and unlocks it)
-   - **Organelles** → reveals which nutrient it eats (and which one poisons it)
-   - **Membrane** → reveals its structural weakness (osmotic / thermal / toxin / none)
-   - **Culture Medium** → reveals its optimum pH & temperature (marks the green bands)
-2. **Read.** The more you know, the fewer fatal mistakes — feeding a pathogen or
-   shocking the wrong membrane just wastes time while the specimen drifts.
-3. **Decide.** Tune the medium and, if present, its internal **vector**:
+1. **Probe.** Click the specimen's layers and the fluid around it. Each scan fills
+   the dossier: **nucleus** (kingdom & species), **cytoplasm** (viral/symbiotic
+   passenger), **organelles** (nutrient it needs), **envelope** (structural
+   weakness), **medium** (optimum pH & temperature — marks the green bands).
+2. **Read.** Acting blind backfires — feeding a pathogen, shocking the wrong
+   membrane, or heating a phage-carrier all cost you while the specimen drifts.
+3. **Decide.** Tune pH & temperature, feed or poison, exploit the weakness
+   (osmotic shock / heat / cytotoxin), and use the **vector**:
+   - **Lytic phage** — *induce* it to burst the host from inside (your fastest
+     kill), or keep it *suppressed* when the host must live.
+   - **Endosymbiont** — *nurture* it to revive a failing host.
 
-| Goal | How |
-|---|---|
-| 🟢 **Cultivate** | Park pH & temperature in the green bands, feed the correct nutrient, clear toxin. If it carries a **symbiont**, *nurture* it to revive a failing host. |
-| 🔴 **Neutralize** | Drive the medium far off-optimum, starve or poison it, exploit the membrane weakness (osmotic shock / heat / cytotoxin) — or **induce its dormant lytic phage** to burst it from the inside. |
-
-## The vector mechanic
-
-Most specimens carry a passenger, discovered by scanning the cytoplasm:
-
-- **Lytic phage** — a latent virus. **Induce** it (or overheat the host) and it
-  replicates, eating the membrane until the cell bursts. Your fastest kill — but
-  if your job was to *save* the host, you must keep it **suppressed**.
-- **Endosymbiont** — a mutualist bacterium. **Nurture** it and it revives a dying
-  host; starve it and the host weakens.
-
-Same toggle, opposite uses — the biology decides which way it cuts.
-
-## Win / lose
-
-- **Cultivate:** raise **Vitality to 100%**. Lose if it falls to 0 (or its
-  membrane ruptures on your watch).
-- **Neutralize:** drive **Vitality to 0** or rupture the membrane. Lose if it
-  reaches 100% and escapes containment.
-
-The **Homeostasis** bar is your live tell: green = the current medium suits it,
-red = it's under stress.
+The **Homeostasis** bar is your live tell: green = the medium suits it, red =
+stress.
 
 ## Under the hood
 
-Everything is one `index.html`: a `<canvas>` renderer (an organic, wobbling
-membrane drawn from summed sine perturbations, a pulsing nucleus, drifting
-organelles, phage/symbiont particles, environment-tinted fluid) over a small
-continuous biology sim — comfort from pH/temperature/nutrient/toxin drives a
-vitality curve, with independent membrane-integrity and vector dynamics. Vanilla
-JavaScript, no libraries.
+Everything is one `index.html`: a `<canvas>` renderer — an organic, wobbling
+envelope (summed-sine perturbation, styled per kingdom's wall), a pulsing nucleus,
+and per-kingdom organelles each drawn as its own shape (cristae, granum stacks,
+DNA loops, plasmid rings, flagella, cilia, spores, lysosomes, centrioles) —
+layered over a continuous biology sim: comfort from pH/temperature/nutrient/toxin
+drives a vitality curve, with independent membrane-integrity and vector dynamics.
+Vanilla JavaScript, no libraries.
 
-*Every specimen — species, optimum, weakness, and passenger — is generated fresh
-and is original to this project.*
+*Every specimen — kingdom, species, optimum, weakness, and passenger — is
+generated fresh and is original to this project.*
