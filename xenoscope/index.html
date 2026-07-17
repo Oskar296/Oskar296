@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>XENOSCOPE — Specimen Protocol</title>
+<style>
+  :root{
+    --bg0:#04090d; --bg1:#071319;
+    --glass:rgba(9,20,26,.55);
+    --glass2:rgba(12,26,33,.7);
+    --line:rgba(255,255,255,.09);
+    --line2:rgba(255,255,255,.16);
+    --ink:#e8f6f4; --dim:#7fa0a4; --dim2:#557077;
+    --aqua:#5ef2d6; --mint:#7effc0; --violet:#b79bff;
+    --amber:#ffcf6a; --coral:#ff7d92; --magenta:#ff5ec7;
+    --good:#57e6a8; --bad:#ff6a6a; --warn:#ffc46b;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg0)}
+  body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased;user-select:none}
+  canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none}
+
+  /* ---------- glass panels ---------- */
+  .panel{
+    position:fixed;background:var(--glass);
+    -webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);
+    border:1px solid var(--line);border-radius:18px;
+    box-shadow:0 14px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .cap{font-size:10.5px;letter-spacing:2.4px;color:var(--dim);text-transform:uppercase}
+  .mono{font-family:var(--mono)}
+
+  /* top bar */
+  #top{top:14px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;
+       padding:9px 16px;z-index:6}
+  #top .sid{font-family:var(--mono);font-size:12px;color:var(--aqua);letter-spacing:1px}
+  #top .name{font-size:13px;font-weight:600;letter-spacing:.4px}
+  #top .name.unk{color:var(--dim2);font-style:italic;font-weight:400}
+  .chip{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1.4px;
+        border:1px solid transparent}
+  .chip.save{color:var(--mint);background:rgba(94,242,214,.09);border-color:rgba(94,242,214,.4)}
+  .chip.kill{color:var(--coral);background:rgba(255,94,120,.09);border-color:rgba(255,125,146,.4)}
+  #top .sep{width:1px;height:22px;background:var(--line)}
+
+  .ibtn{width:32px;height:32px;border-radius:10px;border:1px solid var(--line);
+        background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:15px;
+        display:grid;place-items:center;transition:.15s}
+  .ibtn:hover{color:var(--ink);border-color:var(--line2);background:rgba(255,255,255,.07)}
+
+  /* left: vitals */
+  #vit{left:16px;top:50%;transform:translateY(-50%);width:186px;padding:18px 16px 16px;z-index:5}
+  #vit .cap{margin-bottom:14px}
+  .ring{position:relative;width:130px;height:130px;margin:0 auto 6px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .val{position:absolute;inset:0;display:grid;place-items:center;flex-direction:column;text-align:center}
+  .ring .num{font-size:34px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .ring .lab{font-size:9.5px;letter-spacing:2px;color:var(--dim);margin-top:3px}
+  .bars{margin-top:12px;display:flex;flex-direction:column;gap:12px}
+  .bar .bl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:5px;letter-spacing:.6px}
+  .bar .bl b{color:var(--ink);font-family:var(--mono);font-size:11px}
+  .track{height:6px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+  .track>i{position:absolute;top:0;bottom:0;border-radius:6px;transition:width .3s ease,left .3s ease}
+  .fill-int>i{left:0;background:linear-gradient(90deg,#2f8f7f,var(--aqua))}
+  .fill-vec>i{left:0;background:linear-gradient(90deg,#7d2fa0,var(--magenta))}
+  .homeo{height:6px;border-radius:6px;background:rgba(255,255,255,.06);position:relative;overflow:hidden}
+  .homeo .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.25)}
+  .homeo>i{position:absolute;top:0;bottom:0;left:50%;width:0;border-radius:4px;transition:.25s}
+  #vecRow{display:none}
+
+  /* right: dossier */
+  #dos{right:16px;top:50%;transform:translateY(-50%);width:250px;max-height:78vh;padding:16px 14px;
+       z-index:5;display:flex;flex-direction:column}
+  #dos .cap{margin-bottom:12px}
+  .dlist{display:flex;flex-direction:column;gap:8px;overflow:auto}
+  .dcard{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:rgba(255,255,255,.02);
+         transition:.25s;opacity:.5}
+  .dcard.on{opacity:1;border-color:var(--line2);background:rgba(94,242,214,.05)}
+  .dcard .dh{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;letter-spacing:.4px}
+  .dcard .dh .di{width:8px;height:8px;border-radius:50%;background:var(--dim2);box-shadow:0 0 8px currentColor}
+  .dcard.on .dh .di{background:var(--aqua);color:var(--aqua)}
+  .dcard .dv{font-size:11px;color:var(--dim);line-height:1.5;margin-top:5px;font-family:var(--mono)}
+  .dcard .dv .hl{color:var(--ink)}
+  .dcard .dv .rk{color:var(--coral)} .dcard .dv .gd{color:var(--mint)} .dcard .dv .vi{color:var(--magenta)}
+  .locked{font-style:italic;color:var(--dim2)}
+  #recon{margin-top:11px;font-size:11px;line-height:1.5;color:var(--dim);border-top:1px solid var(--line);padding-top:10px}
+  #recon b{color:var(--aqua)}
+
+  /* bottom: levers */
+  #dock{bottom:16px;left:50%;transform:translateX(-50%);z-index:6;padding:14px 18px;
+        display:flex;gap:22px;align-items:stretch}
+  .sldwrap{width:200px}
+  .sldwrap .sh{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);
+               letter-spacing:.6px;margin-bottom:8px}
+  .sldwrap .sh b{color:var(--ink);font-family:var(--mono);font-size:11.5px}
+  .sldtrack{position:relative;height:26px}
+  .optzone{position:absolute;top:8px;height:10px;border-radius:4px;
+           background:linear-gradient(90deg,rgba(94,242,214,0),rgba(94,242,214,.4),rgba(94,242,214,0));
+           border:1px solid rgba(94,242,214,.5);display:none;pointer-events:none}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:26px;background:transparent;cursor:pointer;position:relative;z-index:2;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:rgba(255,255,255,.14);margin-top:11px}
+  input[type=range]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.14)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--ink);margin-top:-6px;box-shadow:0 0 0 4px rgba(94,242,214,.18),0 2px 8px #000a;transition:.1s}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;background:var(--ink);
+    box-shadow:0 0 0 4px rgba(94,242,214,.18),0 2px 8px #000a}
+  input[type=range]:active::-webkit-slider-thumb{box-shadow:0 0 0 6px rgba(94,242,214,.28),0 2px 8px #000a}
+  .dsep{width:1px;background:var(--line);align-self:stretch}
+  .acts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-content:center}
+  .abtn{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:11px;
+        background:rgba(255,255,255,.03);color:var(--ink);cursor:pointer;padding:8px 12px;
+        font-size:11.5px;font-weight:600;letter-spacing:.3px;min-width:126px;text-align:left;transition:.14s}
+  .abtn small{display:block;font-weight:400;font-size:9.5px;color:var(--dim);letter-spacing:.4px;margin-top:1px}
+  .abtn:hover{border-color:var(--line2);background:rgba(255,255,255,.07)}
+  .abtn .lvl{position:absolute;left:0;bottom:0;height:3px;width:0;transition:width .25s}
+  .abtn[data-a=alpha] .lvl{background:var(--mint)} .abtn[data-a=beta] .lvl{background:var(--amber)}
+  .abtn[data-a=toxin] .lvl{background:var(--coral)} .abtn[data-a=osmo] .lvl{background:#7db8ff}
+  .abtn.vec{grid-column:1/3;border-color:rgba(255,94,199,.35);background:rgba(255,94,199,.06);display:none}
+  .abtn.vec.on{background:rgba(255,94,199,.16);border-color:var(--magenta);box-shadow:0 0 22px rgba(255,94,199,.25)}
+  .abtn.vec .vtag{color:var(--magenta)}
+
+  /* hover zone label */
+  #zlab{position:fixed;z-index:7;pointer-events:none;transform:translate(-50%,-140%);
+        font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink);
+        background:rgba(4,10,13,.72);border:1px solid var(--line2);border-radius:8px;padding:4px 10px;
+        opacity:0;transition:opacity .12s;white-space:nowrap;font-family:var(--mono)}
+  #zlab.on{opacity:1}
+  #zlab .s{color:var(--dim);font-size:10px}
+
+  /* overlays */
+  .overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;
+    background:radial-gradient(900px 600px at 50% 42%,rgba(6,18,24,.82),rgba(3,7,10,.96))}
+  .card{width:min(560px,92vw);padding:30px 32px;border-radius:22px;
+    background:linear-gradient(180deg,rgba(12,24,30,.92),rgba(7,15,20,.94));
+    border:1px solid var(--line2);box-shadow:0 30px 100px #000b, inset 0 1px 0 rgba(255,255,255,.06)}
+  .card h1{margin:6px 0 4px;font-size:30px;letter-spacing:5px;font-weight:800}
+  .card h1 .x{color:var(--aqua)} .card h1 .o{color:var(--violet)}
+  .card .sub{color:var(--dim);font-size:12px;letter-spacing:2px;text-transform:uppercase}
+  .card p{color:var(--dim);line-height:1.65;font-size:13.5px}
+  .card p b{color:var(--ink)} .card p .gd{color:var(--mint)} .card p .rk{color:var(--coral)} .card p .vi{color:var(--magenta)}
+  .steps{display:flex;gap:10px;margin:18px 0}
+  .step{flex:1;border:1px solid var(--line);border-radius:12px;padding:11px;text-align:center}
+  .step .n{font-family:var(--mono);color:var(--aqua);font-size:12px}
+  .step .t{font-size:11.5px;color:var(--ink);margin-top:5px;font-weight:600}
+  .step .d{font-size:10.5px;color:var(--dim);margin-top:3px;line-height:1.4}
+  .cta{margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+  .btn{padding:11px 20px;border-radius:12px;border:1px solid var(--line2);cursor:pointer;
+       background:rgba(255,255,255,.04);color:var(--ink);font-size:13px;font-weight:600;letter-spacing:.4px;transition:.15s}
+  .btn:hover{background:rgba(255,255,255,.09)}
+  .btn.pri{background:linear-gradient(90deg,#1c8f7a,#2fc4a6);border-color:#2fc4a6;color:#032019;font-weight:700}
+  .btn.pri:hover{filter:brightness(1.08)}
+  .verdict{font-size:34px;font-weight:800;letter-spacing:2px;margin:2px 0 6px}
+  .verdict.win{color:var(--mint)} .verdict.lose{color:var(--coral)}
+  .rev{font-size:12px;color:var(--dim);font-family:var(--mono);line-height:1.7;margin-top:12px;
+       border-top:1px solid var(--line);padding-top:12px}
+  .rev .hl{color:var(--ink)}
+  .hidden{display:none!important}
+  @media (max-width:900px){ #vit,#dos{display:none} #dock{flex-direction:column;gap:12px;padding:12px} .sldwrap{width:70vw} }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- top bar -->
+<div id="top" class="panel">
+  <span class="sid" id="sid">SPX-0000</span>
+  <span class="name unk" id="sname">UNIDENTIFIED SPECIMEN</span>
+  <span class="sep"></span>
+  <span class="chip save" id="obj">CULTIVATE</span>
+  <span class="sep"></span>
+  <span class="cap" id="clock">T+0s</span>
+  <button class="ibtn" id="helpBtn" title="Briefing">?</button>
+</div>
+
+<!-- vitals -->
+<div id="vit" class="panel">
+  <div class="cap">Vital Signs</div>
+  <div class="ring">
+    <svg width="130" height="130">
+      <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+      <circle id="vring" cx="65" cy="65" r="52" fill="none" stroke="var(--mint)" stroke-width="9"
+        stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+        style="filter:drop-shadow(0 0 6px rgba(126,255,192,.6));transition:stroke-dashoffset .3s,stroke .3s"/>
+    </svg>
+    <div class="val"><div><div class="num" id="vnum">35</div><div class="lab">VITALITY</div></div></div>
+  </div>
+  <div class="bars">
+    <div class="bar"><div class="bl"><span>MEMBRANE INTEGRITY</span><b id="intv">100%</b></div>
+      <div class="track fill-int"><i id="intb" style="width:100%"></i></div></div>
+    <div class="bar"><div class="bl"><span>HOMEOSTASIS</span><b id="homv">—</b></div>
+      <div class="homeo"><span class="mid"></span><i id="homb"></i></div></div>
+    <div class="bar" id="vecRow"><div class="bl"><span id="vecLbl">VECTOR ACTIVITY</span><b id="vecv">0%</b></div>
+      <div class="track fill-vec"><i id="vecb" style="width:0"></i></div></div>
+  </div>
+</div>
+
+<!-- dossier -->
+<div id="dos" class="panel">
+  <div class="cap">Specimen Dossier</div>
+  <div class="dlist" id="dlist"></div>
+  <div id="recon">Probe the specimen &amp; its medium to build a dossier. <b>Click</b> the nucleus, cytoplasm, organelles, membrane, and surrounding fluid.</div>
+</div>
+
+<!-- levers dock -->
+<div id="dock" class="panel">
+  <div class="sldwrap">
+    <div class="sh"><span>MEDIUM pH</span><b id="phv">7.0</b></div>
+    <div class="sldtrack"><div class="optzone" id="phopt"></div>
+      <input type="range" id="ph" min="0" max="14" step="0.1" value="7"></div>
+  </div>
+  <div class="sldwrap">
+    <div class="sh"><span>TEMPERATURE °C</span><b id="tpv">37</b></div>
+    <div class="sldtrack"><div class="optzone" id="tpopt"></div>
+      <input type="range" id="tp" min="-10" max="110" step="1" value="37"></div>
+  </div>
+  <div class="dsep"></div>
+  <div class="acts">
+    <button class="abtn" data-a="alpha">Nutrient&nbsp;α<small>ferro-sulfur medium</small><span class="lvl"></span></button>
+    <button class="abtn" data-a="beta">Nutrient&nbsp;β<small>organic substrate</small><span class="lvl"></span></button>
+    <button class="abtn" data-a="toxin">Cytotoxin<small>broad-spectrum</small><span class="lvl"></span></button>
+    <button class="abtn" data-a="osmo">Osmotic Shock<small>salinity spike</small><span class="lvl"></span></button>
+    <button class="abtn vec" id="vecBtn"><span class="vtag" id="vecBtnT">Vector</span><small id="vecBtnS">locked · scan cytoplasm</small></button>
+  </div>
+</div>
+
+<div id="zlab"></div>
+
+<!-- intro -->
+<div class="overlay" id="intro">
+  <div class="card">
+    <div class="sub">Xenobiology Division · Live Specimen Bench</div>
+    <h1><span class="x">XENO</span><span class="o">SCOPE</span></h1>
+    <p>A single alien organism drifts under your bio-scope. Command hands you an order: keep it alive, or end it. But it arrived <b>unidentified</b> — first you must read its biology.</p>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><div class="t">PROBE</div><div class="d">Click its structures &amp; the fluid to fill the dossier</div></div>
+      <div class="step"><div class="n">02</div><div class="t">READ</div><div class="d">Learn its optimum, its weakness, its passenger</div></div>
+      <div class="step"><div class="n">03</div><div class="t">DECIDE</div><div class="d">Tune the medium &amp; its inner <span class="vi">vector</span> to save or kill</div></div>
+    </div>
+    <p style="font-size:12.5px">Many specimens carry a dormant <span class="vi">virus or symbiont</span>. <b>Awaken a lytic phage</b> to burst a host from within — or <b>nurture a symbiont</b> to rescue a dying one. Scan before you act: feeding a pathogen or shocking the wrong membrane wastes precious time while the specimen drifts.</p>
+    <div class="cta"><button class="btn pri" id="beginBtn">▶ Receive Assignment</button></div>
+  </div>
+</div>
+
+<!-- end -->
+<div class="overlay hidden" id="end">
+  <div class="card">
+    <div class="sub" id="endSub">Assignment Report</div>
+    <div class="verdict" id="endV">—</div>
+    <p id="endMsg"></p>
+    <div class="rev" id="endRev"></div>
+    <div class="cta">
+      <button class="btn pri" id="nextBtn">▶ Next Specimen</button>
+      <button class="btn" id="briefBtn">Briefing</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+/* =====================================================================
+   XENOSCOPE — examine ONE alien specimen, then cultivate or neutralize it.
+   Probe structures -> learn hidden profile -> tune medium & inner vector.
+   Original organisms. Vanilla JS + Canvas. One file.
+===================================================================== */
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+let W=0,H=0,DPR=1,cx=0,cy=0,R=180;
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+  cx=W/2; cy=H/2; R=Math.max(120,Math.min(W,H)*0.23);
+}
+window.addEventListener('resize',resize); resize();
+
+// ---------- utilities ----------
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const cl=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function approach(cur,tgt,step){return cur<tgt?Math.min(tgt,cur+step):Math.max(tgt,cur-step);}
+
+// ---------- specimen generation ----------
+const GEN=['Pyro','Cryo','Halo','Litho','Vibrio','Xeno','Necro','Umbra','Photo','Chemo','Ferro','Noct'];
+const SPC=['thrix','coccus','bacter','plasmid','spira','myces','vora','phage-bearer','cyst'];
+const EPI=['vermis','abyssi','profundi','glacies','ignis','pallida','ferrox','nocturna','silex','vorax'];
+let P=null;   // hidden profile (truth)
+let S=null;   // dynamic state
+let vecTriggered=false, running=false, over=false, t0=0, elapsed=0;
+const learned=new Set();
+
+function genProfile(){
+  const optPH=+rnd(2.5,11.5).toFixed(1), phBand=rnd(1.9,2.6);
+  const optT=Math.round(rnd(8,88)), tBand=rnd(11,17);
+  const goodNut=Math.random()<0.5?'alpha':'beta';
+  const weak=pick(['osmotic','thermal','toxin','none']);
+  const hasVec=Math.random()<0.62;
+  const vKind = Math.random()<0.5?'lytic':'symbiotic';
+  const vec = hasVec ? { kind: vKind,
+                         name: vKind==='lytic' ? ('Phage λ-'+ri(3,29))
+                                               : ('Symbiont '+pick(['β','σ','μ','θ'])+'-'+ri(3,29)) } : null;
+  const mission = Math.random()<0.5?'save':'kill';
+  // flavour class
+  const th = optT>62?'thermophilic':optT<24?'psychrophilic':'mesophilic';
+  const ph = optPH<5.5?'acidophilic':optPH>8.5?'alkaliphilic':'neutrophilic';
+  const cls = `${th} ${ph} ${goodNut==='alpha'?'chemolithotroph':'organotroph'}`;
+  const name = `${pick(GEN)}${pick(SPC)} ${pick(EPI)}`;
+  const id='SPX-'+ri(1000,9999);
+  return {id,name,cls,optPH,phBand,optT,tBand,goodNut,weak,vec,mission};
+}
+function newSpecimen(){
+  P=genProfile(); vecTriggered=false; over=false; learned.clear();
+  const save=P.mission==='save';
+  // environment: hostile for save (dying), near-optimal for kill (thriving)
+  S={
+    ph: save ? cl(P.optPH + (P.optPH>7?-1:1)*P.phBand*2.0, 0.2,13.8) : P.optPH,
+    temp: save ? cl(P.optT - P.tBand*2.0, -8,108) : P.optT,
+    nutA: (P.goodNut==='alpha'&&!save)?40:0,
+    nutB: (P.goodNut==='beta' &&!save)?40:0,
+    toxin: save?8:0, osmo:0,
+    vitality: save?42:68, integrity:100, vec:0, comfort:0, wobble:0,
+  };
+  // ui
+  $('ph').value=S.ph; $('tp').value=S.temp;
+  $('phv').textContent=(+S.ph).toFixed(1); $('tpv').textContent=Math.round(S.temp);
+  $('sid').textContent=P.id;
+  $('sname').textContent='UNIDENTIFIED SPECIMEN'; $('sname').className='name unk';
+  $('obj').textContent=save?'CULTIVATE':'NEUTRALIZE';
+  $('obj').className='chip '+(save?'save':'kill');
+  $('vring').style.stroke = save?'var(--mint)':'var(--coral)';
+  $('phopt').style.display='none'; $('tpopt').style.display='none';
+  $('vecRow').style.display='none'; $('vecBtn').style.display='none'; $('vecBtn').classList.remove('on');
+  $('recon').innerHTML='Probe the specimen &amp; its medium to build a dossier. <b>Click</b> the nucleus, cytoplasm, organelles, membrane, and surrounding fluid.';
+  buildDossier();
+  buildParticles();
+  elapsed=0; t0=performance.now(); running=true;
+  updateHUD();
+}
+
+// ---------- dossier ----------
+const ZONES=[
+  {key:'nucleus', label:'Nucleus / Genome'},
+  {key:'cytoplasm', label:'Cytoplasm'},
+  {key:'organelles', label:'Organelles'},
+  {key:'membrane', label:'Membrane'},
+  {key:'environment', label:'Culture Medium'},
+];
+function buildDossier(){
+  const box=$('dlist'); box.innerHTML='';
+  ZONES.forEach(z=>{
+    const d=document.createElement('div'); d.className='dcard'; d.id='dc-'+z.key;
+    d.innerHTML=`<div class="dh"><span class="di"></span>${z.label}</div>
+                 <div class="dv locked" id="dv-${z.key}">— unscanned —</div>`;
+    box.appendChild(d);
+  });
+}
+function reveal(key){
+  if(learned.has(key)) return false;
+  learned.add(key);
+  $('dc-'+key).classList.add('on');
+  const dv=$('dv-'+key); dv.classList.remove('locked');
+  if(key==='nucleus'){
+    $('sname').textContent=P.name; $('sname').className='name';
+    dv.innerHTML=`<span class="hl">${P.name}</span><br>${P.cls}. Genome ${P.vec&&P.vec.kind==='lytic'?'shows integrated proviral DNA.':'stable.'}`;
+  } else if(key==='environment'){
+    dv.innerHTML=`Optimum pH <span class="hl">${P.optPH.toFixed(1)}</span> · Optimum temp <span class="hl">${P.optT}°C</span>. Thrives inside the marked bands.`;
+    showOpt();
+  } else if(key==='organelles'){
+    const g=P.goodNut==='alpha'?'Nutrient α (ferro-sulfur)':'Nutrient β (organic substrate)';
+    const b=P.goodNut==='alpha'?'Nutrient β':'Nutrient α';
+    dv.innerHTML=`Metabolises <span class="gd">${g}</span>. <span class="rk">${b}</span> is cytotoxic to it.`;
+  } else if(key==='membrane'){
+    const m={osmotic:'lipid bilayer — <span class="rk">ruptures under osmotic shock</span>',
+             thermal:'thin sheath — <span class="rk">ruptures at thermal extremes</span>',
+             toxin:'porous wall — <span class="rk">dissolves under cytotoxin</span>',
+             none:'thick, resilient wall — <span class="gd">no structural weakness</span>'}[P.weak];
+    dv.innerHTML=`Envelope: ${m}.`;
+  } else if(key==='cytoplasm'){
+    if(P.vec){
+      dv.innerHTML= P.vec.kind==='lytic'
+        ? `Detected dormant <span class="vi">${P.vec.name}</span> — a <span class="rk">lytic bacteriophage</span> latent in the genome. Inducing it bursts the host.`
+        : `Detected <span class="vi">${P.vec.name}</span> — an <span class="gd">endosymbiont</span>. Nurtured, it revives a failing host; starved, the host weakens.`;
+      unlockVec();
+    } else {
+      dv.innerHTML=`Cytoplasm clear. <span class="hl">No viral or symbiotic passenger.</span>`;
+    }
+  }
+  hintRecon();
+  return true;
+}
+function hintRecon(){
+  const n=learned.size;
+  const r=$('recon');
+  if(n>=5){ r.innerHTML= P.mission==='save'
+      ? 'Dossier complete. To <b>cultivate</b>: park pH &amp; temp in the green bands, feed the right nutrient, clear toxin — and use the vector to your advantage.'
+      : 'Dossier complete. To <b>neutralize</b>: exploit the membrane weakness, starve or poison it, drive the medium far off-optimum, or induce a lytic vector.';
+  } else r.innerHTML=`Dossier ${n}/5. Keep probing — the more you know, the fewer mistakes.`;
+}
+function unlockVec(){
+  if(!P.vec) return;
+  $('vecRow').style.display='block';
+  $('vecLbl').textContent = P.vec.kind==='lytic'?'PHAGE INDUCTION':'SYMBIONT ACTIVITY';
+  const b=$('vecBtn'); b.style.display='block';
+  $('vecBtnT').textContent = P.vec.kind==='lytic'?('⚠ Induce '+P.vec.name):('❤ Nurture '+P.vec.name);
+  $('vecBtnS').textContent = P.vec.kind==='lytic'?'awaken lytic cycle · bursts host':'feed endosymbiont · revives host';
+}
+function showOpt(){
+  const ph=$('phopt'), tp=$('tpopt');
+  const pl=(P.optPH-P.phBand-0)/14*100, pw=(2*P.phBand)/14*100;
+  ph.style.left=cl(pl,0,100)+'%'; ph.style.width=cl(pw,0,100)+'%'; ph.style.display='block';
+  const tl=(P.optT-P.tBand-(-10))/120*100, tw=(2*P.tBand)/120*100;
+  tp.style.left=cl(tl,0,100)+'%'; tp.style.width=cl(tw,0,100)+'%'; tp.style.display='block';
+}
+
+// ---------- simulation ----------
+function comfortOf(){
+  const pHfit=cl(1-Math.abs(S.ph-P.optPH)/P.phBand,-1.6,1);
+  const tFit =cl(1-Math.abs(S.temp-P.optT)/P.tBand,-1.6,1);
+  const good=P.goodNut==='alpha'?S.nutA:S.nutB;
+  const bad =P.goodNut==='alpha'?S.nutB:S.nutA;
+  const nut = cl(good/55,0,1) - cl(bad/45,0,1)*1.25 - (good<6?0.28:0);
+  const tox = -cl(S.toxin/60,0,1)*0.7;
+  return 0.42*pHfit + 0.42*tFit + 0.30*nut + tox;   // ~[-2.4 .. +1.14]
+}
+function sim(dt){
+  // injection decay
+  S.nutA=Math.max(0,S.nutA-2.5*dt); S.nutB=Math.max(0,S.nutB-2.5*dt);
+  S.toxin=Math.max(0,S.toxin-5*dt); S.osmo=Math.max(0,S.osmo-42*dt);
+  const comfort=comfortOf(); S.comfort=lerp(S.comfort,comfort,cl(dt*3,0,1));
+
+  // vector activity
+  if(P.vec){
+    const heat = S.temp > (P.optT+P.tBand*1.6);        // heat can auto-induce a lytic phage
+    const trig = vecTriggered || (P.vec.kind==='lytic' && heat);
+    S.vec = approach(S.vec, trig?100:0, (trig?26:16)*dt);
+  }
+  const lytic = P.vec&&P.vec.kind==='lytic' ? S.vec:0;
+  const symb  = P.vec&&P.vec.kind==='symbiotic' ? S.vec:0;
+
+  // membrane integrity
+  let dInt = (comfort>0? 2.6:0);                        // heals only when comfortable
+  dInt -= (P.weak==='osmotic'? S.osmo*0.16 : S.osmo*0.015);
+  if(P.weak==='thermal'){ const tf=1-Math.abs(S.temp-P.optT)/P.tBand; if(tf<0) dInt -= (-tf)*3.6; }
+  if(P.weak==='toxin') dInt -= cl(S.toxin/60,0,1)*3.4;
+  dInt -= lytic*0.05;                                   // lytic phage eats the envelope
+  S.integrity=cl(S.integrity+dInt*dt,0,100);
+
+  // vitality drifts toward a target set by how good its world is.
+  // target>100 (very comfortable) => can reach carrying capacity (win/escape).
+  // target<0  (very hostile)      => can fall to death.
+  let target = 50 + comfort*60 + symb*0.25 - lytic*0.55;
+  let dVit = (target - S.vitality) * 0.09;              // gentle approach (~11s time-constant)
+  if(S.integrity<=0) dVit -= 60;                        // ruptured envelope => collapse
+  S.vitality=cl(S.vitality + dVit*dt, 0, 100);
+  S.wobble=lerp(S.wobble,cl(comfort,-1.2,1.2),cl(dt*2,0,1));
+
+  // win / lose
+  if(S.integrity<=0 && S.vitality<=0.5){ finish(P.mission==='kill', 'lysis'); return; }
+  if(S.vitality>=100){ finish(P.mission==='save', 'thrive'); return; }
+  if(S.vitality<=0){ finish(P.mission==='kill', 'perish'); return; }
+}
+
+// ---------- HUD ----------
+function updateHUD(){
+  const C=326.7;
+  $('vnum').textContent=Math.round(S.vitality);
+  $('vring').style.strokeDashoffset = C*(1-S.vitality/100);
+  $('intv').textContent=Math.round(S.integrity)+'%'; $('intb').style.width=S.integrity+'%';
+  // homeostasis: -1.6..+1.6 -> bar left/right of centre
+  const c=cl(S.comfort/1.4,-1,1);
+  const homb=$('homb');
+  if(c>=0){ homb.style.left='50%'; homb.style.width=(c*50)+'%'; homb.style.background='linear-gradient(90deg,#2f8f6f,var(--good))'; }
+  else { homb.style.width=(-c*50)+'%'; homb.style.left=(50+c*50)+'%'; homb.style.background='linear-gradient(90deg,var(--bad),#8f2f2f)'; }
+  $('homv').textContent = c>0.2?'stable':c<-0.2?'stressed':'marginal';
+  if(P.vec){ $('vecv').textContent=Math.round(S.vec)+'%'; $('vecb').style.width=S.vec+'%'; }
+  // injection levels on buttons
+  $$('.abtn[data-a]').forEach(b=>{
+    const a=b.dataset.a; const v={alpha:S.nutA,beta:S.nutB,toxin:S.toxin,osmo:S.osmo}[a];
+    b.querySelector('.lvl').style.width=cl(v,0,100)+'%';
+  });
+  $('clock').textContent='T+'+Math.floor(elapsed)+'s';
+}
+const $$=(s)=>Array.from(document.querySelectorAll(s));
+
+// ---------- particles / background ----------
+let bokeh=[], leaks=[];
+function buildParticles(){
+  bokeh=[];
+  for(let i=0;i<46;i++) bokeh.push({x:Math.random()*W,y:Math.random()*H,r:rnd(20,110),
+     vx:rnd(-6,6),vy:rnd(-6,6),a:rnd(.015,.06),hue:rnd(0,1)});
+  leaks=[];
+}
+
+// ---------- rendering ----------
+function envTint(){
+  // pH: acid=amber, alkaline=teal ; temp: hot=red glow, cold=blue
+  const acid=cl((6.5-S.ph)/6,0,1), alk=cl((S.ph-7.5)/6,0,1);
+  const hot=cl((S.temp-70)/40,0,1), cold=cl((18-S.temp)/40,0,1);
+  return {acid,alk,hot,cold};
+}
+function blob(cxp,cyp,rad,seed,tsec,amp,pts){
+  ctx.beginPath();
+  const n=pts||120;
+  for(let i=0;i<=n;i++){
+    const a=i/n*Math.PI*2;
+    const w=1 + amp*(0.5*Math.sin(a*3+seed+tsec*0.6)
+                    +0.3*Math.sin(a*5-seed*1.7+tsec*0.9)
+                    +0.2*Math.sin(a*2+tsec*0.4));
+    const rr=rad*w;
+    const x=cxp+Math.cos(a)*rr, y=cyp+Math.sin(a)*rr;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.closePath();
+}
+let orgs=null;
+function ensureOrgs(){
+  if(orgs) return;
+  orgs=[]; const cols=['#ffcf6a','#ff7d92','#7effc0','#7db8ff','#b79bff'];
+  const k=ri(4,6);
+  for(let i=0;i<k;i++) orgs.push({ang:rnd(0,6.28),rad:rnd(.5,.78),sz:rnd(.10,.17),
+     sp:rnd(.05,.14)*(Math.random()<.5?-1:1),col:cols[i%cols.length],ph:rnd(0,6)});
+}
+function draw(ts){
+  const tsec=ts/1000;
+  // pre-game (no specimen yet): just paint the empty field + bokeh
+  if(!P||!S){
+    const gg=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*0.75);
+    gg.addColorStop(0,'#08181f'); gg.addColorStop(1,'#03080b');
+    ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    for(const b of bokeh){ b.x+=b.vx*0.016;b.y+=b.vy*0.016;
+      const bg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+      bg.addColorStop(0,`rgba(94,242,214,${b.a})`); bg.addColorStop(1,'rgba(94,242,214,0)');
+      ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.3); ctx.fill(); }
+    ctx.globalCompositeOperation='source-over';
+    return;
+  }
+  // background fluid
+  const tint=envTint();
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*0.75);
+  g.addColorStop(0, '#08181f'); g.addColorStop(1, '#03080b');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  // bokeh
+  ctx.globalCompositeOperation='lighter';
+  for(const b of bokeh){
+    b.x+=b.vx*0.016; b.y+=b.vy*0.016;
+    if(b.x<-120)b.x=W+120; if(b.x>W+120)b.x=-120; if(b.y<-120)b.y=H+120; if(b.y>H+120)b.y=-120;
+    const bg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+    const col = b.hue<.5? '94,242,214':'120,180,255';
+    bg.addColorStop(0,`rgba(${col},${b.a})`); bg.addColorStop(1,`rgba(${col},0)`);
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.3); ctx.fill();
+  }
+  ctx.globalCompositeOperation='source-over';
+
+  const dead = over && P.mission!=='save' ? false : false;
+  const baseCol = P.mission==='save' ? [126,255,192] : [255,125,146];
+  const health = S.vitality/100;
+  const wob = 0.06 + 0.05*(1-health);                 // sicker = more wobble
+  const rad = R*(0.86+0.16*health);
+
+  // ---- outer glow / cell aura ----
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  const aura=ctx.createRadialGradient(cx,cy,rad*0.3,cx,cy,rad*2.1);
+  const auraA=0.10+0.12*health;
+  aura.addColorStop(0,`rgba(${baseCol.join(',')},${auraA})`);
+  aura.addColorStop(1,`rgba(${baseCol.join(',')},0)`);
+  ctx.fillStyle=aura; ctx.beginPath(); ctx.arc(cx,cy,rad*2.1,0,6.3); ctx.fill();
+  ctx.restore();
+
+  // ---- cytoplasm body ----
+  blob(cx,cy,rad,P.optPH,tsec,wob,120);
+  const body=ctx.createRadialGradient(cx-rad*.25,cy-rad*.25,rad*0.1,cx,cy,rad*1.05);
+  body.addColorStop(0,`rgba(${baseCol.join(',')},0.22)`);
+  body.addColorStop(0.6,`rgba(${Math.round(baseCol[0]*0.5)},${Math.round(baseCol[1]*0.6)},${Math.round(baseCol[2]*0.7)},0.16)`);
+  body.addColorStop(1,`rgba(10,26,30,0.08)`);
+  ctx.fillStyle=body; ctx.fill();
+
+  // membrane stroke (with rupture when integrity low)
+  ctx.save();
+  ctx.lineWidth=cl(rad*0.028,2,6);
+  const mI=S.integrity/100;
+  ctx.strokeStyle=`rgba(${baseCol.join(',')},${0.5+0.4*mI})`;
+  ctx.shadowColor=`rgba(${baseCol.join(',')},0.8)`; ctx.shadowBlur=cl(18*mI+4,4,22);
+  if(mI>0.35){ ctx.stroke(); }
+  else { // draw dashed / broken membrane
+    ctx.setLineDash([rad*0.18*mI+4, rad*0.10]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.restore();
+
+  // ---- organelles ----
+  ensureOrgs();
+  for(const o of orgs){
+    o.ang+=o.sp*0.016;
+    const ox=cx+Math.cos(o.ang)*rad*o.rad, oy=cy+Math.sin(o.ang)*rad*o.rad;
+    const os=rad*o.sz*(0.9+0.12*Math.sin(tsec*1.3+o.ph));
+    ctx.save();
+    const og=ctx.createRadialGradient(ox,oy,0,ox,oy,os*1.8);
+    og.addColorStop(0,o.col); og.addColorStop(0.5,o.col+'66'); og.addColorStop(1,o.col+'00');
+    ctx.globalCompositeOperation='lighter'; ctx.fillStyle=og;
+    ctx.beginPath(); ctx.ellipse(ox,oy,os*1.2,os*0.75,o.ang,0,6.3); ctx.fill();
+    ctx.restore();
+  }
+
+  // ---- nucleus ----
+  const nr=rad*0.30*(0.96+0.06*Math.sin(tsec*1.6));
+  blob(cx,cy,nr,P.optPH*2,tsec*1.3,0.10,60);
+  const ng=ctx.createRadialGradient(cx-nr*.3,cy-nr*.3,0,cx,cy,nr*1.2);
+  ng.addColorStop(0,'#d9c9ff'); ng.addColorStop(0.5,'rgba(183,155,255,.55)'); ng.addColorStop(1,'rgba(120,90,200,.15)');
+  ctx.save(); ctx.shadowColor='rgba(183,155,255,.7)'; ctx.shadowBlur=18; ctx.fillStyle=ng; ctx.fill(); ctx.restore();
+  // genome strands
+  ctx.save(); ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=1.4;
+  for(let i=0;i<3;i++){ ctx.beginPath();
+    for(let j=0;j<=20;j++){const a=j/20*6.28+tsec*0.3+i*2; const rr=nr*(0.3+0.4*Math.abs(Math.sin(a*2+i)));
+      const x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; j?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); }
+  ctx.restore();
+
+  // ---- vector particles (phage / symbiont) inside cell ----
+  if(P.vec && (learned.has('cytoplasm')||S.vec>1)){
+    const count=Math.round(2+S.vec*0.18);
+    const lytic=P.vec.kind==='lytic';
+    const vcol= lytic?'#ff5ec7':'#7effc0';
+    for(let i=0;i<count;i++){
+      const a=i/count*6.28 + tsec*(lytic?0.9:0.4) + i*1.7;
+      const rr=rad*(0.35+0.5*((i*0.37)%1));
+      const vx=cx+Math.cos(a)*rr, vy=cy+Math.sin(a)*rr;
+      const vs=rad*0.028*(1+ S.vec*0.006);
+      ctx.save(); ctx.globalCompositeOperation='lighter';
+      ctx.shadowColor=vcol; ctx.shadowBlur=10; ctx.fillStyle=vcol;
+      if(lytic){ // little icosahedral phage
+        ctx.beginPath(); for(let k=0;k<6;k++){const aa=k/6*6.28; const px=vx+Math.cos(aa)*vs, py=vy+Math.sin(aa)*vs; k?ctx.lineTo(px,py):ctx.moveTo(px,py);} ctx.closePath(); ctx.fill();
+        ctx.strokeStyle=vcol; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(vx,vy+vs); ctx.lineTo(vx,vy+vs*2.2); ctx.stroke();
+      } else { ctx.beginPath(); ctx.arc(vx,vy,vs,0,6.3); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
+  // ---- membrane leak particles when integrity low ----
+  if(mI<0.5 && running){
+    if(Math.random()<0.4){ const a=rnd(0,6.28); leaks.push({x:cx+Math.cos(a)*rad,y:cy+Math.sin(a)*rad,
+       vx:Math.cos(a)*rnd(10,30),vy:Math.sin(a)*rnd(10,30),life:1,col:baseCol}); }
+  }
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(let i=leaks.length-1;i>=0;i--){const p=leaks[i]; p.x+=p.vx*0.016;p.y+=p.vy*0.016;p.life-=0.02;
+    if(p.life<=0){leaks.splice(i,1);continue;}
+    ctx.fillStyle=`rgba(${p.col.join(',')},${p.life*0.5})`; ctx.beginPath(); ctx.arc(p.x,p.y,3*p.life+1,0,6.3); ctx.fill(); }
+  ctx.restore();
+
+  // ---- hover zone highlight ----
+  if(hoverZone && running && !over){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle='rgba(94,242,214,.55)'; ctx.lineWidth=1.5;
+    let r0,r1;
+    const zr={nucleus:[0,.30],cytoplasm:[.30,.62],organelles:[.62,.9],membrane:[.9,1.28],environment:[1.28,1.7]}[hoverZone];
+    r0=rad*zr[0]; r1=rad*Math.min(zr[1],1.55);
+    ctx.beginPath(); ctx.arc(cx,cy,(r0+r1)/2,0,6.3); ctx.lineWidth=Math.max(2,(r1-r0)); ctx.globalAlpha=0.10; ctx.stroke();
+    ctx.restore();
+  }
+
+  // scanning sweep
+  if(scan.active){
+    const p=cl((ts-scan.start)/scan.dur,0,1);
+    ctx.save();
+    ctx.strokeStyle='rgba(94,242,214,.9)'; ctx.lineWidth=2; ctx.shadowColor='rgba(94,242,214,.8)'; ctx.shadowBlur=12;
+    ctx.beginPath(); ctx.arc(scan.x,scan.y,10+p*70,0,6.3); ctx.stroke();
+    ctx.globalAlpha=0.6; ctx.beginPath(); ctx.arc(scan.x,scan.y,10+((p*70+35)%80),0,6.3); ctx.stroke();
+    ctx.restore();
+    if(p>=1){ scan.active=false; if(reveal(scan.zone)) pulseDossier(scan.zone); }
+  }
+
+  // env tint vignette
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  if(tint.hot>0){ const rg=ctx.createRadialGradient(cx,cy,R,cx,cy,Math.max(W,H)); rg.addColorStop(0,'rgba(255,80,40,0)'); rg.addColorStop(1,`rgba(255,70,40,${tint.hot*0.16})`); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+  if(tint.cold>0){ const rg=ctx.createRadialGradient(cx,cy,R,cx,cy,Math.max(W,H)); rg.addColorStop(0,'rgba(80,150,255,0)'); rg.addColorStop(1,`rgba(80,150,255,${tint.cold*0.16})`); ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+  ctx.restore();
+  ctx.save(); ctx.globalCompositeOperation='overlay';
+  if(tint.acid>0){ ctx.fillStyle=`rgba(255,190,90,${tint.acid*0.06})`; ctx.fillRect(0,0,W,H); }
+  if(tint.alk>0){ ctx.fillStyle=`rgba(90,230,255,${tint.alk*0.06})`; ctx.fillRect(0,0,W,H); }
+  ctx.restore();
+}
+function pulseDossier(key){ const c=$('dc-'+key); c.animate([{transform:'scale(1.04)',borderColor:'rgba(94,242,214,.7)'},{transform:'scale(1)'}],{duration:500}); }
+
+// ---------- loop ----------
+let last=0;
+function loop(ts){
+  if(!last)last=ts; let dt=Math.min(0.05,(ts-last)/1000); last=ts;
+  if(P&&running&&!over){ elapsed+=dt; sim(dt); }
+  draw(ts); if(P) updateHUD();
+  requestAnimationFrame(loop);
+}
+
+// ---------- interaction: scan zones ----------
+let hoverZone=null;
+const scan={active:false,zone:null,x:0,y:0,start:0,dur:1500};
+function zoneAt(x,y){
+  const d=Math.hypot(x-cx,y-cy)/R;
+  if(d<0.30)return 'nucleus'; if(d<0.62)return 'cytoplasm'; if(d<0.9)return 'organelles';
+  if(d<1.28)return 'membrane'; if(d<2.2)return 'environment'; return null;
+}
+cv.addEventListener('pointermove',e=>{
+  if(!running||over){hoverZone=null;$('zlab').classList.remove('on');return;}
+  const z=zoneAt(e.clientX,e.clientY); hoverZone=z;
+  const zl=$('zlab');
+  if(z){ const done=learned.has(z);
+    zl.innerHTML= (ZONES.find(q=>q.key===z).label)+(done?' <span class="s">✓ scanned</span>':' <span class="s">· click to probe</span>');
+    zl.style.left=e.clientX+'px'; zl.style.top=e.clientY+'px'; zl.classList.add('on'); }
+  else zl.classList.remove('on');
+});
+cv.addEventListener('pointerleave',()=>{hoverZone=null;$('zlab').classList.remove('on');});
+cv.addEventListener('pointerdown',e=>{
+  if(!running||over||scan.active) return;
+  const z=zoneAt(e.clientX,e.clientY); if(!z) return;
+  if(learned.has(z)){ pulseDossier(z); return; }
+  scan.active=true; scan.zone=z; scan.x=e.clientX; scan.y=e.clientY; scan.start=performance.now();
+});
+
+// ---------- interaction: levers ----------
+$('ph').addEventListener('input',e=>{S.ph=+e.target.value;$('phv').textContent=S.ph.toFixed(1);});
+$('tp').addEventListener('input',e=>{S.temp=+e.target.value;$('tpv').textContent=Math.round(S.temp);});
+$$('.abtn[data-a]').forEach(b=>b.addEventListener('click',()=>{
+  if(!running||over)return;
+  const a=b.dataset.a;
+  if(a==='alpha') S.nutA=cl(S.nutA+34,0,100);
+  else if(a==='beta') S.nutB=cl(S.nutB+34,0,100);
+  else if(a==='toxin') S.toxin=cl(S.toxin+30,0,100);
+  else if(a==='osmo') S.osmo=cl(S.osmo+70,0,100);
+  b.animate([{transform:'scale(.96)'},{transform:'scale(1)'}],{duration:160});
+}));
+$('vecBtn').addEventListener('click',()=>{
+  if(!running||over||!P.vec)return;
+  vecTriggered=!vecTriggered;
+  $('vecBtn').classList.toggle('on',vecTriggered);
+  const s=$('vecBtnS');
+  if(P.vec.kind==='lytic') s.textContent=vecTriggered?'lytic cycle INDUCED · host bursting':'awaken lytic cycle · bursts host';
+  else s.textContent=vecTriggered?'symbiont ACTIVE · reviving host':'feed endosymbiont · revives host';
+});
+
+// ---------- end ----------
+function finish(win,reason){
+  if(over)return; over=true; running=false;
+  const save=P.mission==='save';
+  $('endV').textContent=win?'SPECIMEN SAVED'.replace('SAVED',save?'CULTIVATED':'NEUTRALIZED'):'ASSIGNMENT FAILED';
+  if(!win) $('endV').textContent = save?'SPECIMEN LOST':'CONTAINMENT BREACH';
+  else $('endV').textContent = save?'SPECIMEN CULTIVATED':'SPECIMEN NEUTRALIZED';
+  $('endV').className='verdict '+(win?'win':'lose');
+  $('endSub').textContent='Assignment Report · '+P.id;
+  const rn={lysis:'The membrane ruptured — lysis from structural failure or an induced phage.',
+            thrive:'Vitality reached carrying capacity; the culture is self-sustaining.',
+            perish:'Vitality fell to zero under a hostile medium.'}[reason];
+  let msg;
+  if(win&&save) msg=`You read <b>${P.name}</b> correctly and steered its world back to homeostasis. It thrives.`;
+  else if(win&&!save) msg=`<b>${P.name}</b> is gone. ${rn}`;
+  else if(!win&&save) msg=`<b>${P.name}</b> perished on your bench. ${rn} It needed different care.`;
+  else msg=`<b>${P.name}</b> escaped containment — vitality maxed out before you could bring it down.`;
+  $('endMsg').innerHTML=msg;
+  const vecTxt = P.vec? `${P.vec.name} — <span class="hl">${P.vec.kind==='lytic'?'lytic phage':'endosymbiont'}</span>` : 'none';
+  $('endRev').innerHTML=
+    `<div>SPECIES · <span class="hl">${P.name}</span></div>`+
+    `<div>CLASS · <span class="hl">${P.cls}</span></div>`+
+    `<div>OPTIMUM · <span class="hl">pH ${P.optPH.toFixed(1)}, ${P.optT}°C</span></div>`+
+    `<div>METABOLISES · <span class="hl">Nutrient ${P.goodNut==='alpha'?'α':'β'}</span></div>`+
+    `<div>WEAKNESS · <span class="hl">${P.weak==='none'?'none found':P.weak+' rupture'}</span></div>`+
+    `<div>PASSENGER · <span class="hl">${vecTxt}</span></div>`+
+    `<div style="margin-top:6px">TIME · <span class="hl">${Math.floor(elapsed)}s</span></div>`;
+  $('end').classList.remove('hidden');
+}
+
+// ---------- buttons ----------
+$('beginBtn').addEventListener('click',()=>{ $('intro').classList.add('hidden'); newSpecimen(); });
+$('nextBtn').addEventListener('click',()=>{ $('end').classList.add('hidden'); orgs=null; newSpecimen(); });
+$('briefBtn').addEventListener('click',()=>{ $('end').classList.add('hidden'); $('intro').classList.remove('hidden'); });
+$('helpBtn').addEventListener('click',()=>{ running=false; $('intro').classList.remove('hidden');
+  $('beginBtn').textContent = P?'▶ Resume':'▶ Receive Assignment';
+  $('beginBtn').onclick=()=>{ $('intro').classList.add('hidden'); if(!P)newSpecimen(); else running=true; }; });
+
+buildParticles();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
