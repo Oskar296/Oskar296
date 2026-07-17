@@ -1,81 +1,85 @@
-# 🔬 XENOSCOPE — Specimen Protocol
+# 🔬 XENOSCOPE — Cell Biology Lab
 
-A sleek, single-organism xenobiology game. **One** alien cell drifts under your
-bio-scope — it can belong to any of the **five kingdoms**, and each arrives
-*unidentified*. Command hands you one of **eight** assignments. You read the
-organism's biology, then use the medium and its own internal **virus / symbiont**
-to carry the order out.
+An **educational** alien-biology game. You investigate one specimen at a time —
+it could be an **animal, plant, bacterium, protist, fungus, virus,** or a piece of
+**plant vascular tissue** — identify its organelles and biology, then carry out an
+assignment. You genuinely learn real cell biology as you rank up.
 
-No grids, no build step, no dependencies. One `index.html`, one living cell.
+Built to be **rich but approachable**: ~60% knowledge, 40% action. No build step,
+no dependencies — plain HTML/CSS/JS split across several files.
 
 ## ▶ Play
 
-Open `index.html` in any modern browser, or serve it:
+Serve the folder and open it (recommended, so progress saves):
 
 ```bash
 cd xenoscope
 python3 -m http.server 8000   # then open http://localhost:8000
 ```
 
-## The five kingdoms
+You can also open `index.html` directly, though some browsers disable saved
+progress on `file://`.
 
-Every specimen is generated fresh, with anatomy that also tells you how it lives:
+## The loop: **investigate → classify → decide**
 
-| Kingdom | Tell-tale anatomy |
-|---|---|
-| **Monera** (prokaryote) | No true nucleus — a bare **nucleoid**, plus **plasmid** rings, a **flagellum**, capsule wall. |
-| **Protista** | Nucleus, a pulsing **contractile vacuole**, **cilia**, food vacuoles, amoeboid membrane. |
-| **Fungi** | Nucleus, thick **chitin wall**, a large vacuole, **spore bodies**, mitochondria. |
-| **Plantae** | Rigid **cellulose wall**, a dominant **central vacuole**, stacked-granum **chloroplasts**. |
-| **Animalia** | No wall (flexible membrane), many **mitochondria** with cristae, **lysosomes**, **centrioles**. |
+1. **Investigate (untimed).** Click every structure on the specimen to identify it —
+   each reveals its **name, function, and a fact**, and unlocks a Codex entry. Run
+   **reagent tests** (iodine for starch, Gram stain, methylene blue) for more clues.
+2. **Classify.** Name the specimen's kingdom. Correct answers earn more XP; wrong
+   guesses cost you a little.
+3. **Assignment.** Carry out the order (cultivate, neutralise, stabilise, bloom,
+   quarantine) using the medium and reagents.
 
-Seeing **chloroplasts** means the organism is an **autotroph** — feed it Nutrient α
-(photonic/mineral). No plastids means **heterotroph** — feed it Nutrient β (organic).
-The wrong nutrient is a poison, so read the organelles before you feed.
+## Selective toxicity — why identification matters
 
-## The eight assignments
+The biology is honest, so the **right tool for the organism works and the wrong one
+barely does**:
 
-| # | Task | Win condition |
-|---|------|---------------|
-| 1 | **Cultivate** | Raise Vitality to 100% |
-| 2 | **Neutralize** | Reduce Vitality to 0% (any method) |
-| 3 | **Induce Lysis** | Rupture the membrane (Integrity → 0) — you must *burst* it, not starve it |
-| 4 | **Stabilize** | Hold Vitality 40–70% for 6s (a balancing act) |
-| 5 | **Force Bloom** | Reach & hold Vitality ≥90% for 5s |
-| 6 | **Cure Infection** | Suppress an active lytic phage while keeping the host alive |
-| 7 | **Quarantine** | Hold it subdued (<35%) for 7s without killing it |
-| 8 | **Establish Symbiosis** | Nurture an endosymbiont to full integration while the host thrives |
+- **Antibiotics** kill bacteria (peptidoglycan wall / 70S ribosome) — useless on
+  viruses and your own cells.
+- **Antivirals** work only on viruses; **antifungals** only on fungi.
+- **Osmotic shock** bursts wall-less cells (animal, protist) but walled cells resist.
+- **Autotrophs** need **light + minerals** (photosynthesis); feeding them sugar does
+  nothing. **Heterotrophs** need **glucose**. A **virus** needs a **host cell culture**.
 
-Tasks are only assigned when the specimen's biology makes them possible — e.g.
-*Cure* and *Symbiosis* require the right kind of passenger, *Induce Lysis*
-requires an exploitable weakness or a lytic phage.
+Use the wrong agent and you'll waste the assignment — so read the specimen first.
 
-## The loop: probe → read → decide
+## Every organelle, named
 
-1. **Probe.** Click the specimen's layers and the fluid around it. Each scan fills
-   the dossier: **nucleus** (kingdom & species), **cytoplasm** (viral/symbiotic
-   passenger), **organelles** (nutrient it needs), **envelope** (structural
-   weakness), **medium** (optimum pH & temperature — marks the green bands).
-2. **Read.** Acting blind backfires — feeding a pathogen, shocking the wrong
-   membrane, or heating a phage-carrier all cost you while the specimen drifts.
-3. **Decide.** Tune pH & temperature, feed or poison, exploit the weakness
-   (osmotic shock / heat / cytotoxin), and use the **vector**:
-   - **Lytic phage** — *induce* it to burst the host from inside (your fastest
-     kill), or keep it *suppressed* when the host must live.
-   - **Endosymbiont** — *nurture* it to revive a failing host.
+No more generic "organelles" — you inspect and learn each one individually:
+**nucleus, nucleolus, nucleoid, mitochondria, chloroplasts, thylakoids, ribosomes,
+rough ER, Golgi apparatus, lysosomes, vacuoles, contractile & food vacuoles, cell
+walls (cellulose / chitin / peptidoglycan), capsule, flagella, cilia, pili,
+pseudopodia, plasmids, spores, centrioles, eyespot**, the plant tissues **xylem &
+phloem**, and viral parts **capsid, genome, envelope, spikes, tail fibres** — each
+with its real function and a memorable fact.
 
-The **Homeostasis** bar is your live tell: green = the medium suits it, red =
-stress.
+## Difficulty: tiers **and** career progression
 
-## Under the hood
+- **Tiers** — *Intern* (generous tolerances, hints, pre-scanned structures),
+  *Field Xenobiologist* (standard), *Director* (no hints, tight margins, decoy
+  reagents).
+- **Career** — earn XP for inspecting structures, classifying correctly and
+  completing assignments. Ranking up **unlocks tougher organisms** (protists →
+  fungi → plant tissue → viruses) and grows your **Codex**. Progress is saved
+  locally.
 
-Everything is one `index.html`: a `<canvas>` renderer — an organic, wobbling
-envelope (summed-sine perturbation, styled per kingdom's wall), a pulsing nucleus,
-and per-kingdom organelles each drawn as its own shape (cristae, granum stacks,
-DNA loops, plasmid rings, flagella, cilia, spores, lysosomes, centrioles) —
-layered over a continuous biology sim: comfort from pH/temperature/nutrient/toxin
-drives a vitality curve, with independent membrane-integrity and vector dynamics.
-Vanilla JavaScript, no libraries.
+## Project layout
 
-*Every specimen — kingdom, species, optimum, weakness, and passenger — is
-generated fresh and is original to this project.*
+```
+xenoscope/
+  index.html         · shell
+  css/styles.css     · all styling
+  js/
+    data.js          · organelles, organisms, substances, tasks, ranks (content)
+    sim.js           · specimen generation + assignment biology model
+    draw.js          · canvas renderer (cells, viruses, tissue, every organelle)
+    game.js          · phases, XP/rank progression, Codex (localStorage)
+    ui.js            · panels, overlays, input
+    main.js          · bootstrap + game loop
+```
+
+Plain `<script>` tags, one global `XS` namespace — no bundler, runs anywhere.
+
+*Every specimen is generated fresh and is original to this project; the biology it
+teaches is real.*
