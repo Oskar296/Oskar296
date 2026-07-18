@@ -1,15 +1,18 @@
 /* =====================================================================
    XENOSCOPE · world.js
-   The MACRO layer: whole alien organisms on their exoplanets, the
-   anatomical regions you can zoom into, and scenario generation.
-   Only two objectives exist now: PRESERVE or NEUTRALIZE.
-   Rendering lives in draw.js (reuses its canvas helpers); this file is
-   data + logic only.
+   The MACRO layer: a catalogue of whole alien organisms across SIX
+   kingdoms, each with its own body-plan (drawn in draw.js), the tissues
+   you zoom into, and the scenario logic.
+
+   Two objectives: PRESERVE or NEUTRALIZE.
+   The game is now a DEDUCTION: the cause is hidden. You must run lab
+   assays and inspect cell structures to gather EVIDENCE, commit a
+   diagnosis, then choose the one correct treatment. Wrong moves are
+   punished — harder on higher tiers.
 ===================================================================== */
 (function(XS){
 "use strict";
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const ri=(a,b)=>Math.floor(a+Math.random()*(b-a+1));
 
 /* ---------------- exoplanets (backdrops) ---------------- */
 XS.PLANETS=[
@@ -18,107 +21,236 @@ XS.PLANETS=[
   {name:'Gliese 581 g', sky:['#361d10','#241206'], ground:'#3a2312', accent:[255,180,120], sun:'#ffdca6', terrain:'crags'},
   {name:'TRAPPIST-1 e', sky:['#101838','#0a1024'], ground:'#141d40', accent:[125,184,255], sun:'#cfe0ff', terrain:'ice'},
   {name:'Teegarden c',  sky:['#2a1030','#180a20'], ground:'#2c1236', accent:[255,110,199], sun:'#ffc4ec', terrain:'fungal'},
+  {name:'LHS 1140 b',   sky:['#08221c','#04140f'], ground:'#08281f', accent:[120,255,180], sun:'#c6ffe6', terrain:'moss'},
 ];
 
-/* ---------------- macro creature archetypes ----------------
-   regions: unit coords (x right, y down) relative to the creature centre.
-   `cell` = which cell kingdom you meet when you zoom into that region.
+/* ---------------- region (tissue) templates by body group ----------------
+   coords are unit offsets from the creature centre; cell = kingdomKey met on zoom.
 ------------------------------------------------------------ */
-XS.CREATURES={
-  fauna:{ label:'Fauna', body:'a mobile animal-grade creature', col:[255,143,163],
-    gen:['Vorn','Cryssa','Umbra','Thorn','Glide','Rax'], epi:[' ambler',' maw',' strider',' lurker',' grazer'],
-    blurb:'A wall-less animal-grade organism — it moves, it hunts, and its soft tissues can harbour infections.',
-    regions:[
-      {id:'hide',    name:'Hide / epidermis', tissue:'protective skin', cell:'Animalia', x:0.0,  y:-0.05, r:0.55, rim:true},
-      {id:'gut',     name:'Digestive sac',    tissue:'gut lining',      cell:'Animalia', x:0.05, y:0.34},
-      {id:'hemo',    name:'Hemolymph',        tissue:'circulatory fluid',cell:'Animalia', x:-0.42,y:0.05},
-      {id:'ganglion',name:'Neural ganglion',  tissue:'nerve cluster',   cell:'Animalia', x:0.52, y:-0.32},
-    ],
-    weakness:'hypotonic' },
-  flora:{ label:'Flora', body:'a rooted photosynthetic organism', col:[126,255,192],
-    gen:['Chloro','Sylvo','Viridi','Helio','Frond','Thal'], epi:['bloom',' spire',' canopy',' vine',' reed'],
-    blurb:'A rooted autotroph with rigid cellulose-walled cells — it feeds on light and pumps sap through vascular tissue.',
-    regions:[
-      {id:'leaf',   name:'Photosynthetic frond', tissue:'palisade leaf',   cell:'Plantae',     x:0.28, y:-0.5},
-      {id:'stem',   name:'Vascular stem',        tissue:'xylem & phloem',  cell:'PlantTissue', x:0.0,  y:0.05},
-      {id:'root',   name:'Root network',         tissue:'root cells',      cell:'Plantae',     x:-0.1, y:0.55},
-    ],
-    weakness:'hypertonic' },
-  fungal:{ label:'Fungal', body:'a spore-bearing fungal body', col:[255,196,107],
-    gen:['Myco','Necro','Sporo','Ergo','Cap','Hypha'], epi:['crown',' veil',' bloom',' shroud',' stalk'],
-    blurb:'A chitin-walled decomposer — a fruiting cap above a hidden web of feeding threads (mycelium).',
-    regions:[
-      {id:'cap',     name:'Fruiting cap',   tissue:'cap tissue',    cell:'Fungi', x:0.0,  y:-0.45, r:0.6, rim:true},
-      {id:'gills',   name:'Spore gills',    tissue:'spore-bearing', cell:'Fungi', x:0.0,  y:-0.05},
-      {id:'mycelium',name:'Mycelial mat',   tissue:'feeding hyphae',cell:'Fungi', x:-0.05,y:0.5},
-    ],
-    weakness:'antifungal' },
-};
-XS.CREATURE_KEYS=Object.keys(XS.CREATURES);
-
-/* ---------------- pathogens (for PRESERVE scenarios) ---------------- */
-XS.PATHOGENS={
-  virus:    {label:'viral infection', cure:'antiviral', particle:'virus',
-    tell:'Foreign RNA/protein particles crowd the cells — a virus has invaded this tissue.',
-    why:'Only an antiviral halts viral replication; antibiotics do nothing to a virus.'},
-  bacterium:{label:'bacterial infection', cure:'antibiotic', particle:'bacterium',
-    tell:'Rod-shaped invaders with their own walls swarm between the cells — a bacterial infection.',
-    why:'An antibiotic attacks the bacterial wall / 70S ribosome, sparing the host.'},
-  fungus:   {label:'fungal infection', cure:'antifungal', particle:'fungus',
-    tell:'Creeping chitin-walled threads have colonised the tissue — a fungal infection.',
-    why:'An antifungal disrupts the chitin wall / fungal membrane.'},
+const R_ANIMAL=[
+  {id:'hide', name:'Hide / epidermis', tissue:'protective skin',  x:0.0,  y:-0.08},
+  {id:'gut',  name:'Digestive sac',    tissue:'gut lining',       x:0.06, y:0.30},
+  {id:'core', name:'Body cavity',      tissue:'soft interior',    x:-0.40,y:0.04},
+  {id:'nerve',name:'Neural ganglion',  tissue:'nerve cluster',    x:0.52, y:-0.30},
+];
+const R_PLANT=[
+  {id:'leaf', name:'Photosynthetic frond', tissue:'palisade leaf', x:0.30, y:-0.48},
+  {id:'stem', name:'Vascular stem',        tissue:'xylem & phloem',x:0.0,  y:0.06, cell:'PlantTissue'},
+  {id:'root', name:'Root network',         tissue:'root cells',    x:-0.12,y:0.52},
+];
+const R_FUNGI=[
+  {id:'cap',   name:'Fruiting cap',  tissue:'cap tissue',     x:0.0,  y:-0.42},
+  {id:'gills', name:'Spore surface', tissue:'spore-bearing',  x:0.0,  y:-0.04},
+  {id:'myc',   name:'Mycelial mat',  tissue:'feeding hyphae', x:-0.06,y:0.48},
+];
+const R_PROTIST=[
+  {id:'cortex',name:'Outer cortex',   tissue:'pellicle / membrane', x:0.02, y:-0.40},
+  {id:'endo',  name:'Endoplasm',      tissue:'inner cytoplasm',     x:0.10, y:0.04},
+  {id:'organ', name:'Organelle field',tissue:'organelle cluster',   x:-0.34,y:0.24},
+];
+const R_MICROBE=[
+  {id:'crown', name:'Colony crown',  tissue:'growth front',   x:0.0,  y:-0.34},
+  {id:'matrix',name:'Matrix layer',  tissue:'shared matrix',  x:0.06, y:0.06},
+  {id:'base',  name:'Basal film',    tissue:'anchoring film', x:-0.06,y:0.46},
+];
+const R_BY_PLAN={
+  beast:R_ANIMAL, medusa:R_ANIMAL, arthropod:R_ANIMAL, tentacled:R_ANIMAL, worm:R_ANIMAL,
+  tree:R_PLANT, fern:R_PLANT, vine:R_PLANT, bulb:R_PLANT, reed:R_PLANT,
+  mushroom:R_FUNGI, bracket:R_FUNGI, coral:R_FUNGI, puffball:R_FUNGI, mold:R_FUNGI,
+  amoeba:R_PROTIST, ciliate:R_PROTIST, diatom:R_PROTIST, radiolarian:R_PROTIST,
+  colony:R_MICROBE,
 };
 
-/* ---------------- treatment palette (shown in the treat dock) ---------------- */
-XS.TREATMENTS=[
-  {id:'antiviral', label:'Antiviral',    desc:'Blocks viral replication. Cures a viral infection; useless on bacteria, fungi or host cells.'},
-  {id:'antibiotic',label:'Antibiotic',   desc:'Kills bacteria. Cures a bacterial infection; no effect on viruses or fungi.'},
-  {id:'antifungal',label:'Antifungal',   desc:'Attacks the chitin wall / fungal membrane. Cures fungal rot — and destroys a fungal organism.'},
-  {id:'hypotonic', label:'Osmotic shock',desc:'Floods cells with water. Bursts wall-less animal cells; walled cells resist.'},
-  {id:'hypertonic',label:'Herbicide',    desc:'Draws water out. Plasmolyses walled plant cells, collapsing the plant.'},
-  {id:'detergent', label:'Detergent',    desc:'Dissolves lipid membranes and enveloped viruses.'},
+/* ---------------- SPECIES CATALOGUE (27 across 6 kingdoms) ----------------
+   plan  = body-plan renderer (draw.js)  ·  cell = kingdomKey you meet on zoom
+   col   = base flesh colour             ·  size = scale multiplier
+   form  = per-plan drawing parameters   ·  minXP = rank gate
+   Neutralise weakness is derived from the cell kingdom (honest biology).
+------------------------------------------------------------ */
+XS.SPECIES=[
+  // — ANIMALIA (wall-less → hypotonic) —
+  {id:'thornback', name:['Thornback','Vorn','Rax'], epi:[' grazer',' lurker',' strider'], kingdom:'Animal', body:'a wall-less animal-grade beast', plan:'beast', cell:'Animalia', col:[255,143,163], size:1.0, form:{legs:4,tail:1}, minXP:0,
+    blurb:'A wall-less animal-grade beast — it moves, hunts, and its soft tissues can harbour infections.'},
+  {id:'medusa', name:['Drift','Lumen','Vela'], epi:[' medusa',' bell',' float'], kingdom:'Animal', body:'a drifting medusoid animal', plan:'medusa', cell:'Animalia', col:[173,150,255], size:1.05, form:{arms:7}, minXP:0,
+    blurb:'A gelatinous medusoid — a pulsing bell trailing stinging tentacles through the water column.'},
+  {id:'skitterer', name:['Chityr','Segmo','Karr'], epi:[' skitterer',' scuttler',' marcher'], kingdom:'Animal', body:'a segmented arthropod-grade animal', plan:'arthropod', cell:'Animalia', col:[255,180,120], size:1.0, form:{segs:5,legs:4}, minXP:40,
+    blurb:'A segmented, jointed-limbed animal armoured in plates — but its cells still have no wall.'},
+  {id:'maw', name:['Tendril','Umbra','Nyx'], epi:[' maw',' grasper',' crown'], kingdom:'Animal', body:'a tentacled cephalopod-grade animal', plan:'tentacled', cell:'Animalia', col:[255,110,170], size:1.0, form:{arms:6}, minXP:60,
+    blurb:'A soft-bodied hunter that hauls prey in with a crown of curling tentacles.'},
+  {id:'borer', name:['Deep','Anno','Verm'], epi:[' borer',' burrower',' coil'], kingdom:'Animal', body:'a segmented worm-grade animal', plan:'worm', cell:'Animalia', col:[255,150,140], size:1.0, form:{segs:9}, minXP:0,
+    blurb:'A segmented burrowing worm — a muscular tube of soft, wall-less tissue.'},
+
+  // — PROTISTA (single-celled eukaryote, wall-less → hypotonic) —
+  {id:'ooze', name:['Shifting','Amoebo','Pseudo'], epi:[' ooze',' crawler',' blob'], kingdom:'Protist', body:'a giant amoeboid protist', plan:'amoeba', cell:'Protista', col:[94,242,214], size:0.95, form:{lobes:5}, minXP:60,
+    blurb:'A giant single-celled amoeboid — it flows on false feet (pseudopodia) and engulfs its prey whole.'},
+  {id:'slipper', name:['Cilio','Slipper','Paramé'], epi:[' drifter',' rower',' sweep'], kingdom:'Protist', body:'a ciliated protist', plan:'ciliate', cell:'Protista', col:[120,235,255], size:1.0, form:{}, minXP:60,
+    blurb:'A slipper-shaped single cell clothed in beating cilia that row it along and sweep in food.'},
+  {id:'prism', name:['Glass','Silica','Diato'], epi:[' prism',' frustule',' pane'], kingdom:'Protist', body:'a glass-shelled diatom', plan:'diatom', cell:'Protista', col:[150,220,255], size:1.0, form:{shape:'centric'}, minXP:150,
+    blurb:'A photosynthetic protist inside a two-part shell of glassy silica, etched with fine pores.'},
+  {id:'spinesphere', name:['Radio','Spine','Astra'], epi:[' sphere',' star',' halo'], kingdom:'Protist', body:'a mineral-skeletoned protist', plan:'radiolarian', cell:'Protista', col:[190,200,255], size:1.0, form:{spikes:14}, minXP:150,
+    blurb:'A floating protist that grows an intricate mineral skeleton bristling with needle-fine spines.'},
+
+  // — PLANTAE (cellulose wall → hypertonic) —
+  {id:'spire', name:['Chloro','Sylvo','Helio'], epi:[' spire',' canopy',' crown'], kingdom:'Plant', body:'a rooted photosynthetic tree-form', plan:'tree', cell:'Plantae', col:[126,255,192], size:1.0, form:{fronds:5}, minXP:0,
+    blurb:'A rooted autotroph with rigid cellulose-walled cells — it feeds on light and pumps sap through vascular tissue.'},
+  {id:'fern', name:['Frond','Filica','Pinna'], epi:[' rosette',' fan',' plume'], kingdom:'Plant', body:'a frond-rosette plant', plan:'fern', cell:'Plantae', col:[120,240,170], size:1.05, form:{fronds:6}, minXP:0,
+    blurb:'A low rosette of arcing fronds unrolling from a central crown — all cellulose-walled.'},
+  {id:'vine', name:['Viridi','Creepa','Volu'], epi:[' vine',' tendril',' creeper'], kingdom:'Plant', body:'a sprawling vine-form plant', plan:'vine', cell:'Plantae', col:[150,255,150], size:1.05, form:{}, minXP:40,
+    blurb:'A sprawling autotroph that climbs on coiling tendrils, leaves fanning to catch the light.'},
+  {id:'succulent', name:['Bulbo','Turgo','Aqua'], epi:[' pod',' bulb',' bloom'], kingdom:'Plant', body:'a water-storing succulent plant', plan:'bulb', cell:'Plantae', col:[130,240,200], size:0.95, form:{lobes:5}, minXP:40,
+    blurb:'A swollen, water-hoarding autotroph — its turgid cells bulge against thick cellulose walls.'},
+  {id:'reed', name:['Calamo','Stipa','Junco'], epi:[' reed',' rush',' stalk'], kingdom:'Plant', body:'a slender reed-form plant', plan:'reed', cell:'Plantae', col:[160,255,180], size:1.05, form:{blades:5}, minXP:0,
+    blurb:'A tall, slim autotroph — blade-leaves rising off a vascular stem stiffened by cellulose.'},
+
+  // — FUNGI (chitin wall → antifungal) —
+  {id:'shroud', name:['Myco','Ergo','Veli'], epi:[' shroud',' veil',' cap'], kingdom:'Fungus', body:'a spore-bearing cap fungus', plan:'mushroom', cell:'Fungi', col:[255,196,107], size:1.0, form:{}, minXP:0,
+    blurb:'A chitin-walled decomposer — a fruiting cap above a hidden web of feeding threads (mycelium).'},
+  {id:'conk', name:['Bracko','Shelfa','Poly'], epi:[' conk',' shelf',' bracket'], kingdom:'Fungus', body:'a shelf-bracket fungus', plan:'bracket', cell:'Fungi', col:[230,170,90], size:1.05, form:{shelves:4}, minXP:40,
+    blurb:'A woody bracket fungus that juts from its host in stacked, chitin-walled shelves.'},
+  {id:'antler', name:['Clavo','Coralla','Ramo'], epi:[' antler',' branch',' fan'], kingdom:'Fungus', body:'a branching coral fungus', plan:'coral', cell:'Fungi', col:[255,210,150], size:1.0, form:{}, minXP:60,
+    blurb:'A coral-like fungus that forks upward into slender antlers, spores dusting from the tips.'},
+  {id:'puffball', name:['Sporo','Bovi','Puffa'], epi:[' sphere',' puff',' globe'], kingdom:'Fungus', body:'a puffball fungus', plan:'puffball', cell:'Fungi', col:[240,220,170], size:1.0, form:{}, minXP:0,
+    blurb:'A round chitin-walled fungus that ripens into a bag of spores, puffing them out when struck.'},
+  {id:'mold', name:['Necro','Mucora','Fila'], epi:[' mold',' bloom',' rot'], kingdom:'Fungus', body:'a spreading mold', plan:'mold', cell:'Fungi', col:[210,255,150], size:1.05, form:{}, minXP:150,
+    blurb:'A creeping mold — a low fuzz of hyphae studded with dark fruiting heads on tiny stalks.'},
+
+  // — MONERA / BACTERIA (peptidoglycan wall → antibiotic) —
+  {id:'filament', name:['Cyano','Filo','Nostoc'], epi:[' mat',' strand',' braid'], kingdom:'Bacterial colony', body:'a filamentous bacterial colony', plan:'colony', cell:'Monera', col:[125,184,255], size:1.0, form:{style:'filament'}, minXP:0,
+    blurb:'A colony of filamentous bacteria — chains of prokaryotic cells, each with a peptidoglycan wall.'},
+  {id:'biofilm', name:['Slimo','Muco','Bio'], epi:[' dome',' film',' slick'], kingdom:'Bacterial colony', body:'a bacterial biofilm', plan:'colony', cell:'Monera', col:[110,200,220], size:1.05, form:{style:'dome'}, minXP:60,
+    blurb:'A biofilm — bacteria sheltering under a shared slime dome that shrugs off many attacks.'},
+  {id:'stromatolite', name:['Strom','Layro','Petra'], epi:[' mound',' reef',' column'], kingdom:'Bacterial colony', body:'a stromatolite-building colony', plan:'colony', cell:'Monera', col:[150,190,230], size:1.05, form:{style:'strom'}, minXP:40,
+    blurb:'A layered mound built up over ages by mats of bacteria — the oldest kind of life we know.'},
+
+  // — ARCHAEA (no peptidoglycan; ether-lipid membrane → detergent) —
+  {id:'saltcrystal', name:['Halo','Brino','Salis'], epi:[' colony',' crust',' facet'], kingdom:'Archaeal colony', body:'a halophilic archaeal colony', plan:'colony', cell:'Archaea', col:[178,150,255], size:1.0, form:{style:'crystal'}, minXP:280,
+    blurb:'A salt-loving archaeal colony crusting a brine flat — looks bacterial, but has NO peptidoglycan.'},
+  {id:'ventchimney', name:['Thermo','Pyro','Fumo'], epi:[' chimney',' spire',' vent'], kingdom:'Archaeal colony', body:'a thermophilic archaeal colony', plan:'colony', cell:'Archaea', col:[200,140,220], size:1.05, form:{style:'vent'}, minXP:280,
+    blurb:'A heat-loving archaeal colony encrusting a scalding vent — an extremophile from its own domain of life.'},
+  {id:'brinecrust', name:['Acido','Sulfo','Cryo'], epi:[' crust',' patch',' bloom'], kingdom:'Archaeal colony', body:'an acidophilic archaeal colony', plan:'colony', cell:'Archaea', col:[160,160,255], size:1.0, form:{style:'crust'}, minXP:280,
+    blurb:'An acid-loving archaeal crust — ether-linked membranes let it thrive where nothing else can.'},
+
+  // — PROTIST (extra: colonial flagellate) —
+  {id:'flagcolony', name:['Volvo','Eugleno','Phyto'], epi:[' sphere',' colony',' orb'], kingdom:'Protist', body:'a colonial flagellate protist', plan:'radiolarian', cell:'Protista', col:[120,255,200], size:1.0, form:{spikes:0,cells:true}, minXP:150,
+    blurb:'A hollow ball of green flagellated protist cells that spin together toward the light.'},
 ];
 
-/* ---------------- neutralise weakness by cell kind ---------------- */
-XS.WEAKNESS_WHY={
-  hypotonic:'This creature’s cells have no wall — flooding them with a hypotonic shock makes them swell and burst.',
-  hypertonic:'Rigid cellulose walls resist bursting, so draw water OUT with a hypertonic shock to collapse them (plasmolysis).',
-  antifungal:'Its chitin-walled cells fall to an antifungal that dissolves the fungal wall/membrane.',
+/* ---------------- neutralise weakness by cell kingdom (real biology) ---------------- */
+XS.killAgentsFor=function(cellKey){
+  switch(cellKey){
+    case 'Monera': return ['antibiotic','lysozyme'];
+    case 'Archaea': return ['detergent'];            // no peptidoglycan → antibiotics fail
+    case 'Fungi': return ['antifungal'];
+    case 'Plantae': case 'PlantTissue': return ['hypertonic'];
+    default: return ['hypotonic'];                    // Animalia, Protista (no wall)
+  }
 };
+XS.WEAKNESS_WHY={
+  hypotonic:'Its cells have no wall — a hypotonic (low-salt) shock floods them until they swell and burst.',
+  hypertonic:'Rigid cellulose walls resist bursting, so a hypertonic (high-salt) shock draws water OUT and collapses them (plasmolysis).',
+  antifungal:'Its chitin-walled cells fall to an antifungal that dissolves the fungal wall / membrane.',
+  antibiotic:'Its bacterial peptidoglycan wall and 70S ribosomes are exactly what an antibiotic attacks.',
+  detergent:'Antibiotics fail — it has no peptidoglycan. But its ether-lipid membrane dissolves in detergent.',
+};
+
+/* ---------------- pathogens (PRESERVE) ---------------- */
+XS.PATHOGENS={
+  virus:    {label:'viral infection', dx:'Virus', cure:'antiviral', particle:'virus',
+    tell:'Geometric protein capsids, far smaller than the host cell, packed with foreign nucleic acid.',
+    why:'Only an antiviral halts viral replication; antibiotics do nothing to a virus.'},
+  bacterium:{label:'bacterial infection', dx:'Bacterium', cure:'antibiotic', particle:'bacterium',
+    tell:'Rod-shaped invaders with their own peptidoglycan walls dividing between the host cells.',
+    why:'An antibiotic attacks the bacterial wall / 70S ribosome, sparing the host.'},
+  fungus:   {label:'fungal infection', dx:'Fungus', cure:'antifungal', particle:'fungus',
+    tell:'Branching chitin-walled threads (hyphae) creeping through the tissue.',
+    why:'An antifungal disrupts the chitin wall / fungal membrane.'},
+  parasite: {label:'parasitic infection', dx:'Parasite', cure:'antiparasitic', particle:'parasite',
+    tell:'Motile, nucleated eukaryotic cells burrowing between the host cells.',
+    why:'A eukaryotic parasite shrugs off antibiotics; it needs a targeted antiparasitic.'},
+};
+
+/* ---------------- treatment palette (dock) ---------------- */
+XS.TREATMENTS=[
+  {id:'antibiotic', label:'Antibiotic',   desc:'Attacks peptidoglycan walls / 70S ribosomes. Kills bacteria only.'},
+  {id:'antifungal', label:'Antifungal',   desc:'Disrupts the chitin wall / fungal membrane. Hits fungi only.'},
+  {id:'antiviral',  label:'Antiviral',    desc:'Blocks viral replication. Works only on viruses.'},
+  {id:'antiparasitic',label:'Antiparasitic',desc:'Targets eukaryotic parasites; spares the host.'},
+  {id:'lysozyme',   label:'Lysozyme',     desc:'An enzyme that cracks peptidoglycan — bursts many bacteria.'},
+  {id:'hypotonic',  label:'Osmotic shock',desc:'Floods cells with water. Bursts wall-less cells; walled cells resist.'},
+  {id:'hypertonic', label:'Herbicide',    desc:'Draws water out. Plasmolyses walled plant cells.'},
+  {id:'detergent',  label:'Detergent',    desc:'Dissolves lipid membranes — enveloped viruses and archaeal ether-membranes.'},
+  {id:'toxin',      label:'Broad cytotoxin',desc:'A blunt poison that harms almost anything — indiscriminate and reckless.'},
+];
+XS.agentName=function(id){ const t=XS.TREATMENTS.find(x=>x.id===id); return t?t.label:id; };
+
+/* ---------------- ASSAYS (evidence-gathering, real results) ----------------
+   Each returns a finding string computed from the actual zoomed cell / pathogen,
+   plus a `clue` bucket used to fill the Analysis panel.
+------------------------------------------------------------ */
+const WALLNAME={cellulose:'cellulose',chitin:'chitin',pepti:'peptidoglycan',slayer:'protein S-layer',none:'none (bare membrane)'};
+XS.ASSAYS=[
+  {id:'wall', label:'Wall analysis', short:'wall material', group:'host',
+    run:(sp)=>{ const w=sp.K.wall; return {clue:'wall', text:'Cell wall: '+(WALLNAME[w]||w)+'.'}; }},
+  {id:'nuclear', label:'Nuclear stain', short:'nucleus?', group:'host',
+    run:(sp)=>({clue:'nucleus', text: sp.K.nucleus?'A true membrane-bound NUCLEUS is present → a eukaryote.':'No nucleus — DNA lies loose as a nucleoid → a prokaryote.'})},
+  {id:'lipid', label:'Membrane-lipid assay', short:'ester / ether', group:'host',
+    run:(sp)=>({clue:'lipid', text: sp.kingdomKey==='Archaea'?'Membrane lipids are ETHER-linked → this is an ARCHAEON (not a bacterium).':'Membrane lipids are ester-linked (bacteria & eukaryotes).'})},
+  {id:'gram', label:'Gram stain', short:'purple / pink', group:'host',
+    run:(sp)=>{ if(sp.kingdomKey==='Monera') return {clue:'gram', text:'Gram '+(sp.gram==='+'?'POSITIVE (purple) — thick peptidoglycan.':'NEGATIVE (pink) — thin peptidoglycan + outer membrane.')};
+      if(sp.kingdomKey==='Archaea') return {clue:'gram', text:'Gram stain fails to hold — the wall is NOT peptidoglycan. Suspect an archaeon.'};
+      return {clue:'gram', text:'Gram stain is inconclusive — no peptidoglycan wall here (rules out bacteria).'}; }},
+  {id:'pigment', label:'Pigment scan', short:'chlorophyll?', group:'host',
+    run:(sp)=>({clue:'metabolism', text: (sp.autotroph&&!sp.chemo)?'Photosynthetic pigment (chlorophyll) detected → an autotroph.': sp.chemo?'No chlorophyll, but chemosynthetic machinery → a chemoautotroph.':'No photosynthetic pigment → a heterotroph.'})},
+  {id:'motility', label:'Motility assay', short:'how it moves', group:'host',
+    run:(sp)=>{ const has=id=>sp.parts.some(p=>p.id===id);
+      const m= has('flagellum')?'Swims with a whip-like flagellum.': has('cilia')?'Rows along on beating cilia.': has('pseudopod')?'Crawls on pseudopodia (false feet).':'Non-motile.';
+      return {clue:'motility', text:m}; }},
+  {id:'extremo', label:'Environment probe', short:'temp / pH', group:'host',
+    run:(sp)=>{ const hot=sp.optT>=60, ac=sp.optPH<=3.5, al=sp.optPH>=9.5;
+      return {clue:'extremo', text: (hot||ac||al)?('Thrives at '+sp.optT+'°C / pH '+sp.optPH+' — an EXTREMOPHILE (a hallmark of archaea).'):('Comfortable near '+sp.optT+'°C / pH '+sp.optPH+' — a mesophile.')}; }},
+  // pathogen assays (PRESERVE key region only)
+  {id:'morph', label:'Particle morphology', short:'invader shape', group:'path',
+    run:(sp,pt)=>({clue:'pmorph', text: XS.PATHOGENS[pt].tell})},
+  {id:'pnucleic', label:'Invader nucleic-acid', short:'DNA / RNA / none', group:'path',
+    run:(sp,pt)=>({clue:'pna', text: pt==='virus'?'The invader is little more than nucleic acid in a shell — no ribosomes of its own.': pt==='bacterium'?'The invader carries its own 70S ribosomes and a circular chromosome.': pt==='fungus'?'The invader has chitin walls and eukaryotic nuclei.':'The invader is a nucleated, motile eukaryote.'})},
+  {id:'penvelope', label:'Invader coat assay', short:'wall / envelope', group:'path',
+    run:(sp,pt)=>({clue:'pcoat', text: pt==='virus'?'Some particles wear a lipid envelope stolen from the host — soap could also break those.': pt==='bacterium'?'A peptidoglycan wall surrounds each invader — a classic antibiotic target.': pt==='fungus'?'A tough chitin wall sheaths every thread.':'A flexible pellicle, no wall — a naked eukaryotic membrane.'})},
+];
+XS.assayById=id=>XS.ASSAYS.find(a=>a.id===id);
 
 /* ---------------- scenario generation ---------------- */
 XS.buildScenario=function(objective, tier){
   const T=(XS.TIERS&&XS.TIERS[tier])||{margin:1};
-  const archKey=pick(XS.CREATURE_KEYS), A=XS.CREATURES[archKey];
+  const xp=(XS.progress&&XS.progress.xp)||0;
+  const pool=XS.SPECIES.filter(s=>xp>=(s.minXP||0)); const A=pick(pool.length?pool:XS.SPECIES);
+  A.label=A.label||A.kingdom;                      // UI shows A.label as the organism type
   const planet=pick(XS.PLANETS);
-  const regions=A.regions.map(r=>Object.assign({}, r, {scanned:false, cellSpec:null, status:null}));
+  const tmpl=R_BY_PLAN[A.plan]||R_ANIMAL;
+  const regions=tmpl.map(r=>Object.assign({}, r, {
+    cell:r.cell||A.cell, scanned:false, cellSpec:null,
+    evidence:[], clues:{}, tests:{}, diagnosed:false, dxWrong:0, assaysSince:0, recon:false }));
   const key=pick(regions);
-  const sc={ objective, archKey, A, planet,
-    name:`${pick(A.gen)}${pick(A.epi)}`,
+  const nm=pick(A.name)+pick(A.epi);
+  const sc={ objective, archKey:A.cell, A, planet, name:nm,
     regions, keyId:key.id,
     P:0, host:100, resist:0, cured:false, done:false,
-    tier, sway:Math.random()*Math.PI*2,
-  };
+    tier, sway:Math.random()*Math.PI*2 };
   if(objective==='preserve'){
     const ptype=pick(Object.keys(XS.PATHOGENS));
-    sc.pathType=ptype; sc.agent=XS.PATHOGENS[ptype].cure;
+    sc.pathType=ptype; sc.agent=XS.PATHOGENS[ptype].cure; sc.dxAnswer=XS.PATHOGENS[ptype].dx;
     key.problem={kind:'pathogen', pathType:ptype};
-    sc.brief=`${sc.name} is failing. A ${XS.PATHOGENS[ptype].label} is spreading somewhere in its body. Find the afflicted tissue and cure it — keep the organism alive.`;
-    sc.hostDrain=(objective==='preserve')?4.2/(T.margin||1):0;
+    sc.brief=`${nm} is failing — something is spreading inside it. Zoom into its tissues, run assays to identify the invader, then apply the one correct cure before the organism dies.`;
+    sc.hostDrain=3.4/(T.margin||1);
   } else {
-    sc.agent=A.weakness;
+    sc.agent=XS.killAgentsFor(A.cell)[0]; sc.dxAnswer=XS.KINGDOM_ANSWER[A.cell];
     key.problem={kind:'vital'};
-    sc.brief=`${sc.name} is an invasive threat to this biome. Find the tissue it can’t defend and neutralise the whole organism.`;
+    sc.brief=`${nm} is an invasive threat. Identify what kind of organism it is, find the tissue it can’t defend, and hit it with the one agent its biology can’t withstand.`;
     sc.hostDrain=0;
   }
-  // label region statuses (revealed on scan)
-  regions.forEach(r=>{ r.status = (r.id===sc.keyId)
-    ? (objective==='preserve'?'afflicted':'vulnerable')
-    : (objective==='preserve'?'healthy':'robust'); });
   return sc;
 };
 
-/* lazily build the cell you see when zoomed into a region */
+/* lazily build the cell you meet in a region */
 XS.regionCell=function(sc, region){
   if(region.cellSpec) return region.cellSpec;
   const spec=XS.genSpecimen(region.cell, sc.tier||'field');
@@ -127,43 +259,90 @@ XS.regionCell=function(sc, region){
   return spec;
 };
 
-/* the treatments offered in the treat dock (correct one is always present) */
-XS.treatmentOptions=function(sc){
-  const base=['antiviral','antibiotic','antifungal','hypotonic','hypertonic','detergent'];
-  if(!base.includes(sc.agent)) base.push(sc.agent);
-  // keep a stable, learnable order
-  return base;
+/* which assays are offered in a region */
+XS.zoomAssays=function(sc, region){
+  const isKey=region.id===sc.keyId, preserve=sc.objective==='preserve';
+  return XS.ASSAYS.filter(a=> a.group==='host' || (a.group==='path' && preserve && isKey));
 };
 
-/* apply a treatment to a target region; returns {ok, msg} */
+/* run an assay → record evidence */
+XS.runAssay=function(sc, region, id){
+  const a=XS.assayById(id); if(!a) return null;
+  const spec=XS.regionCell(sc,region);
+  const first=!region.tests[id];
+  const out=a.run(spec, sc.pathType);
+  region.tests[id]=true; region.clues[out.clue]=out.text;
+  if(first){ region.evidence.push(out.text); region.assaysSince++; region.recon=true; }
+  return {text:out.text, first, label:a.label};
+};
+
+/* the classification / diagnosis options for the key threat */
+XS.identifyOptions=function(sc){
+  return sc.objective==='preserve'
+    ? {kind:'pathogen', prompt:'What is the invader?', options:['Virus','Bacterium','Fungus','Parasite']}
+    : {kind:'class',    prompt:'What kind of organism is this?', options:XS.CLASSIFY.slice()};
+};
+
+/* submit a diagnosis for the current region */
+XS.submitDiagnosis=function(sc, region, choice){
+  if(sc.done) return null;
+  const correct = choice===sc.dxAnswer;
+  const T=XS.TIERS[sc.tier]||XS.TIERS.field;
+  if(correct){ region.diagnosed=true;
+    return {ok:true, msg:'Diagnosis confirmed: '+choice+'. Treatment options unlocked.'};
+  }
+  region.dxWrong++; region.assaysSince=0;
+  sc.resist=Math.min(100, sc.resist + Math.round(10/(T.margin||1)) + 6);
+  return {ok:false, msg:'“'+choice+'” doesn’t fit the evidence. Gather more before trying again.'};
+};
+
+/* has the player earned the right to treat this region? */
+XS.canTreat=function(sc, region){
+  if((XS.TIERS[sc.tier]||{}).hint && sc.tier==='intern') return true; // intern: always, with guidance
+  return !!region.diagnosed;
+};
+
+/* the treatments offered (full palette, stable order) */
+XS.treatmentOptions=function(sc){ return XS.TREATMENTS.map(t=>t.id); };
+
+/* apply a treatment to a region → {ok, msg, sev} */
 XS.applyTreatment=function(sc, regionId, agent){
   if(sc.done) return null;
+  const region=sc.regions.find(r=>r.id===regionId);
+  const T=XS.TIERS[sc.tier]||XS.TIERS.field;
   const correctRegion = regionId===sc.keyId;
-  const correctAgent = agent===sc.agent;
+  let correctAgent;
+  if(sc.objective==='preserve') correctAgent = agent===sc.agent;
+  else correctAgent = XS.killAgentsFor(region.cell).includes(agent);
+
   if(correctRegion && correctAgent){
-    sc.P=Math.min(100, sc.P+22);
-    if(sc.objective==='preserve' && sc.P>=100){ sc.cured=true; }
-    return {ok:true, msg:sc.objective==='preserve'?'Correct treatment — the tissue is responding.':'Direct hit on the vulnerable tissue.'};
+    sc.P=Math.min(100, sc.P+ (sc.objective==='preserve'?26:100));
+    if(sc.objective==='preserve' && sc.P>=100) sc.cured=true;
+    return {ok:true, sev:0, msg: sc.objective==='preserve'?'Correct cure — the tissue is responding.':'Direct hit on the vulnerable tissue.'};
   }
-  // wrong: raises the fail meter a little
-  sc.resist=Math.min(100, sc.resist + (correctRegion?9:14));
-  const msg = !correctRegion ? 'Wrong tissue — this region isn’t the problem.'
-            : 'Wrong agent — barely any effect. Match the treatment to the biology.';
-  return {ok:false, msg};
+  // wrong — punish, harder on higher tiers and for reckless moves
+  const base = !correctRegion?14:22;                 // wrong agent on the right tissue is the worst mistake
+  const recklessness = region && !region.diagnosed?1.5:1;
+  const toxinPenalty = agent==='toxin'? (sc.objective==='preserve'?40:0):0; // broad poison ravages a host you're preserving
+  const pen=Math.round((base*recklessness + toxinPenalty)/(T.margin||1));
+  sc.resist=Math.min(100, sc.resist + pen);
+  if(sc.objective==='preserve') sc.host=Math.max(0, sc.host - Math.round(pen*0.6));
+  const msg = !correctRegion ? 'Wrong tissue — the cause isn’t here.'
+    : agent==='toxin' ? 'Reckless — a broad poison is savaging the host.'
+    : 'Wrong agent — the biology shrugs it off. Match the treatment to the evidence.';
+  return {ok:false, sev:pen, msg};
 };
 
-/* per-frame macro tick (called during survey & treat phases) */
+/* per-frame macro tick */
 XS.worldTick=function(sc, dt){
   if(sc.done) return null;
   if(sc.objective==='preserve'){
-    // host declines while the affliction persists; recovers once cured
     if(!sc.cured) sc.host=Math.max(0, sc.host - sc.hostDrain*(1-sc.P/100)*dt);
-    else sc.host=Math.min(100, sc.host + 14*dt);
+    else sc.host=Math.min(100, sc.host + 16*dt);
     if(sc.cured && sc.host>=90){ sc.done=true; return {win:true}; }
-    if(sc.host<=0){ sc.done=true; return {win:false, why:'The organism succumbed to the infection.'}; }
-    if(sc.resist>=100){ sc.done=true; return {win:false, why:'Repeated wrong treatments overwhelmed the host.'}; }
+    if(sc.host<=0){ sc.done=true; return {win:false, why:'The organism succumbed before you cured it.'}; }
+    if(sc.resist>=100){ sc.done=true; return {win:false, why:'Repeated wrong calls overwhelmed the host.'}; }
   } else {
-    // neutralise: P is the takedown progress; resist = it adapting/escaping
     if(sc.P>=100){ sc.done=true; return {win:true}; }
     if(sc.resist>=100){ sc.done=true; return {win:false, why:'The organism adapted to your mistakes and escaped containment.'}; }
   }
@@ -172,9 +351,9 @@ XS.worldTick=function(sc, dt){
 
 XS.OBJECTIVE_INFO={
   preserve:{label:'PRESERVE', tone:'good', verb:'Preserve', winT:'ORGANISM SAVED',
-    goal:'Diagnose the affliction and cure the right tissue — keep it alive.'},
+    goal:'Diagnose the affliction from the evidence and cure the right tissue — keep it alive.'},
   neutralize:{label:'NEUTRALIZE', tone:'bad', verb:'Neutralize', winT:'ORGANISM NEUTRALIZED',
-    goal:'Find the tissue it can’t defend and take the whole organism down.'},
+    goal:'Identify the organism, find the tissue it can’t defend, and hit its one true weakness.'},
 };
 
 })(window.XS);
