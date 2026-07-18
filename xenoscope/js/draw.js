@@ -40,15 +40,42 @@ function blob(rr,amp,asp,seed,t,pts){ ctx.beginPath(); const n=pts||110;
     const w=1+amp*(0.5*Math.sin(a*3+seed+t*.6)+0.3*Math.sin(a*5-seed*1.7+t*.9)+0.2*Math.sin(a*2+t*.4));
     const x=cx+Math.cos(a)*rr*w*asp, y=cy+Math.sin(a)*rr*w; i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.closePath(); }
 
+const ease=x=>x*x*(3-2*x);
 XS.render=function(app){
-  const t=app.time/1000; bg(t);
-  const spec=app.spec, S=app.S; if(!spec){ return; }
-  if(spec.tissue) drawTissue(app,t);
-  else if(spec.isVirus) drawVirus(app,t);
-  else drawCell(app,t);
-  drawScan(app);
-  envTint(S);
+  const t=app.time/1000;
+  const ph=app.phase;
+  if(ph==='survey'||ph==='treat'){ if(app.sc){ drawWorld(app,t); return; } }
+  bg(t);
+  if(ph==='menu'){ if(app.demo) drawMenuDemo(app,t); return; }
+  if(ph==='zoom'){ drawZoom(app,t); return; }
+  if(app.sc){ drawWorld(app,t); }
 };
+function drawMenuDemo(app,t){ const spec=app.demo; if(!spec)return;
+  ctx.save(); ctx.globalAlpha=0.6; ctx.translate(cx,cy); ctx.rotate(Math.sin(t*0.16)*0.09); ctx.translate(-cx,-cy);
+  const da={spec,S:null,phase:'menu',time:app.time};
+  if(spec.tissue)drawTissue(da,t); else if(spec.isVirus)drawVirus(da,t); else drawCell(da,t);
+  ctx.restore(); }
+function drawZoom(app,t){ const spec=app.spec; if(!spec) return;
+  const zt = app.zoomAt? cl((app.time-app.zoomAt)/430,0,1):1;
+  ctx.save();
+  if(zt<1){ const s=0.5+0.5*ease(zt); ctx.globalAlpha=ease(zt); ctx.translate(cx,cy); ctx.scale(s,s); ctx.translate(-cx,-cy); }
+  const da=app;
+  if(spec.tissue)drawTissue(da,t); else if(spec.isVirus)drawVirus(da,t); else drawCell(da,t);
+  if(app.zoomPathogen) drawPathogens(app.zoomPathogen,t);
+  ctx.restore();
+  drawScan(app);
+}
+/* rounded-rect path (for the boxy plant cell) */
+function roundRectPath(x,y,hw,hh,r){ ctx.beginPath();
+  ctx.moveTo(x-hw+r,y-hh); ctx.lineTo(x+hw-r,y-hh); ctx.quadraticCurveTo(x+hw,y-hh,x+hw,y-hh+r);
+  ctx.lineTo(x+hw,y+hh-r); ctx.quadraticCurveTo(x+hw,y+hh,x+hw-r,y+hh);
+  ctx.lineTo(x-hw+r,y+hh); ctx.quadraticCurveTo(x-hw,y+hh,x-hw,y+hh-r);
+  ctx.lineTo(x-hw,y-hh+r); ctx.quadraticCurveTo(x-hw,y-hh,x-hw+r,y-hh); ctx.closePath(); }
+/* plant cells are rigid rectangular boxes; everything else is an organic blob */
+function cellPath(spec,rad,wob,asp,seed,t){
+  if(spec && spec.kingdomKey==='Plantae'){ const s=rad; roundRectPath(cx,cy, s*1.12, s*0.9, s*0.16); }
+  else blob(rad,wob,asp,seed,t);
+}
 
 /* ---------------- CELL ---------------- */
 function drawCell(app,t){
@@ -60,7 +87,7 @@ function drawCell(app,t){
   a.addColorStop(0,`rgba(${kc.join(',')},${0.09+0.12*health})`);a.addColorStop(1,`rgba(${kc.join(',')},0)`);
   ctx.fillStyle=a;ctx.beginPath();ctx.arc(cx,cy,rad*2.1,0,6.3);ctx.fill();ctx.restore();
   // cytoplasm
-  blob(rad,wob,asp,seed,t);
+  cellPath(spec,rad,wob,asp,seed,t);
   const body=ctx.createRadialGradient(cx-rad*.25,cy-rad*.25,rad*.1,cx,cy,rad*1.05);
   body.addColorStop(0,`rgba(${kc.join(',')},.20)`);
   body.addColorStop(.6,`rgba(${Math.round(kc[0]*.5)},${Math.round(kc[1]*.6)},${Math.round(kc[2]*.7)},.15)`);
@@ -71,20 +98,20 @@ function drawCell(app,t){
   const wall=spec.K.wall;
   if(mI>0.35){
     if(wall==='cellulose'||wall==='chitin'){
-      ctx.lineWidth=cl(rad*.05,3,8);ctx.strokeStyle=`rgba(${kc.join(',')},${0.4+0.4*mI})`;blob(rad,wob,asp,seed,t);ctx.stroke();
-      ctx.lineWidth=cl(rad*.018,1.5,4);ctx.strokeStyle=`rgba(${kc.join(',')},${0.7*mI})`;blob(rad*0.9,wob,asp,seed,t);ctx.stroke();
+      ctx.lineWidth=cl(rad*.05,3,8);ctx.strokeStyle=`rgba(${kc.join(',')},${0.4+0.4*mI})`;cellPath(spec,rad,wob,asp,seed,t);ctx.stroke();
+      ctx.lineWidth=cl(rad*.018,1.5,4);ctx.strokeStyle=`rgba(${kc.join(',')},${0.7*mI})`;cellPath(spec,rad*0.9,wob,asp,seed,t);ctx.stroke();
     } else if(wall==='pepti'){
-      ctx.lineWidth=cl(rad*.03,2,5);ctx.strokeStyle=`rgba(${kc.join(',')},${0.55*mI+.3})`;ctx.shadowColor=`rgba(${kc.join(',')},.7)`;ctx.shadowBlur=12;blob(rad,wob,asp,seed,t);ctx.stroke();
-      ctx.shadowBlur=0;ctx.lineWidth=1.4;ctx.strokeStyle=`rgba(${kc.join(',')},${0.5*mI})`;blob(rad*0.88,wob,asp,seed,t);ctx.stroke();
+      ctx.lineWidth=cl(rad*.03,2,5);ctx.strokeStyle=`rgba(${kc.join(',')},${0.55*mI+.3})`;ctx.shadowColor=`rgba(${kc.join(',')},.7)`;ctx.shadowBlur=12;cellPath(spec,rad,wob,asp,seed,t);ctx.stroke();
+      ctx.shadowBlur=0;ctx.lineWidth=1.4;ctx.strokeStyle=`rgba(${kc.join(',')},${0.5*mI})`;cellPath(spec,rad*0.88,wob,asp,seed,t);ctx.stroke();
     } else {
-      ctx.lineWidth=cl(rad*.028,2,6);ctx.strokeStyle=`rgba(${kc.join(',')},${0.5+0.4*mI})`;ctx.shadowColor=`rgba(${kc.join(',')},.8)`;ctx.shadowBlur=cl(18*mI+4,4,22);blob(rad,wob,asp,seed,t);ctx.stroke();
+      ctx.lineWidth=cl(rad*.028,2,6);ctx.strokeStyle=`rgba(${kc.join(',')},${0.5+0.4*mI})`;ctx.shadowColor=`rgba(${kc.join(',')},.8)`;ctx.shadowBlur=cl(18*mI+4,4,22);cellPath(spec,rad,wob,asp,seed,t);ctx.stroke();
     }
-  } else { ctx.lineWidth=cl(rad*.03,2,6);ctx.strokeStyle=`rgba(${kc.join(',')},${0.4+0.4*mI})`;ctx.setLineDash([rad*.18*mI+4,rad*.10]);blob(rad,wob,asp,seed,t);ctx.stroke();ctx.setLineDash([]); }
+  } else { ctx.lineWidth=cl(rad*.03,2,6);ctx.strokeStyle=`rgba(${kc.join(',')},${0.4+0.4*mI})`;ctx.setLineDash([rad*.18*mI+4,rad*.10]);cellPath(spec,rad,wob,asp,seed,t);ctx.stroke();ctx.setLineDash([]); }
   ctx.restore();
   // appendages behind organelles
   for(const p of spec.parts){ if(p.shape==='flagellum') drawFlagellum(p,rad,asp,t); if(p.shape==='cilia') drawCilia(rad,asp,wob,seed,t,p); if(p.shape==='pili') drawPili(rad,asp,t,p); }
   // clip and draw organelles
-  ctx.save(); blob(rad,wob,asp,seed,t); ctx.clip();
+  ctx.save(); cellPath(spec,rad,wob,asp,seed,t); ctx.clip();
   for(const p of spec.parts){ if(['flagellum','cilia','pili','spike','tail'].includes(p.shape)) {markPos(p,rad,asp);continue;} drawPart(app,p,rad,asp,t); }
   ctx.restore();
   inspectRings(app,rad);
@@ -246,7 +273,11 @@ function inspectRings(app,rad){
     const on=app.spec.inspected.has(p.id);
     const hov=app.hoverPart===p;
     if(on){ ctx.strokeStyle='rgba(94,242,214,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p._x,p._y,p._r+4,0,6.3);ctx.stroke(); }
-    if(hov&&app.phase==='investigate'){ ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(p._x,p._y,p._r+6,0,6.3);ctx.stroke();ctx.setLineDash([]); }
+    if(hov&&app.phase==='zoom'){
+      ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(p._x,p._y,p._r+6,0,6.3);ctx.stroke();ctx.setLineDash([]);
+      const pr=p._r+8+(Math.sin((app.time||0)/170)*3+3);
+      ctx.strokeStyle='rgba(94,242,214,.4)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p._x,p._y,pr,0,6.3);ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -265,5 +296,292 @@ function envTint(S){ if(!S)return; const acid=cl((6-S.ph)/6,0,1),alk=cl((S.ph-8)
 XS.partAt=function(app,px,py){ let best=null,bd=1e9;
   for(const p of (app.spec?app.spec.parts:[])){ if(p._x==null)continue; const d=Math.hypot(px-p._x,py-p._y);
     if(d<Math.max(p._r+8,16)&&d<bd){bd=d;best=p;} } return best; };
+
+/* ==================================================================
+   MACRO WORLD — exoplanet + whole organism + zoomable region hotspots
+================================================================== */
+function skyBg(sc,t){
+  const P=sc.planet, g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,P.sky[0]); g.addColorStop(1,P.sky[1]); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // sun / moons
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const sx=W*0.8, sy=H*0.22, sr=Math.min(W,H)*0.09;
+  const sg=ctx.createRadialGradient(sx,sy,0,sx,sy,sr*3);
+  sg.addColorStop(0,P.sun); sg.addColorStop(0.25,P.sun+'88'); sg.addColorStop(1,P.sun+'00');
+  ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(sx,sy,sr*3,0,6.3); ctx.fill();
+  ctx.fillStyle=P.sun; ctx.beginPath(); ctx.arc(sx,sy,sr*0.6,0,6.3); ctx.fill();
+  // a moon
+  ctx.globalCompositeOperation='source-over'; ctx.fillStyle='rgba(255,255,255,.06)';
+  ctx.beginPath(); ctx.arc(W*0.2,H*0.16,Math.min(W,H)*0.05,0,6.3); ctx.fill();
+  ctx.restore();
+  // stars
+  ctx.save(); ctx.fillStyle='rgba(255,255,255,.5)';
+  for(const b of bokeh){ ctx.globalAlpha=b.a*8; ctx.fillRect((b.x*1.7)%W,(b.y*0.9)%(H*0.6),1.2,1.2); }
+  ctx.globalAlpha=1; ctx.restore();
+  // ground
+  const gy=H*0.72; const gg=ctx.createLinearGradient(0,gy,0,H);
+  gg.addColorStop(0,P.ground); gg.addColorStop(1,'#05070c'); ctx.fillStyle=gg;
+  ctx.beginPath(); ctx.moveTo(0,gy);
+  for(let x=0;x<=W;x+=40){ ctx.lineTo(x, gy + Math.sin(x*0.01+2)*10 + Math.sin(x*0.023)*6); }
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+  // haze
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  const hz=ctx.createLinearGradient(0,gy-60,0,gy+40); const a=P.accent.join(',');
+  hz.addColorStop(0,`rgba(${a},0)`); hz.addColorStop(1,`rgba(${a},0.10)`); ctx.fillStyle=hz; ctx.fillRect(0,gy-60,W,120);
+  ctx.restore();
+}
+function drawWorld(app,t){
+  const sc=app.sc; skyBg(sc,t);
+  const ccx=cx, ccy=cy*0.98, S=Math.min(W,H)*0.30;
+  app._creature={ccx,ccy,S};
+  const sway=Math.sin(t*0.6+sc.sway)*0.03;
+  const health = sc.objective==='preserve' ? sc.host/100 : 1-(sc.P/100);
+  ctx.save(); ctx.translate(ccx,ccy); ctx.rotate(sway); ctx.translate(-ccx,-ccy);
+  if(sc.archKey==='fauna') drawFauna(ccx,ccy,S,t,sc,health);
+  else if(sc.archKey==='flora') drawFlora(ccx,ccy,S,t,sc,health);
+  else drawFungal(ccx,ccy,S,t,sc,health);
+  ctx.restore();
+  // hotspots
+  for(const r of sc.regions){
+    const p=regionScreen(app,r); r._x=p.x; r._y=p.y;
+    const key=r.id===sc.keyId && r.scanned;
+    drawHotspot(app,r,p.x,p.y,t,key);
+  }
+}
+function regionScreen(app,r){ const c=app._creature||{ccx:cx,ccy:cy,S:Math.min(W,H)*0.3};
+  return {x:c.ccx + r.x*c.S*1.15, y:c.ccy + r.y*c.S*1.15}; }
+XS.regionScreen=regionScreen;
+function drawHotspot(app,r,x,y,t,key){
+  const pulse=1+0.18*Math.sin(t*2.4+x*0.05);
+  const hov=app.hoverRegion===r;
+  const afflicted=(app.sc.objective==='preserve'&&r.id===app.sc.keyId&&r.scanned);
+  const col=afflicted?'255,120,90':(r.scanned?'94,242,214':'200,220,255');
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.strokeStyle=`rgba(${col},${hov?0.95:0.6})`; ctx.lineWidth=hov?2.5:1.8;
+  ctx.beginPath(); ctx.arc(x,y,14*pulse,0,6.3); ctx.stroke();
+  ctx.strokeStyle=`rgba(${col},0.28)`; ctx.beginPath(); ctx.arc(x,y,22*pulse,0,6.3); ctx.stroke();
+  ctx.fillStyle=`rgba(${col},0.9)`; ctx.beginPath(); ctx.arc(x,y,3,0,6.3); ctx.fill();
+  ctx.restore();
+  if(r.scanned){ ctx.save(); ctx.fillStyle=afflicted?'#ff9a6a':'#8effc0'; ctx.font='12px system-ui'; ctx.textAlign='center';
+    ctx.fillText(afflicted?'⚠':'✓', x, y-20); ctx.restore(); }
+}
+XS.regionAt=function(app,px,py){ if(!app.sc) return null; let best=null,bd=30;
+  for(const r of app.sc.regions){ if(r._x==null)continue; const d=Math.hypot(px-r._x,py-r._y); if(d<bd){bd=d;best=r;} }
+  return best; };
+
+/* ---- creatures: a small toolkit for cohesive, planet-tinted aliens ---- */
+function mix(a,b,f){return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f];}
+function rC(c,a){return `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;}
+function auraGlow(x,y,r,col,a){ ctx.save(); ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(x,y,r*0.12,x,y,r);
+  g.addColorStop(0,rC(col,a)); g.addColorStop(1,rC(col,0));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,6.3); ctx.fill(); ctx.restore(); }
+function softShadow(x,y,rx,ry){ ctx.save();
+  const g=ctx.createRadialGradient(x,y,0,x,y,rx);
+  g.addColorStop(0,'rgba(0,0,0,.34)'); g.addColorStop(0.7,'rgba(0,0,0,.16)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,6.3); ctx.fill(); ctx.restore(); }
+/* smooth closed silhouette through control points (quadratic midpoints) */
+function smoothClosed(pts){ const n=pts.length; ctx.beginPath();
+  ctx.moveTo((pts[n-1][0]+pts[0][0])/2,(pts[n-1][1]+pts[0][1])/2);
+  for(let i=0;i<n;i++){ const c=pts[i], nx=pts[(i+1)%n];
+    ctx.quadraticCurveTo(c[0],c[1],(c[0]+nx[0])/2,(c[1]+nx[1])/2); } ctx.closePath(); }
+/* two-tone flesh: lit crown -> creature colour -> planet-accent shadow */
+function bodyGrad(lx,ly,r,col,acc,health){
+  const lit=mix(col,[255,255,255],0.5), mid=mix(col,acc,0.34*(0.6+0.4*health)), deep=mix(mix(col,acc,0.5),[4,8,14],0.74);
+  const g=ctx.createRadialGradient(lx,ly,r*0.05,lx,ly,r*1.28);
+  g.addColorStop(0,rC(lit,0.95)); g.addColorStop(0.34,rC(col,0.96));
+  g.addColorStop(0.72,rC(mid,0.96)); g.addColorStop(1,rC(deep,0.97)); return g; }
+/* a tapered, curved, rooted limb (tentacle / stalk / root); returns the tip */
+function limb(x0,y0,ang,len,w0,col,acc,t,ph){
+  const seg=12, pts=[]; let x=x0,y=y0,a=ang;
+  for(let i=0;i<=seg;i++){ const f=i/seg;
+    a=ang+Math.sin(t*1.4+ph+f*2.6)*0.32*(0.4+f);
+    x+=Math.cos(a)*(len/seg); y+=Math.sin(a)*(len/seg); pts.push([x,y]); }
+  const L=[],Rr=[];
+  for(let i=0;i<=seg;i++){ const f=i/seg, ww=w0*(1-0.86*f);
+    const j=Math.min(i+1,seg), k=Math.max(i-1,0);
+    const tx=pts[j][0]-pts[k][0], ty=pts[j][1]-pts[k][1], tl=Math.hypot(tx,ty)||1;
+    const nx=-ty/tl, ny=tx/tl;
+    L.push([pts[i][0]+nx*ww,pts[i][1]+ny*ww]); Rr.push([pts[i][0]-nx*ww,pts[i][1]-ny*ww]); }
+  ctx.beginPath(); ctx.moveTo(L[0][0],L[0][1]);
+  for(let i=1;i<=seg;i++)ctx.lineTo(L[i][0],L[i][1]);
+  for(let i=seg;i>=0;i--)ctx.lineTo(Rr[i][0],Rr[i][1]); ctx.closePath();
+  const g=ctx.createLinearGradient(x0,y0,pts[seg][0],pts[seg][1]);
+  g.addColorStop(0,rC(col,0.96)); g.addColorStop(1,rC(mix(col,acc,0.6),0.85));
+  ctx.fillStyle=g; ctx.fill();
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=rC(acc,0.45);
+  ctx.beginPath(); ctx.arc(pts[seg][0],pts[seg][1],w0*0.5+1.5,0,6.3); ctx.fill(); ctx.restore();
+  return pts[seg]; }
+/* drifting bioluminescent motes around a creature */
+function floaters(cxp,cyp,S,t,acc){ ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<11;i++){ const a=i*2.1+t*0.25; const rr=S*(0.75+0.5*((i*0.27)%1));
+    const x=cxp+Math.cos(a)*rr, y=cyp+Math.sin(a*0.8+i)*rr*0.55;
+    ctx.fillStyle=rC(acc,0.32*(0.4+0.6*Math.sin(t*1.3+i))); ctx.beginPath(); ctx.arc(x,y,1.6,0,6.3); ctx.fill(); }
+  ctx.restore(); }
+function drawFauna(ccx,ccy,S,t,sc,health){
+  const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5);
+  const breath=1+0.015*Math.sin(t*1.3);
+  softShadow(ccx,ccy+S*0.82,S*0.95,S*0.15);
+  auraGlow(ccx,ccy-S*0.05,S*1.6,gcol,0.09+0.10*health);
+  // tentacle legs BEHIND the body, roots tucked under the belly so they read as attached
+  const legs=[[-0.34,0.16,2.55],[-0.10,0.24,1.95],[0.16,0.23,1.55],[0.40,0.12,1.12]];
+  for(let i=0;i<legs.length;i++){ const L=legs[i];
+    limb(ccx+L[0]*S,ccy+L[1]*S,L[2],S*(0.56+0.08*(i%2)),S*0.10,mix(col,[8,10,16],0.45),acc,t,i*1.9); }
+  // one continuous silhouette: tail (left) · arched back · head crown (upper-right) · belly
+  const u=(px,py)=>[ccx+px*S*breath, ccy+py*S*breath + Math.sin(t*1.1+px*3)*S*0.008];
+  const body=[
+    u(-0.92,0.04), u(-0.72,-0.20), u(-0.44,-0.36), u(-0.10,-0.45),
+    u(0.24,-0.46), u(0.50,-0.40), u(0.72,-0.42), u(0.90,-0.33),
+    u(0.99,-0.16), u(0.93,-0.02), u(0.74,-0.02),
+    u(0.54,0.05), u(0.30,0.22), u(0.02,0.30), u(-0.28,0.28), u(-0.58,0.20), u(-0.82,0.12)
+  ];
+  smoothClosed(body);
+  ctx.fillStyle=bodyGrad(ccx-S*0.15,ccy-S*0.22,S*1.2,col,acc,health); ctx.fill();
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineWidth=2.2; ctx.strokeStyle=rC(gcol,0.45);
+  ctx.shadowColor=rC(gcol,0.6); ctx.shadowBlur=16; smoothClosed(body); ctx.stroke(); ctx.restore();
+  // internal detail, clipped to the body
+  ctx.save(); smoothClosed(body); ctx.clip();
+  const hl=ctx.createRadialGradient(ccx-S*0.12,ccy-S*0.4,0,ccx-S*0.12,ccy-S*0.4,S*1.1);
+  hl.addColorStop(0,rC(mix(col,[255,255,255],0.6),0.30)); hl.addColorStop(0.6,'rgba(0,0,0,0)');
+  ctx.fillStyle=hl; ctx.fillRect(ccx-S*1.3,ccy-S*1.3,S*2.6,S*2.6);
+  const sh=ctx.createLinearGradient(0,ccy-S*0.05,0,ccy+S*0.35);
+  sh.addColorStop(0,'rgba(0,0,0,0)'); sh.addColorStop(1,rC(mix(col,[4,8,14],0.7),0.5));
+  ctx.fillStyle=sh; ctx.fillRect(ccx-S*1.3,ccy-S*0.05,S*2.6,S*0.6);
+  ctx.globalCompositeOperation='lighter';
+  // bioluminescent dorsal nodes tracing the back
+  for(let i=0;i<7;i++){ const f=i/6, p=u(-0.68+f*1.5,-0.30-Math.sin(f*3.14)*0.12);
+    const pu=0.55+0.45*Math.sin(t*2+i); ctx.fillStyle=rC(acc,0.5*pu);
+    ctx.beginPath(); ctx.arc(p[0],p[1],S*0.035,0,6.3); ctx.fill();
+    ctx.fillStyle=rC(mix(acc,[255,255,255],0.5),0.85*pu); ctx.beginPath(); ctx.arc(p[0],p[1],S*0.014,0,6.3); ctx.fill(); }
+  // glowing veins running down the flank
+  ctx.strokeStyle=rC(acc,0.22); ctx.lineWidth=1.4;
+  for(let i=0;i<4;i++){ const a=u(-0.5+i*0.32,-0.18);
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.quadraticCurveTo(a[0]+S*0.08,a[1]+S*0.2,a[0]-S*0.04+i*S*0.05,a[1]+S*0.4); ctx.stroke(); }
+  ctx.restore();
+  // eyes on the crown
+  const eye=(ex,ey,r)=>{ ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle=rC(gcol,0.9); ctx.shadowColor=rC(gcol,0.9); ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(ex,ey,r,0,6.3); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,.95)'; ctx.beginPath(); ctx.arc(ex-r*0.2,ey-r*0.22,r*0.42,0,6.3); ctx.fill(); ctx.restore(); };
+  const e1=u(0.80,-0.24), e2=u(0.87,-0.10);
+  eye(e1[0],e1[1],S*0.055); eye(e2[0],e2[1],S*0.04);
+  floaters(ccx,ccy-S*0.1,S,t,acc);
+}
+function frond(x,y,side,len,t,i,col,acc,gcol){
+  const droop=Math.sin(t*0.9+i)*len*0.06;
+  const tipx=x+side*len, tipy=y-len*0.42+droop, midx=x+side*len*0.5, midy=y-len*0.34;
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(x,y);
+  ctx.quadraticCurveTo(midx,midy-len*0.24,tipx,tipy);
+  ctx.quadraticCurveTo(midx,midy+len*0.14,x,y+len*0.06); ctx.closePath();
+  const g=ctx.createLinearGradient(x,y,tipx,tipy);
+  g.addColorStop(0,rC(mix(col,[6,10,10],0.35),0.92)); g.addColorStop(1,rC(mix(col,acc,0.5),0.7));
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle=rC(gcol,0.5); ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.quadraticCurveTo(midx,midy,tipx,tipy); ctx.stroke();
+  ctx.strokeStyle=rC(acc,0.32); ctx.lineWidth=1;
+  for(let k=1;k<=3;k++){ const f=k/4, bx=x+(tipx-x)*f, by=y+(midy-y)*f;
+    ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(bx,by-len*0.14); ctx.stroke(); }
+  ctx.restore();
+}
+function drawFlora(ccx,ccy,S,t,sc,health){
+  const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5);
+  const gy=ccy+S*0.92, sway=Math.sin(t*0.7)*0.06;
+  softShadow(ccx,gy,S*0.72,S*0.12);
+  auraGlow(ccx,ccy-S*0.35,S*1.4,gcol,0.08+0.08*health);
+  // roots (behind, feeding into the ground)
+  for(let i=-2;i<=2;i++){ if(i===0)continue;
+    limb(ccx+i*S*0.03,gy-S*0.02, Math.PI*0.5+i*0.42, S*0.42, S*0.05, mix(col,[8,12,10],0.5),acc,t,i*3); }
+  // trunk centreline (base -> apex) drives both the silhouette and the frond nodes
+  const apex=[ccx+Math.sin(sway)*S*0.5, ccy-S*0.62];
+  const cline=f=>[ ccx+(apex[0]-ccx)*(f*f), gy+(apex[1]-gy)*f ];
+  const wtrunk=f=>S*(0.16*(1-f)+0.028);
+  const left=[],right=[];
+  for(let i=0;i<=10;i++){ const f=i/10, c0=cline(f), w=wtrunk(f);
+    left.push([c0[0]-w,c0[1]]); right.push([c0[0]+w,c0[1]]); }
+  ctx.beginPath(); ctx.moveTo(left[0][0],left[0][1]);
+  for(const p of left)ctx.lineTo(p[0],p[1]);
+  for(let i=right.length-1;i>=0;i--)ctx.lineTo(right[i][0],right[i][1]); ctx.closePath();
+  ctx.fillStyle=bodyGrad(ccx-S*0.1,ccy,S*0.9,col,acc,health); ctx.fill();
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineWidth=1.6; ctx.strokeStyle=rC(gcol,0.4);
+  ctx.shadowColor=rC(gcol,0.5); ctx.shadowBlur=12; ctx.stroke(); ctx.restore();
+  // fronds, each rooted on the trunk centreline (so they read as attached)
+  for(let i=0;i<5;i++){ const f=0.30+i*0.15, n=cline(f), side=i%2?1:-1;
+    frond(n[0],n[1],side,S*(0.5-0.05*i),t,i,col,acc,gcol); }
+  // glowing apex seed-pod sitting on the stalk
+  const a0=cline(1);
+  auraGlow(a0[0],a0[1]-S*0.06,S*0.5,gcol,0.45+0.4*health);
+  smoothClosed([[a0[0]-S*0.14,a0[1]],[a0[0]-S*0.1,a0[1]-S*0.22],[a0[0],a0[1]-S*0.32],
+    [a0[0]+S*0.1,a0[1]-S*0.22],[a0[0]+S*0.14,a0[1]],[a0[0],a0[1]+S*0.07]]);
+  ctx.fillStyle=bodyGrad(a0[0]-S*0.05,a0[1]-S*0.2,S*0.36,mix(col,acc,0.3),acc,health); ctx.fill();
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=rC(mix(acc,[255,255,255],0.4),0.8);
+  for(let i=0;i<5;i++){ const a=i/5*6.283+t*0.5;
+    ctx.beginPath(); ctx.arc(a0[0]+Math.cos(a)*S*0.06,a0[1]-S*0.13+Math.sin(a)*S*0.08,S*0.014,0,6.3); ctx.fill(); }
+  ctx.restore();
+  floaters(ccx,ccy-S*0.2,S,t,acc);
+}
+function drawFungal(ccx,ccy,S,t,sc,health){
+  const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5);
+  const gy=ccy+S*0.86, breath=1+0.02*Math.sin(t*1.1), capY=ccy-S*0.42*breath;
+  softShadow(ccx,gy,S*0.82,S*0.14);
+  // mycelium: glowing feeding threads fanning into the ground
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineWidth=1.4;
+  for(let i=0;i<12;i++){ const a=Math.PI*(0.14+0.72*(i/11)), len=S*(0.4+0.42*((i*0.37)%1));
+    ctx.strokeStyle=rC(mix(col,acc,0.5),0.28); ctx.beginPath(); ctx.moveTo(ccx,gy-S*0.05);
+    ctx.quadraticCurveTo(ccx+Math.cos(a)*len*0.6, gy+S*0.02, ccx+Math.cos(a)*len, gy+Math.sin(a)*S*0.12+S*0.05); ctx.stroke(); }
+  ctx.restore();
+  auraGlow(ccx,capY,S*1.3,gcol,0.09+0.10*health);
+  // one continuous silhouette: bulbous base -> stem -> cap flaring out like an umbrella
+  const P=(px,py)=>[ccx+px*S,ccy+py*S];
+  const sil=[
+    P(-0.06,0.42), P(-0.20,0.30), P(-0.17,0.02), P(-0.15,-0.28),
+    P(-0.46,-0.30), P(-0.72,-0.34), P(-0.58,-0.52), P(-0.28,-0.64), P(0,-0.68),
+    P(0.28,-0.64), P(0.58,-0.52), P(0.72,-0.34), P(0.46,-0.30), P(0.15,-0.28),
+    P(0.17,0.02), P(0.20,0.30), P(0.06,0.42)
+  ];
+  smoothClosed(sil);
+  ctx.fillStyle=bodyGrad(ccx-S*0.12,capY-S*0.05,S*1.0,col,acc,health); ctx.fill();
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineWidth=2; ctx.strokeStyle=rC(gcol,0.4);
+  ctx.shadowColor=rC(gcol,0.5); ctx.shadowBlur=14; smoothClosed(sil); ctx.stroke(); ctx.restore();
+  // internal shading + gills, clipped to the silhouette
+  ctx.save(); smoothClosed(sil); ctx.clip();
+  const hl=ctx.createRadialGradient(ccx-S*0.15,capY-S*0.2,0,ccx-S*0.15,capY-S*0.2,S*0.95);
+  hl.addColorStop(0,rC(mix(col,[255,255,255],0.6),0.32)); hl.addColorStop(0.6,'rgba(0,0,0,0)');
+  ctx.fillStyle=hl; ctx.fillRect(ccx-S,capY-S,S*2,S*2);
+  ctx.strokeStyle=rC(mix(col,[10,8,14],0.6),0.5); ctx.lineWidth=1.4;
+  for(let i=-8;i<=8;i++){ const ex=ccx+i*S*0.075;
+    ctx.beginPath(); ctx.moveTo(ccx+i*S*0.02,capY+S*0.05); ctx.lineTo(ex,capY+S*0.15); ctx.stroke(); }
+  const sg=ctx.createLinearGradient(ccx-S*0.2,0,ccx+S*0.2,0);
+  sg.addColorStop(0,rC(mix(col,[6,8,14],0.6),0.42)); sg.addColorStop(0.5,'rgba(0,0,0,0)'); sg.addColorStop(1,rC(mix(col,[6,8,14],0.6),0.42));
+  ctx.fillStyle=sg; ctx.fillRect(ccx-S*0.25,capY,S*0.5,S*0.9);
+  ctx.restore();
+  // glowing pores across the cap
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(let i=0;i<7;i++){ const a=-2.55+i*0.42, rr=S*0.5;
+    const sx=ccx+Math.cos(a)*rr*0.9, sy=capY+Math.sin(a)*S*0.22-S*0.05, pu=0.55+0.45*Math.sin(t*2+i*1.3);
+    ctx.fillStyle=rC(mix(acc,[255,255,255],0.3),0.5*pu); ctx.beginPath(); ctx.arc(sx,sy,S*0.045,0,6.3); ctx.fill(); }
+  ctx.restore();
+  // rising spores
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=rC(acc,0.5);
+  for(let i=0;i<10;i++){ const yy=capY+S*0.2-((t*22+i*26)%(S*1.2));
+    ctx.beginPath(); ctx.arc(ccx-S*0.32+i*S*0.07,yy,1.6,0,6.3); ctx.fill(); }
+  ctx.restore();
+}
+
+/* ---- pathogen particles overlaid on a zoomed infected cell ---- */
+function drawPathogens(kind,t){ ctx.save(); ctx.globalCompositeOperation='lighter';
+  const n=10;
+  for(let i=0;i<n;i++){ const a=i/n*6.283+t*0.6+i; const rr=R*(0.4+0.55*((i*0.37)%1));
+    const x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr, s=R*0.05;
+    if(kind==='virus'){ ctx.fillStyle='#ff5ec7'; ctx.shadowColor='#ff5ec7'; ctx.shadowBlur=10;
+      ctx.beginPath(); for(let k=0;k<6;k++){const aa=k/6*6.283;const px=x+Math.cos(aa)*s,py=y+Math.sin(aa)*s;k?ctx.lineTo(px,py):ctx.moveTo(px,py);} ctx.closePath(); ctx.fill(); }
+    else if(kind==='bacterium'){ ctx.fillStyle='#9fd0ff'; ctx.shadowColor='#9fd0ff'; ctx.shadowBlur=8;
+      ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,s*1.6,s*0.7,0,0,6.3); ctx.fill(); ctx.restore(); }
+    else { ctx.strokeStyle='#ffd27a'; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=8; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(x-s,y); ctx.quadraticCurveTo(x,y-s*1.5,x+s,y); ctx.quadraticCurveTo(x,y+s*1.5,x-s,y); ctx.stroke(); }
+  }
+  ctx.restore();
+}
 
 })(window.XS);
