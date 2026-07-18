@@ -133,9 +133,11 @@ UI.renderRight=function(){
     const regions=sc.regions.map(r=>{ const st=r.recon?(r.id===sc.keyId?'target':'clear'):(r.scanned?'seen':'—');
       const ico=r.recon?(r.id===sc.keyId?'⚠':'✓'):'◦';
       return `<div class="dl-row"><span>${ico} ${r.name}</span><b>${st}</b></div>`; }).join('');
+    const cmp=(sc.traits&&sc.traits.length)?`<div class="cap" style="margin-top:12px">⚠ Complications</div>`+
+      sc.traits.map(tr=>`<div class="cmp"><b>${tr.tag} ${tr.label}</b><small>${tr.hint}</small></div>`).join(''):'';
     UI.right.innerHTML=`<div class="cap">Briefing</div>`+
       `<div class="brief">${sc.brief}</div>`+
-      `<div class="brief-sub">${sc.A.blurb}</div>`+
+      `<div class="brief-sub">${sc.A.blurb}</div>`+ cmp +
       `<div class="cap" style="margin-top:12px">Tissues analysed ${sc.regions.filter(r=>r.recon).length}/${sc.regions.length}</div>`+
       `<div class="dossier">${regions}</div>`+
       `<div class="hintbox">💡 Click the glowing markers to zoom into each tissue, then run <b>lab assays</b> to work out what you’re dealing with.</div>`;
@@ -143,9 +145,11 @@ UI.renderRight=function(){
     const r=app.zoomRegion, isKey=r.id===sc.keyId, preserve=sc.objective==='preserve';
     const internHint=(XS.TIERS[app.tier]||{}).hint && app.tier==='intern';
     let threat;
-    if(r.recon){ threat = isKey
+    if(r.symbiont && r.recon){ threat='<div class="th sym">🤝 A beneficial symbiont lives here — treating this tissue would harm the host. Leave it alone.</div>'; }
+    else if(r.recon){ threat = isKey
         ? (preserve?'<div class="th bad">⚠ An invader is multiplying in this tissue.</div>'
                    :'<div class="th bad">⚠ Exposed tissue — the organism can’t defend it here. A viable target.</div>')
+                   + (sc.shielded?'<div class="th sym">🛡 A biofilm shields these cells — strip it with detergent before the real agent will land.</div>':'')
         : '<div class="th good">✓ This tissue is clear — the cause is elsewhere.</div>'; }
     else threat='<div class="th muted">Run a lab assay to survey this tissue.</div>';
     const ev = r.evidence.length? r.evidence.map(e=>`<div class="ev-row">• ${e}</div>`).join('')
@@ -156,10 +160,11 @@ UI.renderRight=function(){
     } else if(internHint && r.recon && isKey){
       concl=`<div class="diag bad"><div class="diag-t">Intern hint</div><div class="diag-b">${preserve?XS.PATHOGENS[sc.pathType].tell:'Its wall material and metabolism point to a single weakness — read the evidence.'}</div></div>`;
     }
-    UI.right.innerHTML=`<div class="cap">Field Analysis · ${r.name}</div>`+ threat +
+    const tagRow=(sc.traits&&sc.traits.length)?`<div class="cmp-tags">${sc.traits.map(tr=>`<span class="cmp-tag">${tr.tag}</span>`).join('')}</div>`:'';
+    UI.right.innerHTML=`<div class="cap">Field Analysis · ${r.name}</div>`+ tagRow + threat +
       `<div class="cap" style="margin-top:12px">Evidence · ${r.evidence.length}</div>`+
       `<div class="ev-list">${ev}</div>`+ concl +
-      `<div class="hintbox" style="margin-top:10px">${r.diagnosed?'Apply the one agent its biology can’t withstand. Wrong agents are punished.':'Gather evidence, then <b>⌖ Identify</b> the cause to unlock treatments.'}</div>`;
+      `<div class="hintbox" style="margin-top:10px">${sc.diagnosed?'Apply the one agent its biology can’t withstand. Wrong agents are punished.':'Gather evidence, then <b>⌖ Identify</b> the cause to unlock treatments.'}</div>`;
   }
 };
 

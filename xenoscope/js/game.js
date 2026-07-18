@@ -14,7 +14,7 @@ XS.app={ phase:'menu', tier:'field', time:0, daily:false, toasts:[],
   lastXP:[], rankUp:null, missionWrong:0, demo:null };
 
 function fresh(){ return { xp:0, organelles:[], organisms:[], subs:[], badges:[], archetypes:[], species:[],
-  runs:0, wins:0, saves:0, kills:0, flawless:0, scans:0, dirWins:0, assays:0, sharpWins:0 }; }
+  runs:0, wins:0, saves:0, kills:0, flawless:0, scans:0, dirWins:0, assays:0, sharpWins:0, hardWins:0 }; }
 XS.progress=null;
 XS.loadProgress=function(){
   try{ XS.progress=JSON.parse(localStorage.getItem(KEY)); }catch(e){ XS.progress=null; }
@@ -119,6 +119,7 @@ XS.finishMission=function(res){
     if(XS.app.missionWrong===0){ XS.progress.flawless++; XS.progress.sharpWins=(XS.progress.sharpWins||0)+1;
       XS.award(15,'Flawless — clean diagnosis'); }
     if(XS.app.tier==='director') XS.progress.dirWins++;
+    if(sc.traits && sc.traits.length>=2){ XS.progress.hardWins=(XS.progress.hardWins||0)+1; XS.award(12,'Handled '+sc.traits.length+' complications'); }
     XS.award(30, sc.objective==='preserve'?'Organism preserved':'Threat neutralised');
   }
   XS.app.result={win, why:res.why}; XS.app.phase='result'; XS.saveProgress(); XS.checkAchievements();
@@ -136,6 +137,7 @@ XS.ACHIEVEMENTS=[
   {id:'taxonomist', icon:'🧬', name:'Taxonomist',      desc:'Catalogue 12 different species', check:p=>(p.species||[]).length>=12},
   {id:'analyst',    icon:'🔬', name:'Lab Analyst',     desc:'Run 20 lab assays', check:p=>(p.assays||0)>=20},
   {id:'sharp',      icon:'🎯', name:'Sharp Eye',       desc:'Win 5 assignments with no mistakes', check:p=>(p.sharpWins||0)>=5},
+  {id:'trouble',    icon:'🧩', name:'Troubleshooter',  desc:'Win 3 runs with 2+ complications', check:p=>(p.hardWins||0)>=3},
   {id:'surgeon',    icon:'🩺', name:'Field Surgeon',   desc:'Scan 15 tissues', check:p=>(p.scans||0)>=15},
   {id:'director',   icon:'⚡', name:'Top Brass',       desc:'Win a Director-difficulty run', check:p=>p.dirWins>=1},
   {id:'veteran',    icon:'🏅', name:'Veteran',         desc:'Complete 15 assignments', check:p=>p.wins>=15},

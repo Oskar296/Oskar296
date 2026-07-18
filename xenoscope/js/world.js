@@ -247,8 +247,43 @@ XS.buildScenario=function(objective, tier){
     sc.brief=`${nm} is an invasive threat. Identify what kind of organism it is, find the tissue it can’t defend, and hit it with the one agent its biology can’t withstand.`;
     sc.hostDrain=0;
   }
+  rollTraits(sc, tier);
   return sc;
 };
+
+/* ---------------- TRAITS / COMPLICATIONS ----------------
+   The solution to "running out of content": a small library of biology-driven
+   modifiers that recombine with every species × objective, so no two runs play
+   the same. Each teaches a real concept and changes how you must play.
+------------------------------------------------------------ */
+XS.TRAITS=[
+  {id:'virulent', label:'Virulent strain', tag:'⏱ fast', when:sc=>sc.objective==='preserve',
+    hint:'Aggressive and fast-spreading — the host is failing quicker than usual, so diagnose fast.',
+    apply:sc=>{ sc.hostDrain*=1.7; }},
+  {id:'resistant', label:'Drug-resistant', tag:'🧬 resistant', when:sc=>true,
+    hint:'It carries resistance genes (plasmids) — the correct agent still works, but you must hit it harder.',
+    apply:sc=>{ sc.resistantStrain=true; }},
+  {id:'biofilm', label:'Biofilm shield', tag:'🛡 shielded', when:sc=>sc.agent!=='detergent',
+    hint:'The target cells shelter under a slime biofilm — strip it with DETERGENT first, then apply the real agent.',
+    apply:sc=>{ sc.shielded=true; }},
+  {id:'symbiont', label:'Mutualistic symbiont', tag:'🤝 symbiont', when:sc=>sc.regions.length>=2,
+    hint:'A beneficial symbiont lives in one of its tissues — treating THAT tissue harms the host. Find it and leave it alone.',
+    apply:sc=>{ const others=sc.regions.filter(r=>r.id!==sc.keyId); const s=others[Math.floor(Math.random()*others.length)];
+      if(s){ s.symbiont=true; sc.symbiontId=s.id; } }},
+  {id:'extremophile', label:'Extreme habitat', tag:'☢ unstable', when:sc=>true,
+    hint:'Reagents are unstable in this environment — a wrong move costs more than usual. Be certain before you act.',
+    apply:sc=>{ sc.harsh=true; }},
+];
+function rollTraits(sc, tier){
+  sc.traits=[];
+  const budget = tier==='director'?2 : tier==='field'?1 : 0;   // intern: gentle, no complications
+  if(budget<=0) return;
+  const xp=(XS.progress&&XS.progress.xp)||0; if(xp<40) return;   // ease newcomers in
+  let avail=XS.TRAITS.filter(tr=>tr.when(sc));
+  const want = tier==='director' ? (Math.random()<0.6?2:1) : (Math.random()<0.55?1:0);
+  for(let i=0;i<want && avail.length;i++){ const idx=Math.floor(Math.random()*avail.length), tr=avail[idx]; avail.splice(idx,1);
+    tr.apply(sc); sc.traits.push({id:tr.id,label:tr.label,tag:tr.tag,hint:tr.hint}); }
+}
 
 /* lazily build the cell you meet in a region */
 XS.regionCell=function(sc, region){
@@ -288,7 +323,7 @@ XS.submitDiagnosis=function(sc, region, choice){
   if(sc.done) return null;
   const correct = choice===sc.dxAnswer;
   const T=XS.TIERS[sc.tier]||XS.TIERS.field;
-  if(correct){ region.diagnosed=true;
+  if(correct){ region.diagnosed=true; sc.diagnosed=true;
     return {ok:true, msg:'Diagnosis confirmed: '+choice+'. Treatment options unlocked.'};
   }
   region.dxWrong++; region.assaysSince=0;
@@ -296,10 +331,10 @@ XS.submitDiagnosis=function(sc, region, choice){
   return {ok:false, msg:'“'+choice+'” doesn’t fit the evidence. Gather more before trying again.'};
 };
 
-/* has the player earned the right to treat this region? */
+/* has the player earned the right to treat? (diagnosis is scenario-wide) */
 XS.canTreat=function(sc, region){
-  if((XS.TIERS[sc.tier]||{}).hint && sc.tier==='intern') return true; // intern: always, with guidance
-  return !!region.diagnosed;
+  if(sc.tier==='intern') return true;   // intern: treat freely, with guidance
+  return !!sc.diagnosed;
 };
 
 /* the treatments offered (full palette, stable order) */
@@ -309,22 +344,40 @@ XS.treatmentOptions=function(sc){ return XS.TREATMENTS.map(t=>t.id); };
 XS.applyTreatment=function(sc, regionId, agent){
   if(sc.done) return null;
   const region=sc.regions.find(r=>r.id===regionId);
-  const T=XS.TIERS[sc.tier]||XS.TIERS.field;
+  const T=XS.TIERS[sc.tier]||XS.TIERS.field, margin=T.margin||1;
   const correctRegion = regionId===sc.keyId;
   let correctAgent;
   if(sc.objective==='preserve') correctAgent = agent===sc.agent;
   else correctAgent = XS.killAgentsFor(region.cell).includes(agent);
 
-  if(correctRegion && correctAgent){
-    sc.P=Math.min(100, sc.P+ (sc.objective==='preserve'?26:100));
-    if(sc.objective==='preserve' && sc.P>=100) sc.cured=true;
-    return {ok:true, sev:0, msg: sc.objective==='preserve'?'Correct cure — the tissue is responding.':'Direct hit on the vulnerable tissue.'};
+  // TRAIT · symbiont — treating the protected tissue is a serious mistake
+  if(region && region.symbiont){
+    const pen=Math.round(24/margin); sc.resist=Math.min(100,sc.resist+pen);
+    if(sc.objective==='preserve') sc.host=Math.max(0,sc.host-Math.round(20/margin));
+    return {ok:false, sev:pen, msg:'You harmed the mutualistic symbiont living here — never treat this tissue.'};
   }
-  // wrong — punish, harder on higher tiers and for reckless moves
+  // TRAIT · biofilm — strip the shield with detergent before anything lands
+  if(sc.shielded && correctRegion){
+    if(agent==='detergent'){ sc.shielded=false; return {ok:true, sev:0, strip:true, msg:'Biofilm dissolved — the cells are exposed. Now apply the real agent.'}; }
+    const pen=Math.round(9/margin); sc.resist=Math.min(100,sc.resist+pen);
+    return {ok:false, sev:pen, msg:'A biofilm shields these cells — strip it with detergent first.'};
+  }
+
+  if(correctRegion && correctAgent){
+    let gain = sc.objective==='preserve'?26:100;
+    if(sc.resistantStrain) gain = sc.objective==='preserve'?18:50;   // resistant strain needs extra hits
+    sc.P=Math.min(100, sc.P+gain);
+    if(sc.objective==='preserve' && sc.P>=100) sc.cured=true;
+    const clinging = sc.resistantStrain && sc.P<100;
+    return {ok:true, sev:0, msg: clinging?'It’s working, but this resistant strain is clinging on — hit it again.'
+      : (sc.objective==='preserve'?'Correct cure — the tissue is responding.':'Direct hit on the vulnerable tissue.')};
+  }
+  // wrong — punish, harder on higher tiers, for reckless moves and in harsh habitats
   const base = !correctRegion?14:22;                 // wrong agent on the right tissue is the worst mistake
-  const recklessness = region && !region.diagnosed?1.5:1;
-  const toxinPenalty = agent==='toxin'? (sc.objective==='preserve'?40:0):0; // broad poison ravages a host you're preserving
-  const pen=Math.round((base*recklessness + toxinPenalty)/(T.margin||1));
+  const recklessness = !sc.diagnosed?1.5:1;
+  const toxinPenalty = agent==='toxin'? (sc.objective==='preserve'?40:0):0;
+  let pen=(base*recklessness + toxinPenalty); if(sc.harsh) pen*=1.25;
+  pen=Math.round(pen/margin);
   sc.resist=Math.min(100, sc.resist + pen);
   if(sc.objective==='preserve') sc.host=Math.max(0, sc.host - Math.round(pen*0.6));
   const msg = !correctRegion ? 'Wrong tissue — the cause isn’t here.'
