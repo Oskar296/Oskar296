@@ -55,9 +55,10 @@ const R_MICROBE=[
 ];
 const R_BY_PLAN={
   beast:R_ANIMAL, medusa:R_ANIMAL, arthropod:R_ANIMAL, tentacled:R_ANIMAL, worm:R_ANIMAL,
-  tree:R_PLANT, fern:R_PLANT, vine:R_PLANT, bulb:R_PLANT, reed:R_PLANT,
+  anemone:R_ANIMAL, crinoid:R_ANIMAL,
+  tree:R_PLANT, fern:R_PLANT, vine:R_PLANT, bulb:R_PLANT, reed:R_PLANT, canopy:R_PLANT,
   mushroom:R_FUNGI, bracket:R_FUNGI, coral:R_FUNGI, puffball:R_FUNGI, mold:R_FUNGI,
-  amoeba:R_PROTIST, ciliate:R_PROTIST, diatom:R_PROTIST, radiolarian:R_PROTIST,
+  amoeba:R_PROTIST, ciliate:R_PROTIST, diatom:R_PROTIST, radiolarian:R_PROTIST, urchin:R_PROTIST,
   colony:R_MICROBE,
 };
 
@@ -133,6 +134,16 @@ XS.SPECIES=[
   // — PROTIST (extra: colonial flagellate) —
   {id:'flagcolony', name:['Volvo','Eugleno','Phyto'], epi:[' sphere',' colony',' orb'], kingdom:'Protist', body:'a colonial flagellate protist', plan:'radiolarian', cell:'Protista', col:[120,255,200], size:1.0, form:{spikes:0,cells:true}, minXP:150,
     blurb:'A hollow ball of green flagellated protist cells that spin together toward the light.'},
+
+  // — extra distinct body-plans —
+  {id:'anemone', name:['Antho','Actino','Coralla'], epi:[' bloom',' crown',' polyp'], kingdom:'Animal', body:'a sessile tentacled animal', plan:'anemone', cell:'Animalia', col:[255,128,180], size:1.0, form:{arms:9}, minXP:40,
+    blurb:'A sessile animal anchored to the substrate, a crown of stinging tentacles fishing the current — wall-less cells throughout.'},
+  {id:'crinoid', name:['Crino','Pluma','Lili'], epi:[' star',' feather',' lily'], kingdom:'Animal', body:'a stalked feather-star animal', plan:'crinoid', cell:'Animalia', col:[255,170,140], size:1.0, form:{arms:7}, minXP:150,
+    blurb:'A filter-feeding animal on a slender stalk, feathery arms fanning the water to trap food.'},
+  {id:'seaurchin', name:['Echino','Helio','Astro'], epi:[' burr',' orb',' pincushion'], kingdom:'Protist', body:'a spiny mineral-skeletoned protist', plan:'urchin', cell:'Protista', col:[190,150,255], size:0.95, form:{spikes:16}, minXP:150,
+    blurb:'A single-celled protist that props itself on a bristling ball of mineral spines to catch drifting prey.'},
+  {id:'canopy', name:['Canopo','Umbra','Palma'], epi:[' parasol',' canopy',' crown'], kingdom:'Plant', body:'a broad-canopy tree-form plant', plan:'canopy', cell:'Plantae', col:[128,232,160], size:1.05, form:{fronds:6}, minXP:40,
+    blurb:'A rooted autotroph that spreads a wide umbrella of leaf-blades to soak up a dim red sun.'},
 ];
 
 /* ---------------- neutralise weakness by cell kingdom (real biology) ---------------- */
@@ -167,6 +178,12 @@ XS.PATHOGENS={
   parasite: {label:'parasitic infection', dx:'Parasite', cure:'antiparasitic', particle:'parasite',
     tell:'Motile, nucleated eukaryotic cells burrowing between the host cells.',
     why:'A eukaryotic parasite shrugs off antibiotics; it needs a targeted antiparasitic.'},
+  prion:    {label:'prion disease', dx:'Prion', cure:'denaturant', particle:'prion',
+    tell:'No cells, no nucleic acid — just angular clumps of MISFOLDED PROTEIN forcing the host’s own proteins to misfold.',
+    why:'A prion is not alive — antibiotics and antivirals do nothing. Only a protein DENATURANT can break it down.'},
+  toxin_load:{label:'chemical intoxication', dx:'Toxin', cure:'antitoxin', particle:'toxin',
+    tell:'No invading organism at all — the cells are dying of an accumulated TOXIN diffusing through the tissue.',
+    why:'There is nothing to kill. Only an ANTITOXIN that binds and neutralises the poison will help.'},
 };
 
 /* ---------------- treatment palette (dock) ---------------- */
@@ -179,6 +196,8 @@ XS.TREATMENTS=[
   {id:'hypotonic',  label:'Osmotic shock',desc:'Floods cells with water. Bursts wall-less cells; walled cells resist.'},
   {id:'hypertonic', label:'Herbicide',    desc:'Draws water out. Plasmolyses walled plant cells.'},
   {id:'detergent',  label:'Detergent',    desc:'Dissolves lipid membranes — enveloped viruses and archaeal ether-membranes.'},
+  {id:'denaturant', label:'Protein denaturant',desc:'Unfolds and breaks down misfolded proteins — the only thing that destroys a prion.'},
+  {id:'antitoxin',  label:'Antitoxin',    desc:'Binds and neutralises a chemical toxin. Useless against any living pathogen.'},
   {id:'toxin',      label:'Broad cytotoxin',desc:'A blunt poison that harms almost anything — indiscriminate and reckless.'},
 ];
 XS.agentName=function(id){ const t=XS.TREATMENTS.find(x=>x.id===id); return t?t.label:id; };
@@ -212,26 +231,62 @@ XS.ASSAYS=[
   {id:'morph', label:'Particle morphology', short:'invader shape', group:'path',
     run:(sp,pt)=>({clue:'pmorph', text: XS.PATHOGENS[pt].tell})},
   {id:'pnucleic', label:'Invader nucleic-acid', short:'DNA / RNA / none', group:'path',
-    run:(sp,pt)=>({clue:'pna', text: pt==='virus'?'The invader is little more than nucleic acid in a shell — no ribosomes of its own.': pt==='bacterium'?'The invader carries its own 70S ribosomes and a circular chromosome.': pt==='fungus'?'The invader has chitin walls and eukaryotic nuclei.':'The invader is a nucleated, motile eukaryote.'})},
+    run:(sp,pt)=>{ const m={virus:'The invader is little more than nucleic acid in a shell — no ribosomes of its own.',
+      bacterium:'The invader carries its own 70S ribosomes and a circular chromosome.',
+      fungus:'The invader has chitin walls and eukaryotic nuclei.',
+      parasite:'The invader is a nucleated, motile eukaryote.',
+      prion:'NO nucleic acid whatsoever — the agent is pure protein. It cannot be an organism.',
+      toxin_load:'No pathogen nucleic acid anywhere — there is no organism here at all.'};
+      return {clue:'pna', text:m[pt]||m.parasite}; }},
   {id:'penvelope', label:'Invader coat assay', short:'wall / envelope', group:'path',
-    run:(sp,pt)=>({clue:'pcoat', text: pt==='virus'?'Some particles wear a lipid envelope stolen from the host — soap could also break those.': pt==='bacterium'?'A peptidoglycan wall surrounds each invader — a classic antibiotic target.': pt==='fungus'?'A tough chitin wall sheaths every thread.':'A flexible pellicle, no wall — a naked eukaryotic membrane.'})},
+    run:(sp,pt)=>{ const m={virus:'Some particles wear a lipid envelope stolen from the host — soap could also break those.',
+      bacterium:'A peptidoglycan wall surrounds each invader — a classic antibiotic target.',
+      fungus:'A tough chitin wall sheaths every thread.',
+      parasite:'A flexible pellicle, no wall — a naked eukaryotic membrane.',
+      prion:'No membrane, no wall — only aggregated, misfolded protein. Only denaturation breaks it.',
+      toxin_load:'Nothing to sheath — the assay finds only diffusing toxin molecules, not a cell.'};
+      return {clue:'pcoat', text:m[pt]||m.parasite}; }},
 ];
 XS.assayById=id=>XS.ASSAYS.find(a=>a.id===id);
+
+/* ---------------- procedural morphology ----------------
+   Every individual is unique: a species is only a *template*. We roll a fresh
+   colour, size, proportions, appendage counts and skin pattern for each one, so
+   two of the same body-plan look like different creatures — effectively an
+   unlimited bestiary from a finite set of plans. Biology (cell, weakness) is
+   never changed by looks.
+------------------------------------------------------------ */
+function rgb2hsl(c){ let r=c[0]/255,g=c[1]/255,b=c[2]/255; const mx=Math.max(r,g,b),mn=Math.min(r,g,b); let h,s,l=(mx+mn)/2;
+  if(mx===mn){h=s=0;} else { const d=mx-mn; s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    h = mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4; h/=6; } return [h,s,l]; }
+function hsl2rgb(a){ const H=a[0],S=a[1],L=a[2]; const f=(p,q,t)=>{ if(t<0)t+=1; if(t>1)t-=1;
+  if(t<1/6)return p+(q-p)*6*t; if(t<1/2)return q; if(t<2/3)return p+(q-p)*(2/3-t)*6; return p; };
+  let r,g,b; if(S===0){r=g=b=L;} else { const q=L<0.5?L*(1+S):L+S-L*S, p=2*L-q; r=f(p,q,H+1/3); g=f(p,q,H); b=f(p,q,H-1/3); }
+  return [Math.round(r*255),Math.round(g*255),Math.round(b*255)]; }
+XS.genMorph=function(base){ const R=Math.random, cl=XS.cl||((v,a,b)=>v<a?a:v>b?b:v);
+  const h=rgb2hsl(base.col);
+  const col=hsl2rgb([ (h[0]+(R()*0.2-0.1)+1)%1, cl(h[1]*(0.75+R()*0.6),0.25,0.98), cl(h[2]*(0.8+R()*0.45),0.32,0.84) ]);
+  const j=(lo,hi)=>Math.round(lo+R()*(hi-lo)), bf=base.form||{};
+  const form=Object.assign({}, bf, { legs:j(3,6), arms:j(5,9), segs:j(4,8), lobes:j(4,7),
+    spikes:(bf.spikes===0)?0:j(10,20), fronds:j(4,7), blades:j(4,7), shelves:j(3,6), shape:R()<0.5?'centric':'pennate' });
+  return { col, size:0.85+R()*0.32, form, pattern:['spots','stripes','bands','none','none'][Math.floor(R()*5)], glow:0.8+R()*0.5, seed:R()*6.28 };
+};
 
 /* ---------------- scenario generation ---------------- */
 XS.buildScenario=function(objective, tier){
   const T=(XS.TIERS&&XS.TIERS[tier])||{margin:1};
   const xp=(XS.progress&&XS.progress.xp)||0;
-  const pool=XS.SPECIES.filter(s=>xp>=(s.minXP||0)); const A=pick(pool.length?pool:XS.SPECIES);
-  A.label=A.label||A.kingdom;                      // UI shows A.label as the organism type
+  const pool=XS.SPECIES.filter(s=>xp>=(s.minXP||0)); const base=pick(pool.length?pool:XS.SPECIES);
+  const morph=XS.genMorph(base);
+  const A=Object.assign({}, base, {label:base.kingdom, col:morph.col, form:morph.form, size:(base.size||1)*morph.size});
   const planet=pick(XS.PLANETS);
-  const tmpl=R_BY_PLAN[A.plan]||R_ANIMAL;
+  const tmpl=R_BY_PLAN[base.plan]||R_ANIMAL;
   const regions=tmpl.map(r=>Object.assign({}, r, {
     cell:r.cell||A.cell, scanned:false, cellSpec:null,
     evidence:[], clues:{}, tests:{}, diagnosed:false, dxWrong:0, assaysSince:0, recon:false }));
   const key=pick(regions);
   const nm=pick(A.name)+pick(A.epi);
-  const sc={ objective, archKey:A.cell, A, planet, name:nm,
+  const sc={ objective, archKey:base.cell, A, morph, planet, name:nm,
     regions, keyId:key.id,
     P:0, host:100, resist:0, cured:false, done:false,
     tier, sway:Math.random()*Math.PI*2 };
@@ -247,6 +302,7 @@ XS.buildScenario=function(objective, tier){
     sc.brief=`${nm} is an invasive threat. Identify what kind of organism it is, find the tissue it can’t defend, and hit it with the one agent its biology can’t withstand.`;
     sc.hostDrain=0;
   }
+  sc.assayBudget = (tier==='director')?6:null;   // Director: limited reagents — choose your assays
   rollTraits(sc, tier);
   return sc;
 };
@@ -268,11 +324,22 @@ XS.TRAITS=[
     apply:sc=>{ sc.shielded=true; }},
   {id:'symbiont', label:'Mutualistic symbiont', tag:'🤝 symbiont', when:sc=>sc.regions.length>=2,
     hint:'A beneficial symbiont lives in one of its tissues — treating THAT tissue harms the host. Find it and leave it alone.',
-    apply:sc=>{ const others=sc.regions.filter(r=>r.id!==sc.keyId); const s=others[Math.floor(Math.random()*others.length)];
+    apply:sc=>{ const others=sc.regions.filter(r=>r.id!==sc.keyId && !r.decoy); const s=others[Math.floor(Math.random()*others.length)];
       if(s){ s.symbiont=true; sc.symbiontId=s.id; } }},
   {id:'extremophile', label:'Extreme habitat', tag:'☢ unstable', when:sc=>true,
     hint:'Reagents are unstable in this environment — a wrong move costs more than usual. Be certain before you act.',
     apply:sc=>{ sc.harsh=true; }},
+  {id:'coinfection', label:'Co-infection', tag:'✚ mixed', when:sc=>sc.objective==='preserve',
+    hint:'TWO different invaders are present — you must apply BOTH matching cures to clear the tissue.',
+    apply:sc=>{ const others=Object.keys(XS.PATHOGENS).filter(k=>k!==sc.pathType && XS.PATHOGENS[k].cure!==sc.agent);
+      const p2=others[Math.floor(Math.random()*others.length)]; sc.pathType2=p2; sc.cures=[sc.agent, XS.PATHOGENS[p2].cure]; }},
+  {id:'decoy', label:'Necrotic decoy', tag:'✖ decoy', when:sc=>sc.regions.length>=2,
+    hint:'One tissue is already dead and only LOOKS infected — analyse carefully so you don’t treat the wrong one.',
+    apply:sc=>{ const others=sc.regions.filter(r=>r.id!==sc.keyId && !r.symbiont); const d=others[Math.floor(Math.random()*others.length)];
+      if(d){ d.decoy=true; sc.decoyId=d.id; } }},
+  {id:'mutating', label:'Rapidly mutating', tag:'🧬 mutating', when:sc=>true,
+    hint:'It adapts in real time — its adaptation meter climbs on its own, so work fast and don’t waste moves.',
+    apply:sc=>{ sc.mutating=true; }},
 ];
 function rollTraits(sc, tier){
   sc.traits=[];
@@ -305,16 +372,18 @@ XS.runAssay=function(sc, region, id){
   const a=XS.assayById(id); if(!a) return null;
   const spec=XS.regionCell(sc,region);
   const first=!region.tests[id];
+  if(first && sc.assayBudget!=null && sc.assayBudget<=0)
+    return {blocked:true, text:'Out of reagents — no assay charges left. Diagnose from the evidence you have.', label:a.label};
   const out=a.run(spec, sc.pathType);
   region.tests[id]=true; region.clues[out.clue]=out.text;
-  if(first){ region.evidence.push(out.text); region.assaysSince++; region.recon=true; }
+  if(first){ region.evidence.push(out.text); region.assaysSince++; region.recon=true; if(sc.assayBudget!=null) sc.assayBudget--; }
   return {text:out.text, first, label:a.label};
 };
 
 /* the classification / diagnosis options for the key threat */
 XS.identifyOptions=function(sc){
   return sc.objective==='preserve'
-    ? {kind:'pathogen', prompt:'What is the invader?', options:['Virus','Bacterium','Fungus','Parasite']}
+    ? {kind:'pathogen', prompt:'What is the cause?', options:['Virus','Bacterium','Fungus','Parasite','Prion','Toxin']}
     : {kind:'class',    prompt:'What kind of organism is this?', options:XS.CLASSIFY.slice()};
 };
 
@@ -347,7 +416,7 @@ XS.applyTreatment=function(sc, regionId, agent){
   const T=XS.TIERS[sc.tier]||XS.TIERS.field, margin=T.margin||1;
   const correctRegion = regionId===sc.keyId;
   let correctAgent;
-  if(sc.objective==='preserve') correctAgent = agent===sc.agent;
+  if(sc.objective==='preserve') correctAgent = sc.cures ? sc.cures.includes(agent) : agent===sc.agent;
   else correctAgent = XS.killAgentsFor(region.cell).includes(agent);
 
   // TRAIT · symbiont — treating the protected tissue is a serious mistake
@@ -364,6 +433,13 @@ XS.applyTreatment=function(sc, regionId, agent){
   }
 
   if(correctRegion && correctAgent){
+    if(sc.cures){                                        // TRAIT · co-infection — every invader needs its own cure
+      sc.curesApplied=sc.curesApplied||{}; sc.curesApplied[agent]=true;
+      const done=sc.cures.filter(c=>sc.curesApplied[c]).length;
+      sc.P=Math.round(done/sc.cures.length*100);
+      if(sc.P>=100) sc.cured=true;
+      return {ok:true, sev:0, msg: done<sc.cures.length?'One invader cleared — but a second is still present. Apply its cure too.':'Both invaders cleared — the tissue is recovering.'};
+    }
     let gain = sc.objective==='preserve'?26:100;
     if(sc.resistantStrain) gain = sc.objective==='preserve'?18:50;   // resistant strain needs extra hits
     sc.P=Math.min(100, sc.P+gain);
@@ -389,6 +465,7 @@ XS.applyTreatment=function(sc, regionId, agent){
 /* per-frame macro tick */
 XS.worldTick=function(sc, dt){
   if(sc.done) return null;
+  if(sc.mutating){ const m=(XS.TIERS[sc.tier]||{}).margin||1; sc.resist=Math.min(100, sc.resist + 1.2*dt/m); }
   if(sc.objective==='preserve'){
     if(!sc.cured) sc.host=Math.max(0, sc.host - sc.hostDrain*(1-sc.P/100)*dt);
     else sc.host=Math.min(100, sc.host + 16*dt);

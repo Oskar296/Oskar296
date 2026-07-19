@@ -2,9 +2,10 @@
 
 An **educational** biology game with a **macro → micro** loop. You're a field
 xenobiologist studying a whole alien organism on its exoplanet — drawn from a
-catalogue of **27 procedurally‑rendered species across the six kingdoms of life**
-(animals, plants, fungi, protists, bacteria and archaea), each with its own
-distinct body‑plan. You get **one of two orders**:
+catalogue of **31 species across the six kingdoms of life** (animals, plants,
+fungi, protists, bacteria and archaea) — and **every individual is unique**: its
+colour, size, proportions, limb/spine counts and skin pattern are rolled fresh,
+so no two look alike. You get **one of two orders**:
 
 - 💚 **Preserve** — the organism is sick. Work out *what* is attacking it, find the
   afflicted tissue, and apply the one correct cure before it dies.
@@ -52,16 +53,22 @@ Or just open `index.html` (some browsers disable saved progress on `file://`).
 
 ## Depth & replayability
 
-- **27 distinct species across six kingdoms** on **six exoplanets**, each a unique
-  procedural body‑plan (medusa, arthropod, cephalopod, diatom, radiolarian, coral
-  fungus, bracket fungus, biofilm, stromatolite, archaeal vent colony…).
-- **A real deduction loop** — the answer is hidden; you gather evidence with
-  **9 lab assays** + organelle inspection, then commit a diagnosis before you can
-  treat. Higher species tiers unlock as you rank up.
-- **Difficulty tiers** (Intern / Field / Director). Intern lets you treat without a
-  formal diagnosis; Field & Director require a correct diagnosis and punish wrong
-  calls — Director hardest of all.
-- **XP & ranks**, a growing **Codex**, **14 achievements** with unlock toasts, and a
+- **31 species across six kingdoms** on **six exoplanets** — 26 distinct body‑plans
+  (medusa, arthropod, cephalopod, worm, anemone, crinoid, urchin, diatom,
+  radiolarian, coral & bracket fungus, puffball, biofilm, stromatolite, archaeal
+  vent colony…) × **per‑individual procedural morphology**, so the bestiary is
+  effectively unlimited.
+- **A real deduction loop** — the answer is hidden; you gather evidence with **10
+  lab assays** + organelle inspection, then commit a diagnosis before you can treat.
+- **6 kinds of affliction** — virus, bacterium, fungus, parasite, **prion** (only a
+  denaturant works) and **chemical toxin** (no organism at all — needs an antitoxin).
+- **8 complications** that recombine onto any specimen — drug‑resistant, biofilm
+  shield, mutualistic symbiont, virulent, extreme habitat, **co‑infection** (two
+  cures), **necrotic decoy** (a false target) and **rapidly‑mutating**.
+- **Difficulty tiers** (Intern / Field / Director). Field & Director require a correct
+  diagnosis and punish wrong calls; **Director adds up to two complications and a
+  limited assay budget**, so you must choose which tests to spend.
+- **XP & ranks**, a growing **Codex**, **15 achievements** with unlock toasts, and a
   seeded **🗓 Daily** assignment with a shareable result.
 - **Sound**: synth SFX, volume slider, ambient toggle. Honours reduced‑motion.
 

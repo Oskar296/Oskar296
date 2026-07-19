@@ -146,8 +146,10 @@ UI.renderRight=function(){
     const internHint=(XS.TIERS[app.tier]||{}).hint && app.tier==='intern';
     let threat;
     if(r.symbiont && r.recon){ threat='<div class="th sym">🤝 A beneficial symbiont lives here — treating this tissue would harm the host. Leave it alone.</div>'; }
+    else if(r.decoy && r.recon){ threat='<div class="th sym">✖ Necrotic decoy — already-dead debris that only looks infected. This is NOT the active focus.</div>'; }
     else if(r.recon){ threat = isKey
-        ? (preserve?'<div class="th bad">⚠ An invader is multiplying in this tissue.</div>'
+        ? (preserve?('<div class="th bad">⚠ An invader is multiplying in this tissue.</div>'
+                    + (sc.cures?'<div class="th sym">✚ Mixed infection — a SECOND invader is also present. You will need two cures.</div>':''))
                    :'<div class="th bad">⚠ Exposed tissue — the organism can’t defend it here. A viable target.</div>')
                    + (sc.shielded?'<div class="th sym">🛡 A biofilm shields these cells — strip it with detergent before the real agent will land.</div>':'')
         : '<div class="th good">✓ This tissue is clear — the cause is elsewhere.</div>'; }
@@ -180,7 +182,10 @@ UI.renderDock=function(){
   const r=app.zoomRegion;
   UI.dock.className='panel dock-treat';
   const assays=XS.zoomAssays(sc,r);
-  const abtn=a=>`<button class="abtn assay ${r.tests[a.id]?'used':''}" data-assay="${a.id}"><b>${a.label}</b><small>${a.short}</small></button>`;
+  const out0=sc.assayBudget!=null && sc.assayBudget<=0;
+  const abtn=a=>{ const used=r.tests[a.id], dis=out0&&!used;
+    return `<button class="abtn assay ${used?'used':''} ${dis?'dis':''}" data-assay="${a.id}"><b>${a.label}</b><small>${a.short}</small></button>`; };
+  const assayLab=`Lab assays${sc.assayBudget!=null?' · <b>'+sc.assayBudget+'</b> charges left':''}`;
   const dxDone=r.diagnosed, canTreat=XS.canTreat(sc,r);
   const idGroup = dxDone
     ? `<div class="dock-group idgroup"><div class="dock-lab">Diagnosis</div><div class="dx-done">✓ ${sc.dxAnswer}</div></div>`
@@ -192,7 +197,7 @@ UI.renderDock=function(){
   }
   UI.dock.innerHTML=`<button class="abtn back" id="backBtn"><b>← Organism</b><small>zoom out</small></button>`+
     `<div class="dsep"></div>`+
-    `<div class="dock-group"><div class="dock-lab">Lab assays</div><div class="btn-row assay-row">${assays.map(abtn).join('')}</div></div>`+
+    `<div class="dock-group"><div class="dock-lab">${assayLab}</div><div class="btn-row assay-row">${assays.map(abtn).join('')}</div></div>`+
     `<div class="dsep"></div>`+ idGroup + treatGroup;
   $('backBtn').onclick=()=>{ sfx('click'); XS.exitRegion(); UI.renderPhase(); };
   const idb=$('idBtn'); if(idb) idb.onclick=()=>{ sfx('click'); UI.showIdentify(); };

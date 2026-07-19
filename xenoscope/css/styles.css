@@ -222,6 +222,7 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-ra
 .abtn.assay b{color:var(--aqua)}
 .abtn.assay.used{border-color:rgba(94,242,214,.4);background:rgba(94,242,214,.06)}
 .abtn.assay.used b::after{content:' ✓';color:var(--mint)}
+.abtn.assay.dis{opacity:.4;filter:grayscale(.5)}
 .abtn.identify{border-color:var(--warn);min-width:118px}
 .abtn.identify b{color:var(--warn)}
 .idgroup{max-width:150px}

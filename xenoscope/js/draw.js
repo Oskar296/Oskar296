@@ -353,7 +353,7 @@ XS.regionScreen=regionScreen;
 function drawHotspot(app,r,x,y,t,key){
   const pulse=1+0.18*Math.sin(t*2.4+x*0.05);
   const hov=app.hoverRegion===r;
-  const target=(r.id===app.sc.keyId && r.recon);          // only revealed once the tissue is analysed
+  const target=((r.id===app.sc.keyId)||r.decoy) && r.recon;   // key tissue (and any necrotic decoy) look like targets once analysed
   const col=target?'255,120,90':(r.recon?'94,242,214':(r.scanned?'150,200,220':'200,220,255'));
   ctx.save();
   ctx.globalCompositeOperation='lighter';
@@ -452,6 +452,15 @@ function frond(x,y,side,len,t,i,col,acc,gcol){
 function nucleusGlow(x,y,r,acc){ ctx.save(); ctx.globalCompositeOperation='lighter';
   const g=ctx.createRadialGradient(x,y,0,x,y,r); g.addColorStop(0,rC(mix(acc,[255,255,255],0.4),0.55)); g.addColorStop(0.5,rC(acc,0.3)); g.addColorStop(1,rC(acc,0));
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,6.3); ctx.fill(); ctx.restore(); }
+/* per-individual skin pattern, drawn inside a clipped body */
+function paintPattern(sc,x,y,S,col,acc){ const m=sc.morph; if(!m||m.pattern==='none')return; ctx.save();
+  if(m.pattern==='spots'){ ctx.fillStyle=rC(mix(acc,[255,255,255],0.25),0.14);
+    for(let i=0;i<20;i++){ const a=i*2.399+m.seed, rr=S*0.72*Math.sqrt((i+1)/20); ctx.beginPath(); ctx.arc(x+Math.cos(a)*rr,y+Math.sin(a)*rr,S*0.05,0,6.3); ctx.fill(); } }
+  else if(m.pattern==='stripes'){ ctx.strokeStyle=rC(mix(col,[0,0,0],0.5),0.16); ctx.lineWidth=S*0.05;
+    for(let i=-7;i<=7;i++){ ctx.beginPath(); ctx.moveTo(x+i*S*0.13,y-S); ctx.lineTo(x+i*S*0.13+S*0.22,y+S); ctx.stroke(); } }
+  else { ctx.strokeStyle=rC(mix(col,[0,0,0],0.5),0.15); ctx.lineWidth=S*0.06;
+    for(let i=-5;i<=5;i++){ ctx.beginPath(); ctx.moveTo(x-S,y+i*S*0.18); ctx.quadraticCurveTo(x,y+i*S*0.18+S*0.05,x+S,y+i*S*0.18); ctx.stroke(); } }
+  ctx.restore(); }
 
 /* ================= BODY-PLAN RENDERERS ================= */
 XS.PLANS={
@@ -465,7 +474,7 @@ XS.PLANS={
     const body=[u(-0.92,0.04),u(-0.72,-0.20),u(-0.44,-0.36),u(-0.10,-0.45),u(0.24,-0.46),u(0.50,-0.40),u(0.72,-0.42),u(0.90,-0.33),
       u(0.99,-0.16),u(0.93,-0.02),u(0.74,-0.02),u(0.54,0.05),u(0.30,0.22),u(0.02,0.30),u(-0.28,0.28),u(-0.58,0.20),u(-0.82,0.12)];
     fillGlow(body,bodyGrad(ccx-S*0.15,ccy-S*0.22,S*1.2,col,acc,health),gcol,2.2);
-    ctx.save(); smoothClosed(body); ctx.clip(); ctx.globalCompositeOperation='lighter';
+    ctx.save(); smoothClosed(body); ctx.clip(); paintPattern(sc,ccx,ccy,S,col,acc); ctx.globalCompositeOperation='lighter';
     for(let i=0;i<7;i++){ const f=i/6, p=u(-0.68+f*1.5,-0.30-Math.sin(f*3.14)*0.12), pu=0.55+0.45*Math.sin(t*2+i);
       ctx.fillStyle=rC(acc,0.5*pu); ctx.beginPath(); ctx.arc(p[0],p[1],S*0.035,0,6.3); ctx.fill();
       ctx.fillStyle=rC(mix(acc,[255,255,255],0.5),0.85*pu); ctx.beginPath(); ctx.arc(p[0],p[1],S*0.014,0,6.3); ctx.fill(); }
@@ -484,7 +493,7 @@ XS.PLANS={
     const bell=[]; for(let a=Math.PI; a<=2*Math.PI+0.001; a+=Math.PI/12) bell.push([ccx+Math.cos(a)*bw, by+Math.sin(a)*bh]);
     bell.push([ccx+bw*0.86,by+bh*0.35]); bell.push([ccx,by+bh*0.5]); bell.push([ccx-bw*0.86,by+bh*0.35]);
     fillGlow(bell,bodyGrad(ccx-S*0.1,by-S*0.28,S*0.9,col,acc,health),gcol,2);
-    ctx.save(); smoothClosed(bell); ctx.clip(); ctx.globalCompositeOperation='lighter';
+    ctx.save(); smoothClosed(bell); ctx.clip(); paintPattern(sc,ccx,by,S*0.8,col,acc); ctx.globalCompositeOperation='lighter';
     nucleusGlow(ccx,by-bh*0.1,bw*0.7,acc);
     ctx.strokeStyle=rC(mix(acc,[255,255,255],0.4),0.4); ctx.lineWidth=1.4;
     for(let i=0;i<5;i++){ const a=Math.PI+ (i+1)/6*Math.PI; ctx.beginPath(); ctx.moveTo(ccx,by-bh*0.1);
@@ -526,7 +535,7 @@ XS.PLANS={
     const mant=[[ccx-S*0.42,my+S*0.28],[ccx-S*0.5,my-S*0.05],[ccx-S*0.34,my-S*0.42],[ccx,my-S*0.56],
       [ccx+S*0.34,my-S*0.42],[ccx+S*0.5,my-S*0.05],[ccx+S*0.42,my+S*0.28],[ccx,my+S*0.4]];
     fillGlow(mant,bodyGrad(ccx-S*0.12,my-S*0.3,S*0.8,col,acc,health),gcol,2);
-    ctx.save(); smoothClosed(mant); ctx.clip(); nucleusGlow(ccx,my-S*0.1,S*0.5,acc); ctx.restore();
+    ctx.save(); smoothClosed(mant); ctx.clip(); paintPattern(sc,ccx,my,S*0.7,col,acc); nucleusGlow(ccx,my-S*0.1,S*0.5,acc); ctx.restore();
     eyeAt(ccx-S*0.18,my-S*0.02,S*0.075,gcol); eyeAt(ccx+S*0.18,my-S*0.02,S*0.075,gcol);
     floaters(ccx,my,S,t,acc); },
 
@@ -552,7 +561,7 @@ XS.PLANS={
     for(let i=0;i<M;i++){ const a=i/M*6.283, lobe=1+0.42*Math.sin(a*n+t*0.8)+0.12*Math.sin(a*2-t);
       pts.push([ccx+Math.cos(a)*S*0.6*lobe, ccy+Math.sin(a)*S*0.52*lobe]); }
     fillGlow(pts,bodyGrad(ccx-S*0.1,ccy-S*0.12,S*0.9,col,acc,health),gcol,2);
-    ctx.save(); smoothClosed(pts); ctx.clip(); ctx.globalCompositeOperation='lighter';
+    ctx.save(); smoothClosed(pts); ctx.clip(); paintPattern(sc,ccx,ccy,S*0.6,col,acc); ctx.globalCompositeOperation='lighter';
     nucleusGlow(ccx+S*0.08,ccy+S*0.02,S*0.34,acc);
     ctx.fillStyle=rC(mix(acc,[255,255,255],0.3),0.5);
     for(let i=0;i<6;i++){ const a=i*1.6+t*0.4; ctx.beginPath(); ctx.arc(ccx+Math.cos(a)*S*0.3,ccy+Math.sin(a)*S*0.25,S*0.05,0,6.3); ctx.fill(); }
@@ -704,7 +713,7 @@ XS.PLANS={
     const sil=[P(-0.06,0.42),P(-0.20,0.30),P(-0.17,0.02),P(-0.15,-0.28),P(-0.46,-0.30),P(-0.72,-0.34),P(-0.58,-0.52),P(-0.28,-0.64),P(0,-0.68),
       P(0.28,-0.64),P(0.58,-0.52),P(0.72,-0.34),P(0.46,-0.30),P(0.15,-0.28),P(0.17,0.02),P(0.20,0.30),P(0.06,0.42)];
     fillGlow(sil,bodyGrad(ccx-S*0.12,capY-S*0.05,S*1.0,col,acc,health),gcol,2);
-    ctx.save(); smoothClosed(sil); ctx.clip();
+    ctx.save(); smoothClosed(sil); ctx.clip(); paintPattern(sc,ccx,capY,S*0.7,col,acc);
     const hl=ctx.createRadialGradient(ccx-S*0.15,capY-S*0.2,0,ccx-S*0.15,capY-S*0.2,S*0.95);
     hl.addColorStop(0,rC(mix(col,[255,255,255],0.6),0.32)); hl.addColorStop(0.6,'rgba(0,0,0,0)'); ctx.fillStyle=hl; ctx.fillRect(ccx-S,capY-S,S*2,S*2);
     ctx.strokeStyle=rC(mix(col,[10,8,14],0.6),0.5); ctx.lineWidth=1.4;
@@ -817,6 +826,73 @@ XS.PLANS={
       fillGlow(pts,bodyGrad(ccx,gy-S*0.08,S*0.9,col,acc,health),gcol,1.4);
       for(let i=0;i<10;i++){ const f=(i+0.5)/10, x=ccx+(-0.8+1.6*f)*S, y=gy-Math.max(0.05,Math.sin(f*3.14))*S*0.14-S*0.02; orb(x,y,S*0.05,mix(col,acc,0.3),acc,health); } }
     floaters(ccx,ccy,S,t,acc); },
+
+  /* --- more Animalia / Protista body-plans --- */
+  anemone(ccx,ccy,S,t,sc,health){ const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5), F=sc.A.form||{};
+    const gy=ccy+S*0.72, top=ccy-S*0.12, n=(F.arms||8)+4;
+    softShadow(ccx,gy,S*0.6,S*0.12); auraGlow(ccx,ccy-S*0.15,S*1.4,gcol,0.09+0.09*health);
+    // waving crown tentacles fanning up & out
+    for(let i=0;i<n;i++){ const f=n>1?i/(n-1):0.5, ang=-Math.PI*0.5+(f-0.5)*Math.PI*1.35;
+      limb(ccx+(f-0.5)*S*0.34, top, ang+Math.sin(t*1.6+i)*0.22, S*(0.5+0.22*Math.sin(i*1.3)), S*0.04, mix(col,acc,0.4),acc,t,i*0.9); }
+    // stout column
+    const colm=[[ccx-S*0.24,gy],[ccx-S*0.3,ccy+S*0.1],[ccx-S*0.24,top+S*0.04],[ccx,top-S*0.02],
+      [ccx+S*0.24,top+S*0.04],[ccx+S*0.3,ccy+S*0.1],[ccx+S*0.24,gy]];
+    fillGlow(colm,bodyGrad(ccx-S*0.1,ccy,S*0.7,col,acc,health),gcol,2);
+    ctx.save(); smoothClosed(colm); ctx.clip(); paintPattern(sc,ccx,ccy+S*0.2,S*0.5,col,acc); ctx.restore();
+    auraGlow(ccx,top,S*0.26,mix(acc,[255,255,255],0.3),0.5+0.3*health);
+    floaters(ccx,ccy-S*0.1,S,t,acc); },
+
+  urchin(ccx,ccy,S,t,sc,health){ const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5), F=sc.A.form||{};
+    const r=S*0.4, n=(F.spikes||16); softShadow(ccx,ccy+S*0.46,S*0.6,S*0.12); auraGlow(ccx,ccy,S*1.3,gcol,0.08+0.08*health);
+    // thick tapering spines all around
+    ctx.save();
+    for(let i=0;i<n;i++){ const a=i/n*6.283+Math.sin(t*0.6)*0.03, bx=ccx+Math.cos(a)*r*0.92, by=ccy+Math.sin(a)*r*0.92, ex=ccx+Math.cos(a)*r*1.75, ey=ccy+Math.sin(a)*r*1.75;
+      const nx=-Math.sin(a), ny=Math.cos(a), w=S*0.03;
+      ctx.beginPath(); ctx.moveTo(bx+nx*w,by+ny*w); ctx.lineTo(ex,ey); ctx.lineTo(bx-nx*w,by-ny*w); ctx.closePath();
+      const g=ctx.createLinearGradient(bx,by,ex,ey); g.addColorStop(0,rC(mix(col,acc,0.3),0.9)); g.addColorStop(1,rC(mix(col,acc,0.6),0.5)); ctx.fillStyle=g; ctx.fill(); }
+    ctx.restore();
+    orb(ccx,ccy,r,col,acc,health);
+    ctx.save(); ctx.beginPath(); ctx.arc(ccx,ccy,r,0,6.3); ctx.clip(); paintPattern(sc,ccx,ccy,r,col,acc);
+    nucleusGlow(ccx,ccy,r*0.7,acc); ctx.restore();
+    floaters(ccx,ccy,S,t,acc); },
+
+  crinoid(ccx,ccy,S,t,sc,health){ const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5), F=sc.A.form||{};
+    const gy=ccy+S*0.8, cup=ccy-S*0.05, n=(F.arms||6); softShadow(ccx,gy,S*0.4,S*0.1); auraGlow(ccx,ccy-S*0.2,S*1.3,gcol,0.07+0.08*health);
+    // stalk
+    const sway=Math.sin(t*0.7)*0.05, stalk=[]; for(let i=0;i<=10;i++){ const f=i/10; stalk.push([ccx+Math.sin(sway)*f*S*0.2, gy+(cup-gy)*f, f]); }
+    ribbon(stalk,f=>S*0.05*(1-0.4*f), bodyGrad(ccx,ccy,S*0.7,col,acc,health), gcol);
+    // feathery arms fanning up from the cup
+    for(let i=0;i<n;i++){ const f=n>1?i/(n-1):0.5, ang=-Math.PI*0.5+(f-0.5)*Math.PI*1.1, wob=Math.sin(t*0.9+i)*0.06;
+      const len=S*(0.7-0.1*Math.abs(f-0.5)), dir=Math.cos(ang+wob), diry=Math.sin(ang+wob), pts=[];
+      for(let k=0;k<=10;k++){ const g=k/10; pts.push([ccx+dir*len*g+(-diry)*Math.sin(g*3.14)*S*0.04, cup+diry*len*g, g]); }
+      ribbon(pts,g=>S*0.028*(1-0.7*g)+S*0.004, bodyGrad(ccx,ccy,S*0.7,col,acc,health), gcol);
+      ctx.save(); ctx.strokeStyle=rC(mix(col,acc,0.5),0.5); ctx.lineWidth=1.1;
+      for(let k=2;k<10;k++){ const p=pts[k], nn=[-(pts[k+1][1]-p[1]),(pts[k+1][0]-p[0])], nl=Math.hypot(nn[0],nn[1])||1;
+        for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(p[0],p[1]); ctx.lineTo(p[0]+s*nn[0]/nl*S*0.07,p[1]+s*nn[1]/nl*S*0.07); ctx.stroke(); } } ctx.restore(); }
+    orb(ccx,cup,S*0.12,mix(col,acc,0.3),acc,health);
+    floaters(ccx,ccy-S*0.1,S,t,acc); },
+
+  /* --- more Plantae --- */
+  canopy(ccx,ccy,S,t,sc,health){ const col=sc.A.col, acc=sc.planet.accent, gcol=mix(col,acc,0.5), F=sc.A.form||{};
+    const gy=ccy+S*0.92, sway=Math.sin(t*0.6)*0.04, top=ccy-S*0.34, n=(F.fronds||5)+2;
+    softShadow(ccx,gy,S*0.7,S*0.12); auraGlow(ccx,top,S*1.4,gcol,0.08+0.08*health);
+    for(let i=-2;i<=2;i++){ if(i===0)continue; limb(ccx+i*S*0.03,gy-S*0.02,Math.PI*0.5+i*0.4,S*0.4,S*0.05,mix(col,[8,12,10],0.5),acc,t,i*3); }
+    // trunk
+    const left=[],right=[]; for(let i=0;i<=8;i++){ const f=i/8, x=ccx+Math.sin(sway)*f*S*0.3, y=gy+(top-gy)*f, w=S*(0.12*(1-f)+0.03); left.push([x-w,y]); right.push([x+w,y]); }
+    ctx.beginPath(); ctx.moveTo(left[0][0],left[0][1]); for(const p of left)ctx.lineTo(p[0],p[1]); for(let i=right.length-1;i>=0;i--)ctx.lineTo(right[i][0],right[i][1]); ctx.closePath();
+    ctx.fillStyle=bodyGrad(ccx,ccy,S*0.9,col,acc,health); ctx.fill();
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineWidth=1.6; ctx.strokeStyle=rC(gcol,0.4); ctx.shadowColor=rC(gcol,0.5); ctx.shadowBlur=12; ctx.stroke(); ctx.restore();
+    const tx=ccx+Math.sin(sway)*S*0.3;
+    // broad umbrella of leaf-blades fanning out horizontally at the top
+    for(let i=0;i<n;i++){ const f=n>1?i/(n-1):0.5, side=f<0.5?-1:1, ang=-Math.PI*0.5+(f-0.5)*Math.PI*1.15+Math.sin(t*0.8+i)*0.04;
+      const len=S*(0.62-0.12*Math.abs(f-0.5)), ex=tx+Math.cos(ang)*len, ey=top+Math.sin(ang)*len*0.7;
+      ctx.save(); ctx.beginPath(); ctx.moveTo(tx,top);
+      ctx.quadraticCurveTo((tx+ex)/2+ -Math.sin(ang)*S*0.1,(top+ey)/2,ex,ey);
+      ctx.quadraticCurveTo((tx+ex)/2+Math.sin(ang)*S*0.1,(top+ey)/2+S*0.06,tx,top+S*0.06); ctx.closePath();
+      const g=ctx.createLinearGradient(tx,top,ex,ey); g.addColorStop(0,rC(mix(col,[6,10,10],0.35),0.9)); g.addColorStop(1,rC(mix(col,acc,0.5),0.72)); ctx.fillStyle=g; ctx.fill();
+      ctx.strokeStyle=rC(gcol,0.45); ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(tx,top); ctx.lineTo(ex,ey); ctx.stroke(); ctx.restore(); }
+    auraGlow(tx,top,S*0.2,gcol,0.4+0.3*health);
+    floaters(ccx,ccy-S*0.2,S,t,acc); },
 };
 
 /* ---- pathogen particles overlaid on a zoomed infected cell ---- */
@@ -834,6 +910,13 @@ function drawPathogens(kind,t){ ctx.save(); ctx.globalCompositeOperation='lighte
       ctx.beginPath(); ctx.ellipse(0,0,s*1.4,s*0.9,0,0,6.3); ctx.fill();
       ctx.fillStyle='#d8b0ff'; ctx.beginPath(); ctx.arc(s*0.3,0,s*0.4,0,6.3); ctx.fill();
       ctx.strokeStyle='rgba(200,160,255,.6)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(-s*1.3,0); ctx.quadraticCurveTo(-s*1.9,Math.sin(t*6+i)*s*0.6,-s*2.4,0); ctx.stroke(); ctx.restore(); }
+    else if(kind==='prion'){ // angular clump of misfolded protein
+      ctx.save(); ctx.translate(x,y); ctx.rotate(a); ctx.fillStyle='rgba(230,230,150,.6)'; ctx.shadowColor='#e6e696'; ctx.shadowBlur=8;
+      ctx.beginPath(); for(let k=0;k<7;k++){ const aa=k/7*6.283, rr=s*(0.7+0.6*((k*0.41)%1)); const px=Math.cos(aa)*rr, py=Math.sin(aa)*rr; k?ctx.lineTo(px,py):ctx.moveTo(px,py);} ctx.closePath(); ctx.fill(); ctx.restore(); }
+    else if(kind==='toxin_load'){ // diffuse toxin molecules, no organism
+      ctx.fillStyle='rgba(180,255,140,.5)'; ctx.shadowColor='#b4ff8c'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.arc(x,y,s*0.5,0,6.3); ctx.fill();
+      ctx.fillStyle='rgba(180,255,140,.25)'; ctx.beginPath(); ctx.arc(x+Math.sin(t+i)*s,y+Math.cos(t*1.3+i)*s,s*0.3,0,6.3); ctx.fill(); }
     else { ctx.strokeStyle='#ffd27a'; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=8; ctx.lineWidth=2;
       ctx.beginPath(); ctx.moveTo(x-s,y); ctx.quadraticCurveTo(x,y-s*1.5,x+s,y); ctx.quadraticCurveTo(x,y+s*1.5,x-s,y); ctx.stroke(); }
   }
