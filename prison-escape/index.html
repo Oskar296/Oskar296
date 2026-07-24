@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#05070c" />
+<title>BLACKGATE — Prison Escape</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚨</text></svg>" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div id="hudLevel" class="hud-level">BLOCK</div>
+        <div id="hudObjective" class="hud-objective">—</div>
+      </div>
+      <div class="hud-center">
+        <div class="meter">
+          <span class="meter-label">ALARM</span>
+          <div class="bar"><div id="suspFill" class="bar-fill"></div></div>
+        </div>
+        <div class="meter">
+          <span class="meter-label">STAMINA</span>
+          <div class="bar small"><div id="stamFill" class="bar-fill stam"></div></div>
+        </div>
+      </div>
+      <div class="hud-right">
+        <div id="hudKeys" class="keys"></div>
+        <button id="btnMute" class="mute" title="Mute">🔊</button>
+      </div>
+    </div>
+    <div id="alertBanner" class="alert-banner">⚠ SPOTTED</div>
+    <div class="hud-hint">
+      <span><b>WASD / ↑↓←→</b> move</span>
+      <span><b>SHIFT</b> sprint</span>
+      <span><b>E / SPACE</b> hide in locker</span>
+      <span><b>ESC</b> pause · <b>R</b> restart</span>
+    </div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="touch">
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div class="touch-btns">
+      <button id="btnAct" class="tbtn">HIDE</button>
+      <button id="btnSprint" class="tbtn">RUN</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Title screen -->
+  <div id="titleScreen" class="screen title">
+    <div class="panel">
+      <div class="logo">BLACK<span>GATE</span></div>
+      <div class="tag">MAXIMUM SECURITY · PRISON ESCAPE</div>
+      <p class="blurb">You're the only ordinary inmate in a wing full of super-villains.
+        Lights are out. The guards are patrolling. <b>BRUTE</b>, <b>VOLT</b>, <b>WRAITH</b> and the <b>WARDEN</b>
+        are between you and the sky. Stay in the shadows, grab the keycards, and get out.</p>
+      <div class="btnrow">
+        <button id="btnStart" class="btn primary">▶ BREAK OUT</button>
+        <button id="btnHow" class="btn">HOW TO PLAY</button>
+      </div>
+      <div class="hintline">Tip: guards see in a cone of light. Break their line of sight — or duck into a locker.</div>
+    </div>
+  </div>
+
+  <!-- Help -->
+  <div id="helpScreen" class="screen hidden">
+    <div class="panel">
+      <h2>HOW TO PLAY</h2>
+      <ul class="help">
+        <li><b>Move</b> with WASD or the arrow keys (or the on-screen stick on touch).</li>
+        <li><b>Sprint</b> with SHIFT — faster, but noisy. Guards can <i>hear</i> you run nearby.</li>
+        <li><b>Vision cones</b> are the light in front of guards & villains. Stay out of them.</li>
+        <li>Being seen fills the <b>ALARM</b> bar. Fill it and you're recaptured. Break line of sight to calm it.</li>
+        <li><b>Keycards</b> open the colour-matched doors. Collect them all to unlock the <b>EXIT</b>.</li>
+        <li><b>Lockers</b> — stand next to one and press <b>E / SPACE</b> to hide. You're invisible inside.</li>
+      </ul>
+      <div class="villains">
+        <div><span class="v" style="--c:#4a78d6"></span><b>GUARD</b> — steady patrols, tight cone.</div>
+        <div><span class="v" style="--c:#d1402f"></span><b>BRUTE</b> — slow, but <i>charges</i> when he spots you.</div>
+        <div><span class="v" style="--c:#2fd3e6"></span><b>VOLT</b> — fast, erratic, quick to react.</div>
+        <div><span class="v" style="--c:#9a54ec"></span><b>WRAITH</b> — blinks in and out, teleporting around.</div>
+        <div><span class="v" style="--c:#e6a52a"></span><b>WARDEN</b> — wide eyes, guards the final gate.</div>
+      </div>
+      <div class="btnrow"><button id="btnHelpClose" class="btn primary">GOT IT</button></div>
+    </div>
+  </div>
+
+  <!-- Caught -->
+  <div id="caughtScreen" class="screen hidden danger">
+    <div class="panel">
+      <div class="big-status fail">RECAPTURED</div>
+      <p id="caughtBody" class="blurb">They dragged you back to your cell.</p>
+      <div class="btnrow">
+        <button id="btnRetry" class="btn primary">↻ TRY AGAIN</button>
+        <button id="btnMenu" class="btn">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level clear -->
+  <div id="clearScreen" class="screen hidden success">
+    <div class="panel">
+      <div id="clearTitle" class="big-status win">BLOCK CLEAR</div>
+      <p id="clearBody" class="blurb"></p>
+      <div class="btnrow"><button id="btnNext" class="btn primary">NEXT BLOCK →</button></div>
+    </div>
+  </div>
+
+  <!-- Win -->
+  <div id="winScreen" class="screen hidden success">
+    <div class="panel">
+      <div class="big-status win">FREEDOM</div>
+      <p class="blurb">You slipped past every last one of them and vanished into the night.
+        Blackgate never even sounded the final alarm. <b>You're out.</b></p>
+      <div class="btnrow"><button id="btnPlayAgain" class="btn primary">▶ ESCAPE AGAIN</button></div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pauseScreen" class="screen hidden">
+    <div class="panel">
+      <h2>PAUSED</h2>
+      <div class="btnrow col">
+        <button id="btnResume" class="btn primary">RESUME</button>
+        <button id="btnRestart" class="btn">RESTART BLOCK</button>
+        <button id="btnMenu2" class="btn">MAIN MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
