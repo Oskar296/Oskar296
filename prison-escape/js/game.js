@@ -652,5 +652,6 @@ window.PE = window.PE || {};
   };
 
   PE.game = game;
-  window.addEventListener('DOMContentLoaded', () => game.init());
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', () => game.init());
+  else game.init();
 })();
