@@ -62,6 +62,7 @@ var R = (function () {
       if (b.table) return table(b.table);
       if (b.callout) return callout(b.callout);
       if (b.formula) return '<div class="formula">' + esc(b.formula) + '</div>';
+      if (b.diagram) return (typeof DIA !== 'undefined') ? DIA.render(b.diagram) : '';
       if (b.defs) {
         return '<div class="twrap"><table><tbody>' + b.defs.map(function (d) {
           return '<tr><th style="width:32%">' + inline(d[0]) + '</th><td>' + inline(d[1]) + '</td></tr>';

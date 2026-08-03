@@ -166,6 +166,7 @@ BS.addTopic({
           ['**Low morale / motivation**', 'Workers feel like a small cog in a huge machine; absenteeism and turnover rise and productivity falls'],
           ['**Slow decision making**', 'Decisions pass through many layers of management, so the firm reacts slowly to the market']
         ] } },
+        { diagram: 'avgcost' },
         { callout: { k: 'tip', b: 'Draw or describe the **average cost curve**: it falls as output rises (economies of scale), reaches a minimum at the optimum output, then rises (diseconomies). Naming the minimum point as the most efficient level of output is a strong analysis mark.' } }
       ]
     },
@@ -188,6 +189,7 @@ BS.addTopic({
           'The **break-even point** is where the total revenue and total cost lines cross. Read the output down to the horizontal axis',
           'Left of that point is the **loss** area; right of it is the **profit** area'
         ] },
+        { diagram: 'breakeven' },
         { callout: { k: 'warn', b: 'The total revenue line must start at the **origin** — at zero output there is zero revenue. The total cost line must start at the **fixed cost** level, not at zero. Getting these two starting points wrong is the most common charting error.' } },
         { h3: 'What changes the break-even point?' },
         { table: { head: ['Change', 'Effect on break-even output'], rows: [

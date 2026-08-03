@@ -19,9 +19,11 @@ may not save).
 | Section | What it does |
 |---|---|
 | **Dashboard** | Progress per unit, cards due for review, quiz accuracy, study streak, and the topics you flagged as shaky |
-| **Notes** | All **6 units / 25 sub-topics** of the syllabus. Each topic opens with what the syllabus says you must know, then the content, key terms, exam tips, and the mistakes that lose the most marks |
+| **Notes** | All **6 units / 25 sub-topics** of the syllabus. Each topic opens with what the syllabus says you must know, then the content, key terms, exam tips, and the mistakes that lose the most marks. Includes **10 drawn diagrams** — product life cycle, break-even, average cost curve, Maslow, tall vs flat structures, the business cycle, distribution channels and more |
 | **Flashcards** | **242 key terms** in a Leitner spaced-repetition system — get a card right and it moves up a box and comes back later; get it wrong and it returns tomorrow |
 | **Quiz** | **120 multiple-choice questions** with a worked explanation on every one, filterable by unit or topic, plus a "retry what I got wrong" mode |
+| **Written practice** | **27 exam-style written questions** (2, 4 and 6 marks). You type a full answer, then reveal the mark scheme and tick the points you actually made — the app scores it and tracks your best. Every question has a model answer and a "watch out" note |
+| **Case studies** | **2 complete Paper 2 papers**, 80 marks each: stimulus text, four data appendices, four 20-mark questions with mark schemes and model answers for every 12-marker. Built-in 1h30 exam timer |
 | **Exam technique** | Paper 1 and Paper 2 structure and AO weightings, every command word and how to answer it, what a 2/4/6/12-mark answer needs, six 12-mark practice questions with model plans, and the full formula sheet |
 | **Calculators** | Break-even (with a live chart), profitability and liquidity ratios, a six-month cash-flow forecast, plus added value, market share, labour turnover, productivity and price elasticity |
 | **Glossary** | Every key term, searchable and filterable by unit |
@@ -44,6 +46,14 @@ may not save).
 | `1` / `2` | Grade a flipped flashcard: not yet / got it |
 | `Esc` | Close search |
 
+## Why written practice matters most
+
+Paper 1 and Paper 2 are both written, and together AO3 (analysis) and AO4 (evaluation) are
+**40% of the qualification** — marks you cannot earn by recognising a right answer in a list.
+The multiple-choice quiz is good for checking recall quickly; the written practice and case
+studies are what actually move your grade. Mark yourself honestly: the points you *didn't*
+tick are your revision list.
+
 ## How it's put together
 
 No framework. Plain HTML, CSS and ES5 JavaScript.
@@ -55,7 +65,10 @@ js/store.js           namespace + localStorage: confidence, Leitner boxes, quiz 
 js/render.js          turns note data structures into HTML
 js/notes/u1..u6.js    the syllabus content, one file per unit
 js/glossary.js        242 key terms — also the flashcard deck
-js/quizbank.js        120 questions with explanations
+js/quizbank.js        120 multiple-choice questions with explanations
+js/written.js         27 written questions with mark schemes and model answers
+js/cases.js           2 full Paper 2 case studies (80 marks each)
+js/diagrams.js        10 theme-aware SVG diagrams
 js/exam.js            papers, command words, mark ladders, drills, formula sheet
 js/views-*.js         one file per section of the app
 js/main.js            hash router, sidebar, theme toggle, search
@@ -75,8 +88,8 @@ BS.addTopic({
 ```
 
 Body blocks can be a plain string (paragraph), `{h3}`, `{list}`, `{num}`, `{table}`,
-`{defs}`, `{formula}` or `{callout}`. Inside any text you can use `**bold**`, `*italic*`,
-`` `code` `` and `[[4.2]]` to link to another topic.
+`{defs}`, `{formula}`, `{callout}` or `{diagram: 'plc'}`. Inside any text you can use
+`**bold**`, `*italic*`, `` `code` `` and `[[4.2]]` to link to another topic.
 
 ## A note on accuracy
 

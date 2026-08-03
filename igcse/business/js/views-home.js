@@ -18,6 +18,12 @@ V.home = function () {
   BS.quiz.forEach(function (q) { var r = s.question(q.id); tries += r.tries; right += r.right; });
   var acc = tries ? Math.round(right / tries * 100) : null;
 
+  var wDone = 0, wGot = 0, wAvail = 0;
+  BS.written.forEach(function (q) {
+    var w = s.written(q.id);
+    if (w.tries) { wDone++; wGot += w.best; wAvail += q.marks; }
+  });
+
   var streak = s.streak();
   var pct = total ? Math.round(read / total * 100) : 0;
 
@@ -32,6 +38,7 @@ V.home = function () {
   h += stat('Topics read', read + ' / ' + total, pct + '% of the syllabus');
   h += stat('Cards mastered', mastered, due + ' due for review');
   h += stat('Quiz accuracy', acc === null ? '—' : acc + '%', tries + ' answered');
+  h += stat('Written marks', wAvail ? wGot + '/' + wAvail : '—', wDone + ' of ' + BS.written.length + ' attempted');
   h += stat('Study streak', streak + (streak === 1 ? ' day' : ' days'), streak ? 'Keep it going' : 'Study today to start');
   h += '</div>';
 
@@ -42,9 +49,13 @@ V.home = function () {
   else h += '<a class="btn primary" href="#/cards">Practise flashcards</a>';
   var nextTopic = BS.notes.filter(function (t) { return !s.isRead(t.id); })[0];
   if (nextTopic) h += '<a class="btn" href="#/notes/' + nextTopic.id + '">Next topic: ' + nextTopic.id + ' ' + R.esc(nextTopic.title) + '</a>';
+  h += '<a class="btn" href="#/written">Write an exam answer</a>';
   h += '<a class="btn" href="#/quiz">Take a mixed quiz</a>';
-  h += '<a class="btn" href="#/exam">Exam technique</a>';
-  h += '</div></div>';
+  h += '<a class="btn" href="#/cases">Do a case study</a>';
+  h += '</div>';
+  h += '<p class="small" style="margin:14px 0 0">Multiple choice is useful for checking recall, but the exam is written. ' +
+    'If you only do one thing today, do a <a href="#/written">written answer</a> and mark it yourself.</p>';
+  h += '</div>';
 
   /* weak topics */
   var weak = BS.notes.filter(function (t) { return s.conf(t.id) === 1; });

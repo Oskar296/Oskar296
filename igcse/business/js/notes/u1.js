@@ -58,7 +58,7 @@ BS.addTopic({
           'It transforms those inputs into **outputs** — goods or services',
           'It sells the output, usually to make a **profit** for the owners'
         ] },
-        { formula: 'INPUTS  →  PROCESS (transformation)  →  OUTPUTS\nraw materials, labour,     manufacturing,        finished goods\nmachines, land             assembling, serving   and services' }
+        { diagram: 'transformation' }
       ]
     },
     {

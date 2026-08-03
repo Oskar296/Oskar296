@@ -85,12 +85,16 @@
     else if (p[0] === 'notes') { html = V.notes(); navKey = 'notes'; }
     else if (p[0] === 'cards') { html = V.cards(r.params); after = V.afterCards; navKey = 'cards'; }
     else if (p[0] === 'quiz') { html = V.quiz(r.params); after = V.afterQuiz; navKey = 'quiz'; }
+    else if (p[0] === 'written') { html = V.written(r.params); after = V.afterWritten; navKey = 'written'; }
+    else if (p[0] === 'cases' && p[1]) { html = V.case(p[1]); after = V.afterCase; navKey = 'cases'; }
+    else if (p[0] === 'cases') { html = V.cases(); navKey = 'cases'; }
     else if (p[0] === 'exam') { html = V.exam(); after = V.afterExam; navKey = 'exam'; }
     else if (p[0] === 'tools') { html = V.tools(); after = V.afterTools; navKey = 'tools'; }
     else if (p[0] === 'glossary') { html = V.glossary(); after = V.afterGlossary; navKey = 'glossary'; }
     else { html = '<h1>Page not found</h1><p><a href="#/">Back to the dashboard</a></p>'; }
 
     V._cardKey = null;
+    if (V._caseCleanup) { V._caseCleanup(); V._caseCleanup = null; }
     main.innerHTML = linkTopics(html);
     if (after) after(main);
 
@@ -130,6 +134,20 @@
     });
     BS.glossary.forEach(function (g) {
       index.push({ title: g.t, sub: 'Term · ' + g.tp, href: '#/glossary', hay: (g.t + ' ' + g.d).toLowerCase() });
+    });
+    BS.written.forEach(function (w) {
+      index.push({
+        title: w.cmd + ' — ' + String(w.q).replace(/\*\*/g, '').slice(0, 70),
+        sub: 'Written practice · ' + w.marks + ' marks · ' + w.tp,
+        href: '#/written?topic=' + w.tp,
+        hay: ((w.stem || '') + ' ' + w.q + ' ' + w.cmd).toLowerCase()
+      });
+    });
+    BS.cases.forEach(function (c) {
+      index.push({
+        title: c.title, sub: 'Case study · ' + c.tag, href: '#/cases/' + c.id,
+        hay: (c.title + ' ' + c.tag + ' ' + c.blurb + ' ' + c.text.join(' ')).toLowerCase()
+      });
     });
     index.push({ title: 'Command words', sub: 'Exam technique', href: '#/exam', hay: 'command words define state explain analyse evaluate justify recommend calculate outline discuss suggest' });
     index.push({ title: 'Formula sheet', sub: 'Exam technique', href: '#/exam', hay: 'formula formulae break-even contribution ratio roce margin cash flow added value elasticity' });

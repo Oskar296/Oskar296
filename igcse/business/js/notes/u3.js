@@ -254,6 +254,7 @@ BS.addTopic({
           ['**Maturity**', 'At their highest but growth slows; the most competitive stage', 'Highest — development costs recovered, output high so unit costs low', 'Competitive/promotional pricing; brand-reminder advertising; extension strategies begin'],
           ['**Decline**', 'Falling', 'Falling, eventually a loss', 'Reduce promotion spending, cut price to clear stock, withdraw the product']
         ] } },
+        { diagram: 'plc' },
         { h3: 'Extension strategies' },
         'Extension strategies are used at **maturity or early decline** to lengthen the product\'s life and delay the fall in sales.',
         { list: [
@@ -265,6 +266,7 @@ BS.addTopic({
           '**Price reductions** or special offers',
           '**Improving the product** with new features or technology'
         ] },
+        { diagram: 'extension' },
         { callout: { k: 'note', t: 'Product portfolio', b: 'Businesses hold a **portfolio** of products at different life-cycle stages, so that profits from mature products fund the development of new ones and the decline of one product does not sink the business.' } }
       ]
     },
@@ -303,6 +305,7 @@ BS.addTopic({
           ['**Two intermediaries**', 'Producer → Wholesaler → Retailer → Consumer', 'The wholesaler buys in bulk, breaks bulk, stores stock and pays the producer quickly; reaches many small retailers', 'Two profit margins taken, so a higher final price or lower producer margin; least control of all'],
           ['**Agents / brokers**', 'Producer → Agent → Retailer/Consumer', 'Useful when selling **abroad** — local knowledge, language and contacts; low set-up cost', 'Commission must be paid; the agent may also represent competitors']
         ] } },
+        { diagram: 'channels' },
         { callout: { k: 'tip', b: 'Choosing a channel depends on: the **type of product** (perishable, fragile, high value), the **market** (local or international), the **cost** of each channel, the **control** the business wants over its brand, and how **technically complex** the product is.' } }
       ]
     },

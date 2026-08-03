@@ -38,6 +38,7 @@ BS.addTopic({
           ['**Slump / depression**', 'A deep and prolonged recession; very high unemployment', 'Widespread business failure; only essential goods sell well'],
           ['**Recovery**', 'GDP begins to rise again; confidence returns', 'Demand and investment start to recover']
         ] } },
+        { diagram: 'cycle' },
         { callout: { k: 'tip', b: 'How badly a business is hit by a recession depends on **what it sells**. Firms selling **luxury goods** (holidays, jewellery, new cars) suffer badly. Firms selling **necessities and inferior goods** (basic food, budget supermarkets, repairs) may even grow. Say which type the case-study business is.' } }
       ]
     },
@@ -297,6 +298,7 @@ BS.addTopic({
           ['Depreciation', 'A fall in the value of a currency against others — it buys less foreign currency. Sometimes called a "weak" currency.']
         ] },
         { callout: { k: 'tip', t: 'The one thing to memorise', b: '**SPICED** — **S**trong **P**ound (currency) = **I**mports **C**heap, **E**xports **D**ear.\nSo an **appreciation** makes imports cheaper and exports dearer. A **depreciation** does the opposite.' } },
+        { diagram: 'spiced' },
         { table: { head: ['', 'Appreciation (currency stronger)', 'Depreciation (currency weaker)'], rows: [
           ['**Price of exports abroad**', 'Rises — foreign customers pay more', 'Falls — foreign customers pay less'],
           ['**Effect on exporters**', 'Sales, revenue and profit **fall**; less competitive abroad; may have to cut prices and margins', 'Sales, revenue and profit **rise**; more competitive abroad'],

@@ -30,6 +30,8 @@ BS.store = (function () {
     read: {},        // topicId -> timestamp
     cards: {},       // termId  -> { box:1..5, due:ts, seen:n, right:n }
     quiz: {},        // questionId -> { tries:n, right:n, lastOk:bool }
+    written: {},     // writtenId  -> { tries:n, best:n, last:n, outOf:n, text:'' }
+    cases: {},       // caseId.qIndex -> { best:n, outOf:n, text:'' }
     sessions: [],    // { t:ts, kind:'quiz'|'cards', score:n, total:n }
     days: {},        // 'YYYY-MM-DD' -> count of studied items
     theme: null
@@ -111,6 +113,29 @@ BS.store = (function () {
       save();
     },
     question: function (id) { return data.quiz[id] || { tries: 0, right: 0, lastOk: false }; },
+
+    written: function (id) { return data.written[id] || { tries: 0, best: 0, last: 0, outOf: 0, text: '' }; },
+    saveWritten: function (id, score, outOf, text) {
+      var w = data.written[id] || { tries: 0, best: 0, last: 0, outOf: 0, text: '' };
+      w.tries++;
+      w.last = score;
+      w.best = Math.max(w.best, score);
+      w.outOf = outOf;
+      w.text = (text || '').slice(0, 4000);
+      data.written[id] = w;
+      save();
+      return w;
+    },
+    caseAns: function (key) { return data.cases[key] || { best: 0, outOf: 0, text: '' }; },
+    saveCase: function (key, score, outOf, text) {
+      var c = data.cases[key] || { best: 0, outOf: 0, text: '' };
+      c.best = Math.max(c.best, score);
+      c.outOf = outOf;
+      c.text = (text || '').slice(0, 8000);
+      data.cases[key] = c;
+      save();
+      return c;
+    },
 
     logSession: function (kind, score, total) {
       data.sessions.push({ t: Date.now(), kind: kind, score: score, total: total });

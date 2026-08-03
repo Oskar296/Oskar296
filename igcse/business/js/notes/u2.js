@@ -48,6 +48,7 @@ BS.addTopic({
           ['2', '**Safety** — security and protection', 'Permanent contracts, job security, safe working conditions'],
           ['1', '**Physical** — food, shelter, warmth', 'Enough pay to buy the basics; rest breaks; reasonable hours']
         ] } },
+        { diagram: 'maslow' },
         { callout: { k: 'warn', b: 'Not everyone follows the same order, and needs may overlap. Some people never reach the top level. Say so if a question asks you to evaluate Maslow.' } },
         { h3: 'Herzberg — two-factor theory' },
         'Herzberg separated the things that cause **satisfaction** from the things that cause **dissatisfaction**.',
@@ -140,6 +141,7 @@ BS.addTopic({
           ['Cost', 'High — many managers to pay', 'Lower management costs'],
           ['Decisions', 'Slow, but well controlled', 'Fast, and staff are more empowered']
         ] } },
+        { diagram: 'structures' },
         { defs: [['Delayering', 'Removing one or more levels of the hierarchy, usually of middle management, to make the structure flatter.']] },
         { table: { head: ['Benefits of delayering', 'Drawbacks of delayering'], rows: [
           ['Lower wage costs — fewer managers', 'Redundancy payments cost money in the short run'],

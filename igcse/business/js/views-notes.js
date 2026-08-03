@@ -59,7 +59,11 @@ V.topic = function (id) {
       });
       h += '</tbody></table></div>';
       h += '<div class="btnrow"><a class="btn sm" href="#/cards?topic=' + t.id + '">Drill these as flashcards</a>' +
-           '<a class="btn sm" href="#/quiz?topic=' + t.id + '">Quiz me on ' + t.id + '</a></div>';
+           '<a class="btn sm" href="#/quiz?topic=' + t.id + '">Quiz me on ' + t.id + '</a>';
+      var nw = BS.written.filter(function (w) { return w.tp === t.id; }).length;
+      if (nw) h += '<a class="btn sm primary" href="#/written?topic=' + t.id + '">Write ' + nw +
+        ' exam answer' + (nw === 1 ? '' : 's') + '</a>';
+      h += '</div>';
     }
   }
 
