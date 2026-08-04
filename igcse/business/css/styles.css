@@ -25,6 +25,32 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* Dark tokens apply from the OS preference before main.js has stamped
+   data-theme, so the page never flashes light on a dark device. Once
+   data-theme is set — by the app's own toggle or by the artifact viewer's —
+   the rules below win in both directions. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme]){
+    --bg:#0e1220;
+    --surface:#161b2c;
+    --surface-2:#1e2438;
+    --border:#2a3149;
+    --text:#e8ebf4;
+    --muted:#a0a8bf;
+    --accent:#7b9cff;
+    --accent-soft:#1d2745;
+    --good:#5fd7a8;
+    --good-soft:#12312a;
+    --warn:#f0b95c;
+    --warn-soft:#33280f;
+    --bad:#ff8a80;
+    --bad-soft:#3a1c1c;
+    --tip:#b6a4ff;
+    --tip-soft:#251f42;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+
 html[data-theme="dark"]{
   --bg:#0e1220;
   --surface:#161b2c;

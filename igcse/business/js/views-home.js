@@ -30,8 +30,14 @@ V.home = function () {
   var h = '';
   h += '<div class="eyebrow">Cambridge IGCSE 0450</div>';
   h += '<h1>Business Studies revision</h1>';
-  h += '<p class="lead">Six units, ' + total + ' syllabus topics, ' + BS.glossary.length +
-       ' key terms and ' + BS.quiz.length + ' practice questions. Everything is saved in this browser.</p>';
+  var caseMarks = 0;
+  BS.cases.forEach(function (c) {
+    c.questions.forEach(function (q) { q.parts.forEach(function (p) { caseMarks += p.marks; }); });
+  });
+  h += '<p class="lead">Six units and ' + total + ' syllabus topics, with ' + BS.glossary.length +
+       ' key terms, ' + BS.quiz.length + ' quiz questions, ' + BS.written.length +
+       ' written questions with mark schemes, and ' + BS.cases.length + ' full case studies worth ' +
+       caseMarks + ' marks. Everything is saved in this browser.</p>';
 
   /* stats */
   h += '<div class="grid g4" style="margin-bottom:18px">';
