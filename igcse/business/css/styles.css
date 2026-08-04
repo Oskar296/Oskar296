@@ -318,6 +318,36 @@ tr:last-child td{border-bottom:none}
 .opt:disabled{cursor:default}
 .explain{margin-top:14px;font-size:14.5px}
 
+/* ---------- syllabus outcomes ---------- */
+.card.spec{border-left:4px solid var(--accent);padding:16px 20px}
+.spec-head{
+  font-size:11.5px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--accent); font-weight:800; margin-bottom:12px;
+}
+.outcome{display:flex;gap:13px;padding:10px 0;border-top:1px solid var(--border)}
+.outcome:first-of-type{border-top:none;padding-top:0}
+.outcome .o-n{
+  font-family:var(--mono); font-size:12.5px; font-weight:700; color:var(--accent);
+  flex:0 0 auto; min-width:38px; padding-top:2px;
+}
+.outcome .o-b{flex:1;min-width:0}
+.outcome .o-t{font-size:15px;font-weight:650;margin-bottom:5px;line-height:1.4}
+.outcome ul{margin:0;padding-left:19px}
+.outcome li{font-size:14.5px;color:var(--muted);margin:3px 0}
+.spec-note{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--border)}
+
+/* ---------- question stems ---------- */
+.stems{display:flex;flex-direction:column;gap:7px;margin:10px 0 4px}
+.stem-row{
+  display:flex; gap:12px; align-items:flex-start; font-size:14.5px; line-height:1.5;
+  padding:9px 12px; background:var(--surface-2); border-radius:9px;
+}
+.stem-row .marks{
+  font-family:var(--mono); font-size:12px; font-weight:700; color:#fff;
+  background:var(--accent); border-radius:6px; padding:2px 7px; flex:0 0 auto; margin-top:1px;
+}
+ul.earn li{margin:7px 0}
+
 /* ---------- written practice ---------- */
 .stem{
   background:var(--surface-2); border-left:4px solid var(--muted);

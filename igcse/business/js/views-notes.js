@@ -4,9 +4,15 @@ var V = window.V || {};
 
 V.notes = function () {
   var s = BS.store;
+  var outcomes = 0;
+  BS.notes.forEach(function (t) {
+    var sp = BS.specFor(t.id);
+    if (sp && sp.outcomes) outcomes += sp.outcomes.length;
+  });
   var h = '<div class="eyebrow">Syllabus</div><h1>Revision notes</h1>' +
-    '<p class="lead">All six units of the Cambridge IGCSE Business Studies 0450 syllabus. ' +
-    'Rate your confidence at the bottom of each topic and it will show up here and on the dashboard.</p>';
+    '<p class="lead">All six units of the Cambridge IGCSE Business Studies 0450 syllabus, mapped to its ' +
+    outcomes + ' numbered learning outcomes. Every topic opens with exactly what the syllabus requires and ends with ' +
+    'how that topic is examined. Rate your confidence at the bottom of each one and it shows up here and on the dashboard.</p>';
 
   BS.units.forEach(function (u) {
     h += '<h2 id="u' + u.n + '">' + u.n + '. ' + R.esc(u.title) + '</h2>';
@@ -41,8 +47,21 @@ V.topic = function (id) {
   h += '<div class="eyebrow">' + t.id + '</div>';
   h += '<h1>' + R.esc(t.title) + '</h1>';
 
-  h += '<div class="card tight"><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin-bottom:6px">What the syllabus says you must know</div>';
-  h += '<ul style="margin-bottom:0">' + t.syllabus.map(function (p) { return '<li>' + R.inline(p) + '</li>'; }).join('') + '</ul></div>';
+  var spec = BS.specFor(t.id);
+  h += '<div class="card spec"><div class="spec-head">What the syllabus requires</div>';
+  if (spec && spec.outcomes) {
+    spec.outcomes.forEach(function (o) {
+      h += '<div class="outcome"><div class="o-n">' + o.n + '</div><div class="o-b">' +
+        '<div class="o-t">' + R.inline(o.t) + '</div>' +
+        '<ul>' + o.pts.map(function (p) { return '<li>' + R.inline(p) + '</li>'; }).join('') + '</ul>' +
+        '</div></div>';
+    });
+    h += '<p class="small spec-note">Numbered against the published 0450 subject content. ' +
+      'Check the syllabus for your own exam series — Cambridge is the authority on the exact wording.</p>';
+  } else {
+    h += '<ul style="margin-bottom:0">' + t.syllabus.map(function (p) { return '<li>' + R.inline(p) + '</li>'; }).join('') + '</ul>';
+  }
+  h += '</div>';
 
   t.sections.forEach(function (sec) {
     h += '<h2>' + R.inline(sec.h) + '</h2>';
@@ -65,6 +84,26 @@ V.topic = function (id) {
         ' exam answer' + (nw === 1 ? '' : 's') + '</a>';
       h += '</div>';
     }
+  }
+
+  /* how this topic is examined */
+  if (spec && spec.technique) {
+    var tq = spec.technique;
+    h += '<h2>How this topic is examined</h2>';
+    h += '<div class="card"><p>' + R.inline(tq.asked) + '</p>';
+    if (tq.stems && tq.stems.length) {
+      h += '<h3>Question stems you should expect</h3><div class="stems">';
+      tq.stems.forEach(function (s2) {
+        h += '<div class="stem-row"><span class="marks">' + s2[1] + '</span>' +
+          '<span>' + R.inline(s2[0]) + '</span></div>';
+      });
+      h += '</div>';
+    }
+    if (tq.earn && tq.earn.length) {
+      h += '<h3>What actually earns the marks</h3><ul class="earn">' +
+        tq.earn.map(function (x) { return '<li>' + R.inline(x) + '</li>'; }).join('') + '</ul>';
+    }
+    h += '</div>';
   }
 
   if (t.tips && t.tips.length) {

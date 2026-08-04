@@ -19,7 +19,7 @@ may not save).
 | Section | What it does |
 |---|---|
 | **Dashboard** | Progress per unit, cards due for review, quiz accuracy, study streak, and the topics you flagged as shaky |
-| **Notes** | All **6 units / 25 sub-topics** of the syllabus. Each topic opens with what the syllabus says you must know, then the content, key terms, exam tips, and the mistakes that lose the most marks. Includes **10 drawn diagrams** — product life cycle, break-even, average cost curve, Maslow, tall vs flat structures, the business cycle, distribution channels and more |
+| **Notes** | All **6 units / 25 sub-topics**, mapped to the syllabus's **76 numbered learning outcomes** (1.1.1, 1.1.2 …). Each topic opens with exactly what the syllabus requires, then the content, key terms, **how that topic is examined**, exam tips and the mistakes that lose the most marks. Includes **10 drawn diagrams** — product life cycle, break-even, average cost curve, Maslow, tall vs flat structures, the business cycle, distribution channels and more |
 | **Flashcards** | **242 key terms** in a Leitner spaced-repetition system — get a card right and it moves up a box and comes back later; get it wrong and it returns tomorrow |
 | **Quiz** | **120 multiple-choice questions** with a worked explanation on every one, filterable by unit or topic, plus a "retry what I got wrong" mode |
 | **Written practice** | **27 exam-style written questions** (2, 4 and 6 marks). You type a full answer, then reveal the mark scheme and tick the points you actually made — the app scores it and tracks your best. Every question has a model answer and a "watch out" note |
@@ -64,6 +64,7 @@ css/styles.css        light and dark themes
 js/store.js           namespace + localStorage: confidence, Leitner boxes, quiz history, streak
 js/render.js          turns note data structures into HTML
 js/notes/u1..u6.js    the syllabus content, one file per unit
+js/syllabus.js        76 numbered learning outcomes + per-topic exam technique
 js/glossary.js        242 key terms — also the flashcard deck
 js/quizbank.js        120 multiple-choice questions with explanations
 js/written.js         27 written questions with mark schemes and model answers
@@ -91,8 +92,20 @@ Body blocks can be a plain string (paragraph), `{h3}`, `{list}`, `{num}`, `{tabl
 `{defs}`, `{formula}`, `{callout}` or `{diagram: 'plc'}`. Inside any text you can use
 `**bold**`, `*italic*`, `` `code` `` and `[[4.2]]` to link to another topic.
 
+## Per-topic exam technique
+
+The **Exam technique** section covers the general rules — paper structure, command words,
+what each mark allocation needs. Every individual topic then carries its own
+*How this topic is examined* block: how that topic tends to appear, the **question stems to
+expect with their mark allocations**, and what specifically earns the marks there. It is the
+difference between knowing break-even and knowing that the examiner wants you to divide by
+contribution, start the revenue line at the origin, and comment on whether the output is
+achievable.
+
 ## A note on accuracy
 
 Written to match the published Cambridge IGCSE Business Studies 0450 syllabus, but this is
-not an official Cambridge resource. Always check the current syllabus for your exam series
-at [cambridgeinternational.org](https://www.cambridgeinternational.org/).
+**not an official Cambridge resource**. The numbered learning outcomes were reconstructed
+from the published subject content rather than copied from the PDF, so treat the numbering
+as a reliable guide and not as a quotation. Always check the current syllabus for your exam
+series at [cambridgeinternational.org](https://www.cambridgeinternational.org/).

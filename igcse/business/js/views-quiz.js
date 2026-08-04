@@ -167,7 +167,11 @@ V.exam = function () {
   var e = BS.exam;
   var h = '<div class="eyebrow">Technique</div><h1>How to answer the paper</h1>' +
     '<p class="lead">Content gets you into the exam. Technique gets you the grade. ' +
-    'Most marks are lost by not developing points, not applying them to the business, and not deciding on the 12-markers.</p>';
+    'Most marks are lost by not developing points, not applying them to the business, and not deciding on the 12-markers.</p>' +
+    '<div class="callout"><span class="clabel">This page is the general rules</span>' +
+    '<p>Every topic also has its own <strong>How this topic is examined</strong> section — the question stems that ' +
+    'actually come up for it, with their mark allocations, and what earns the marks on that specific topic. ' +
+    'Open any topic from <a href="#/notes">Notes</a> and scroll past the content to find it.</p></div>';
 
   /* papers */
   h += '<h2>The two papers</h2><div class="grid g2">';

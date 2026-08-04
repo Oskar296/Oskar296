@@ -126,7 +126,17 @@
     if (index) return index;
     index = [];
     BS.notes.forEach(function (t) {
+      var sp = BS.specFor(t.id);
       var text = t.syllabus.join(' ') + ' ' + t.sections.map(function (s) { return s.h; }).join(' ');
+      if (sp) {
+        text += ' ' + JSON.stringify(sp.outcomes) + ' ' + JSON.stringify(sp.technique);
+        sp.outcomes.forEach(function (o) {
+          index.push({
+            title: o.n + ' ' + o.t, sub: 'Syllabus outcome · ' + t.id + ' ' + t.title,
+            href: '#/notes/' + t.id, hay: (o.n + ' ' + o.t + ' ' + o.pts.join(' ')).toLowerCase()
+          });
+        });
+      }
       index.push({ title: t.id + ' ' + t.title, sub: 'Unit ' + t.unit + ' · topic', href: '#/notes/' + t.id, hay: (t.id + ' ' + t.title + ' ' + text).toLowerCase() });
       t.sections.forEach(function (s) {
         index.push({ title: s.h, sub: t.id + ' ' + t.title, href: '#/notes/' + t.id, hay: (s.h + ' ' + JSON.stringify(s.body)).toLowerCase() });
