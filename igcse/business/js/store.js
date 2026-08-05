@@ -34,6 +34,7 @@ BS.store = (function () {
     cases: {},       // caseId.qIndex -> { best:n, outOf:n, text:'' }
     sessions: [],    // { t:ts, kind:'quiz'|'cards', score:n, total:n }
     days: {},        // 'YYYY-MM-DD' -> count of studied items
+    rush: { best: 0, bestCombo: 0, plays: 0 },
     theme: null
   };
   var data;
@@ -135,6 +136,17 @@ BS.store = (function () {
       data.cases[key] = c;
       save();
       return c;
+    },
+
+    rush: function () { return data.rush || { best: 0, bestCombo: 0, plays: 0 }; },
+    logRush: function (score, bestCombo) {
+      var r = data.rush || { best: 0, bestCombo: 0, plays: 0 };
+      r.plays++;
+      r.best = Math.max(r.best, score);
+      r.bestCombo = Math.max(r.bestCombo || 0, bestCombo);
+      data.rush = r;
+      save();
+      return r;
     },
 
     logSession: function (kind, score, total) {

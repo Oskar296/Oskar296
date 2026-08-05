@@ -5,6 +5,42 @@
   var sidebar = document.getElementById('sidebar');
   var unitNav = document.getElementById('unitNav');
 
+  /* ---------------- toasts ---------------- */
+  var toastBox = document.createElement('div');
+  toastBox.id = 'toasts';
+  document.body.appendChild(toastBox);
+
+  function toast(kind, icon, title, sub, ms) {
+    var el = document.createElement('div');
+    el.className = 'toast ' + kind;
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<span class="t-ico">' + icon + '</span><span><span class="t-t">' +
+      R.esc(title) + '</span>' + (sub ? '<span class="t-s">' + R.esc(sub) + '</span>' : '') + '</span>';
+    toastBox.appendChild(el);
+    setTimeout(function () {
+      el.classList.add('t-out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 240);
+    }, ms || 2600);
+  }
+  BS.toast = toast;
+
+  /* Announce whatever changed since the last BS.game.snap(). Views call this
+     after any action that could have moved progress forward. */
+  BS.announce = function () {
+    var d = BS.game.settle();
+    if (d.xp > 0) toast('t-xp', '✦', '+' + d.xp + ' XP', null, 1900);
+    d.unlocked.forEach(function (a, i) {
+      setTimeout(function () { toast('t-ach', a.icon, a.name, a.d, 4200); }, 300 + i * 450);
+    });
+    if (d.levelUp) {
+      setTimeout(function () {
+        toast('t-lvl', '🎉', 'Level ' + d.levelUp.n + ' — ' + d.levelUp.name, 'Keep going.', 4600);
+      }, 150);
+    }
+    return d;
+  };
+  BS.game.snap();
+
   /* ---------------- theme ---------------- */
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
@@ -88,6 +124,8 @@
     else if (p[0] === 'written') { html = V.written(r.params); after = V.afterWritten; navKey = 'written'; }
     else if (p[0] === 'cases' && p[1]) { html = V.case(p[1]); after = V.afterCase; navKey = 'cases'; }
     else if (p[0] === 'cases') { html = V.cases(); navKey = 'cases'; }
+    else if (p[0] === 'rush') { html = V.rush(); after = V.afterRush; navKey = 'rush'; }
+    else if (p[0] === 'achievements') { html = V.achievements(); navKey = 'achievements'; }
     else if (p[0] === 'exam') { html = V.exam(); after = V.afterExam; navKey = 'exam'; }
     else if (p[0] === 'tools') { html = V.tools(); after = V.afterTools; navKey = 'tools'; }
     else if (p[0] === 'glossary') { html = V.glossary(); after = V.afterGlossary; navKey = 'glossary'; }
@@ -95,6 +133,8 @@
 
     V._cardKey = null;
     if (V._caseCleanup) { V._caseCleanup(); V._caseCleanup = null; }
+    if (V._rushCleanup) { V._rushCleanup(); V._rushCleanup = null; }
+    BS.game.snap();
     main.innerHTML = linkTopics(html);
     if (after) after(main);
 

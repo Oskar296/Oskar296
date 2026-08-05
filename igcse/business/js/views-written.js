@@ -172,6 +172,7 @@ V.afterWritten = function (root) {
       var score = Math.min(q.marks, state.got.filter(Boolean).length);
       s.saveWritten(q.id, score, q.marks, text);
       s.tick(2);
+      BS.announce();
       state.total += score; state.max += q.marks;
       state.i++;
       drawQ();

@@ -109,6 +109,7 @@ V.afterQuiz = function (root) {
     if (ok) state.score++;
     s.gradeQuestion(q.id, ok);
     s.tick(1);
+    BS.announce();
     state.log.push({ q: q, chose: idx, ok: ok });
 
     var btns = area.querySelectorAll('.opt');

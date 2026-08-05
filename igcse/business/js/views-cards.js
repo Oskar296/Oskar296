@@ -129,6 +129,7 @@ V.afterCards = function (root) {
     var g = state.queue[state.i];
     s.gradeCard(g.id, ok);
     s.tick(1);
+    BS.announce();
     if (ok) state.right++;
     state.done++;
     state.i++; state.flipped = false;

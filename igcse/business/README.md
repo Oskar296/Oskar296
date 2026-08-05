@@ -18,7 +18,7 @@ may not save).
 
 | Section | What it does |
 |---|---|
-| **Dashboard** | Progress per unit, cards due for review, quiz accuracy, study streak, and the topics you flagged as shaky |
+| **Dashboard** | Your level and XP, a daily goal ring, per-unit mastery, cards due for review, study streak, recent achievements and the topics you flagged as shaky |
 | **Notes** | All **6 units / 25 sub-topics**, mapped to the syllabus's **76 numbered learning outcomes** (1.1.1, 1.1.2 …). Each topic opens with exactly what the syllabus requires, then the content, key terms, **how that topic is examined**, exam tips and the mistakes that lose the most marks. Includes **10 drawn diagrams** — product life cycle, break-even, average cost curve, Maslow, tall vs flat structures, the business cycle, distribution channels and more |
 | **Flashcards** | **242 key terms** in a Leitner spaced-repetition system — get a card right and it moves up a box and comes back later; get it wrong and it returns tomorrow |
 | **Quiz** | **120 multiple-choice questions** with a worked explanation on every one, filterable by unit or topic, plus a "retry what I got wrong" mode |
@@ -26,6 +26,8 @@ may not save).
 | **Case studies** | **2 complete Paper 2 papers**, 80 marks each: stimulus text, four data appendices, four 20-mark questions with mark schemes and model answers for every 12-marker. Built-in 1h30 exam timer |
 | **Exam technique** | Paper 1 and Paper 2 structure and AO weightings, every command word and how to answer it, what a 2/4/6/12-mark answer needs, six 12-mark practice questions with model plans, and the full formula sheet |
 | **Calculators** | Break-even (with a live chart), profitability and liquidity ratios, a six-month cash-flow forecast, plus added value, market share, labour turnover, productivity and price elasticity |
+| **Exam Rush** | A 90-second timed challenge: three lives, and a combo multiplier that climbs every three correct in a row to a maximum of 5×. Answers still count towards normal quiz progress |
+| **Achievements** | 34 badges across eight groups, plus the twelve-level career ladder from Work Experience to Chair of the Board |
 | **Glossary** | Every key term, searchable and filterable by unit |
 
 ## Syllabus coverage
@@ -45,6 +47,21 @@ may not save).
 | `Space` / `Enter` | Flip the current flashcard |
 | `1` / `2` | Grade a flipped flashcard: not yet / got it |
 | `Esc` | Close search |
+
+## How the progression works
+
+XP is **derived from your progress, never banked as you go**. It is recalculated from what
+you actually know: topics read, how far each flashcard has climbed the Leitner boxes, quiz
+questions currently right, and marks scored on written answers and case studies. Re-answering
+a question you already know adds nothing — the only way the number rises is by learning
+something new. Full mastery of the whole course lands almost exactly on level 12.
+
+**Nothing is ever locked behind a level.** Levels and badges are feedback on studying, not a
+gate in front of it. Every topic, question and case study is available from the first minute.
+
+Mastery per unit blends topics read (20%), flashcards at box 4+ (30%), quiz questions
+currently right (25%) and written marks scored (25%), so reading alone cannot get you far up
+the bar.
 
 ## Why written practice matters most
 
@@ -70,6 +87,7 @@ js/quizbank.js        120 multiple-choice questions with explanations
 js/written.js         27 written questions with mark schemes and model answers
 js/cases.js           2 full Paper 2 case studies (80 marks each)
 js/diagrams.js        10 theme-aware SVG diagrams
+js/game.js            XP, levels, 34 achievements, per-unit mastery
 js/exam.js            papers, command words, mark ladders, drills, formula sheet
 js/views-*.js         one file per section of the app
 js/main.js            hash router, sidebar, theme toggle, search

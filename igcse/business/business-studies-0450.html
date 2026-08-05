@@ -260,7 +260,7 @@ tr:last-child td{border-bottom:none}
 .btnrow{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0 0}
 
 /* ---------- progress ---------- */
-.bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.bar{display:block;height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
 .bar>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
 .bar.good>i{background:var(--good)}
 .stat{
@@ -326,6 +326,102 @@ tr:last-child td{border-bottom:none}
 .opt.wrong .letter{background:var(--bad);color:#fff;border-color:var(--bad)}
 .opt:disabled{cursor:default}
 .explain{margin-top:14px;font-size:14.5px}
+
+/* ---------- toasts ---------- */
+#toasts{
+  position:fixed; right:16px; bottom:16px; z-index:70;
+  display:flex; flex-direction:column-reverse; gap:9px; pointer-events:none;
+  max-width:min(340px,calc(100vw - 32px));
+}
+.toast{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  box-shadow:var(--shadow); padding:11px 14px; font-size:14px;
+  display:flex; gap:11px; align-items:center;
+  animation:toast-in .26s cubic-bezier(.2,.9,.3,1.2);
+}
+.toast .t-ico{font-size:21px;line-height:1;flex:0 0 auto}
+.toast .t-t{display:block;font-weight:700;font-size:14px}
+.toast .t-s{display:block;font-size:12.5px;color:var(--muted);margin-top:1px}
+.toast.t-xp{border-color:var(--accent)}
+.toast.t-xp .t-t{color:var(--accent)}
+.toast.t-ach{border-color:var(--warn);background:var(--warn-soft)}
+.toast.t-lvl{border-color:var(--good);background:var(--good-soft)}
+.toast.t-lvl .t-t{color:var(--good)}
+.toast.t-out{animation:toast-out .22s ease forwards}
+@keyframes toast-in{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes toast-out{to{opacity:0;transform:translateY(6px) scale(.98)}}
+@media (prefers-reduced-motion: reduce){
+  .toast,.toast.t-out{animation:none}
+}
+
+/* ---------- progression ---------- */
+.levelcard{
+  background:linear-gradient(135deg,var(--accent-soft),var(--surface) 65%);
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px 20px; margin-bottom:16px; box-shadow:var(--shadow);
+}
+.levelcard .lv-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.lv-badge{
+  width:52px;height:52px;border-radius:14px;background:var(--accent);color:#fff;
+  display:grid;place-items:center;font-weight:800;font-size:20px;flex:0 0 auto;
+  font-family:var(--mono);letter-spacing:-.03em;
+}
+.lv-name{display:block;font-size:19px;font-weight:750;letter-spacing:-.01em;line-height:1.25}
+.lv-sub{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.lv-xp{margin-left:auto;text-align:right}
+.lv-xp .n{display:block;font-size:24px;font-weight:750;font-variant-numeric:tabular-nums;line-height:1.1}
+.lv-xp .l{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+
+.ring{display:block}
+.ring .track{stroke:var(--surface-2)}
+.ring .fill{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .5s ease}
+.ring.done .fill{stroke:var(--good)}
+.goalcard{display:flex;align-items:center;gap:16px}
+.goalcard .g-txt{flex:1;min-width:0}
+
+.ach-grid{display:grid;gap:11px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.ach{
+  display:flex; gap:12px; align-items:flex-start; padding:13px 15px;
+  border:1px solid var(--border); border-radius:12px; background:var(--surface);
+}
+.ach.locked{opacity:.5}
+.ach.got{border-color:var(--warn);background:var(--warn-soft)}
+.ach .a-ico{font-size:24px;line-height:1;flex:0 0 auto}
+.ach.locked .a-ico{filter:grayscale(1)}
+.ach .a-n{display:block;font-size:14.5px;font-weight:650;line-height:1.3}
+.ach .a-d{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+
+.mastery-row{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.mastery-row .m-n{font-size:14.5px;font-weight:600;flex:1;min-width:0}
+.mastery-row .m-v{
+  font-family:var(--mono);font-size:13px;font-weight:700;min-width:44px;text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---------- exam rush ---------- */
+.rush-hud{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);margin-bottom:14px;box-shadow:var(--shadow);
+}
+.rush-hud .r-time{font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:-.03em}
+.rush-hud .r-time.low{color:var(--bad)}
+.rush-hud .r-score{font-size:22px;font-weight:750;font-variant-numeric:tabular-nums}
+.rush-hud .r-lab{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.lives{letter-spacing:2px;font-size:17px}
+.combo{
+  font-family:var(--mono);font-weight:800;font-size:17px;color:var(--warn);
+  opacity:0;transition:opacity .2s,transform .2s;transform:scale(.9);
+}
+.combo.on{opacity:1;transform:scale(1)}
+.combo.big{color:var(--bad)}
+.flash{animation:flash .3s ease}
+@keyframes flash{0%{background:var(--good-soft)}100%{background:transparent}}
+.flash.bad{animation:flashbad .3s ease}
+@keyframes flashbad{0%{background:var(--bad-soft)}100%{background:transparent}}
+@media (prefers-reduced-motion: reduce){
+  .flash,.flash.bad{animation:none}
+}
 
 /* ---------- syllabus outcomes ---------- */
 .card.spec{border-left:4px solid var(--accent);padding:16px 20px}
@@ -489,11 +585,13 @@ hr{border:none;border-top:1px solid var(--border);margin:26px 0}
       <a href="#/notes" data-nav="notes">📖 <span>Notes</span></a>
       <a href="#/cards" data-nav="cards">🗂 <span>Flashcards</span></a>
       <a href="#/quiz" data-nav="quiz">✍️ <span>Quiz</span></a>
+      <a href="#/rush" data-nav="rush">⚡ <span>Exam Rush</span></a>
       <a href="#/written" data-nav="written">📝 <span>Written practice</span></a>
       <a href="#/cases" data-nav="cases">📋 <span>Case studies</span></a>
       <a href="#/exam" data-nav="exam">🎯 <span>Exam technique</span></a>
       <a href="#/tools" data-nav="tools">🧮 <span>Calculators</span></a>
       <a href="#/glossary" data-nav="glossary">🔤 <span>Glossary</span></a>
+      <a href="#/achievements" data-nav="achievements">🏅 <span>Achievements</span></a>
     </div>
     <div class="nav-head">Syllabus</div>
     <div class="nav-group" id="unitNav"></div>
@@ -552,6 +650,7 @@ BS.store = (function () {
     cases: {},       // caseId.qIndex -> { best:n, outOf:n, text:'' }
     sessions: [],    // { t:ts, kind:'quiz'|'cards', score:n, total:n }
     days: {},        // 'YYYY-MM-DD' -> count of studied items
+    rush: { best: 0, bestCombo: 0, plays: 0 },
     theme: null
   };
   var data;
@@ -653,6 +752,17 @@ BS.store = (function () {
       data.cases[key] = c;
       save();
       return c;
+    },
+
+    rush: function () { return data.rush || { best: 0, bestCombo: 0, plays: 0 }; },
+    logRush: function (score, bestCombo) {
+      var r = data.rush || { best: 0, bestCombo: 0, plays: 0 };
+      r.plays++;
+      r.best = Math.max(r.best, score);
+      r.bestCombo = Math.max(r.bestCombo || 0, bestCombo);
+      data.rush = r;
+      save();
+      return r;
     },
 
     logSession: function (kind, score, total) {
@@ -5978,6 +6088,320 @@ BS.exam = {
 };
 </script>
 <script>
+/* ===== js/game.js ===== */
+/* game.js — the progression layer.
+
+   Two rules this file sticks to:
+
+   1. XP is DERIVED from real progress, never accumulated as a separate score.
+      Re-answering a question you already know does not print XP. The only way
+      the number goes up is by learning something you had not learned before.
+   2. Nothing in the app is ever locked behind a level. Levels and badges are
+      feedback on studying, not a gate in front of it.                        */
+
+BS.game = (function () {
+
+  /* ---------------- levels ---------------- */
+
+  var LEVELS = [
+    { n: 1,  xp: 0,    name: 'Work experience' },
+    { n: 2,  xp: 120,  name: 'Intern' },
+    { n: 3,  xp: 300,  name: 'Trainee' },
+    { n: 4,  xp: 600,  name: 'Junior analyst' },
+    { n: 5,  xp: 1000, name: 'Analyst' },
+    { n: 6,  xp: 1500, name: 'Team leader' },
+    { n: 7,  xp: 2100, name: 'Department manager' },
+    { n: 8,  xp: 2900, name: 'Operations director' },
+    { n: 9,  xp: 3900, name: 'Finance director' },
+    { n: 10, xp: 5000, name: 'Managing director' },
+    { n: 11, xp: 6200, name: 'Chief executive' },
+    { n: 12, xp: 7500, name: 'Chair of the board' }
+  ];
+
+  /* XP a flashcard is worth at each Leitner box — mastery pays, seeing does not */
+  var CARD_XP = [0, 2, 5, 9, 14, 20];
+
+  function xp() {
+    var s = BS.store, total = 0;
+
+    BS.notes.forEach(function (t) { if (s.isRead(t.id)) total += 20; });
+
+    BS.glossary.forEach(function (g) {
+      total += CARD_XP[s.card(g.id).box] || 0;
+    });
+
+    BS.quiz.forEach(function (q) {
+      var r = s.question(q.id);
+      if (!r.tries) return;
+      total += 1;                 /* for having a go */
+      if (r.lastOk) total += 5;   /* for currently knowing it */
+    });
+
+    BS.written.forEach(function (w) {
+      total += s.written(w.id).best * 4;
+    });
+
+    BS.cases.forEach(function (c) {
+      c.questions.forEach(function (q, qi) {
+        q.parts.forEach(function (p, pi) {
+          total += s.caseAns(c.id + '.' + qi + '.' + pi).best * 3;
+        });
+      });
+    });
+
+    total += (s.rush().best || 0) * 2;
+    return total;
+  }
+
+  function level(x) {
+    if (x === undefined) x = xp();
+    var cur = LEVELS[0];
+    for (var i = 0; i < LEVELS.length; i++) if (x >= LEVELS[i].xp) cur = LEVELS[i];
+    var next = LEVELS[cur.n] || null;   /* LEVELS is 0-indexed, so [cur.n] is the next one */
+    return {
+      n: cur.n,
+      name: cur.name,
+      xp: x,
+      into: x - cur.xp,
+      need: next ? next.xp - cur.xp : 0,
+      toNext: next ? next.xp - x : 0,
+      next: next,
+      pct: next ? Math.min(100, Math.round((x - cur.xp) / (next.xp - cur.xp) * 100)) : 100
+    };
+  }
+
+  /* ---------------- mastery ---------------- */
+
+  /* A blended 0-100 score per unit. Reading alone caps you low on purpose —
+     you cannot "master" a unit without answering questions on it.            */
+  function mastery(unit) {
+    var s = BS.store;
+    var topics = BS.unitTopics(unit);
+    if (!topics.length) return 0;
+
+    var read = topics.filter(function (t) { return s.isRead(t.id); }).length / topics.length;
+
+    var cards = BS.glossary.filter(function (g) { return g.u === unit; });
+    var known = cards.length
+      ? cards.filter(function (g) { return s.card(g.id).box >= 4; }).length / cards.length : 0;
+
+    var qs = BS.quiz.filter(function (q) { return q.u === unit; });
+    var right = qs.length
+      ? qs.filter(function (q) { return s.question(q.id).lastOk; }).length / qs.length : 0;
+
+    var ws = BS.written.filter(function (w) { return w.u === unit; });
+    var wGot = 0, wMax = 0;
+    ws.forEach(function (w) { wGot += s.written(w.id).best; wMax += w.marks; });
+    var written = wMax ? wGot / wMax : 0;
+
+    return Math.round((read * 0.20 + known * 0.30 + right * 0.25 + written * 0.25) * 100);
+  }
+
+  function overallMastery() {
+    var t = 0;
+    BS.units.forEach(function (u) { t += mastery(u.n); });
+    return Math.round(t / BS.units.length);
+  }
+
+  /* ---------------- achievements ---------------- */
+
+  var s = function () { return BS.store; };
+
+  function readCount() {
+    return BS.notes.filter(function (t) { return s().isRead(t.id); }).length;
+  }
+  function cardsAtBox(b) {
+    return BS.glossary.filter(function (g) { return s().card(g.id).box >= b; }).length;
+  }
+  function quizAnswered() {
+    return BS.quiz.filter(function (q) { return s().question(q.id).tries; }).length;
+  }
+  function quizRight() {
+    return BS.quiz.filter(function (q) { return s().question(q.id).lastOk; }).length;
+  }
+  function writtenDone() {
+    return BS.written.filter(function (w) { return s().written(w.id).tries; }).length;
+  }
+  function writtenFull() {
+    return BS.written.filter(function (w) {
+      var r = s().written(w.id); return r.tries && r.best >= w.marks;
+    }).length;
+  }
+  function topicQuizPerfect(tp) {
+    var qs = BS.quiz.filter(function (q) { return q.tp === tp; });
+    return qs.length > 0 && qs.every(function (q) { return s().question(q.id).lastOk; });
+  }
+  function unitAllRead(u) {
+    var ts = BS.unitTopics(u);
+    return ts.length > 0 && ts.every(function (t) { return s().isRead(t.id); });
+  }
+  function caseParts(cid) {
+    var c = BS.cases.filter(function (x) { return x.id === cid; })[0];
+    if (!c) return { got: 0, max: 0, done: 0, parts: 0 };
+    var got = 0, max = 0, done = 0, parts = 0;
+    c.questions.forEach(function (q, qi) {
+      q.parts.forEach(function (p, pi) {
+        parts++; max += p.marks;
+        var a = s().caseAns(cid + '.' + qi + '.' + pi);
+        if (a.outOf) { done++; got += a.best; }
+      });
+    });
+    return { got: got, max: max, done: done, parts: parts };
+  }
+
+  var ACHIEVEMENTS = [
+    /* getting going */
+    { id: 'first-topic', icon: '📖', name: 'Opening the file', d: 'Read your first topic.', group: 'Getting going',
+      test: function () { return readCount() >= 1; } },
+    { id: 'first-card', icon: '🗂', name: 'Card carrying', d: 'Grade your first flashcard.', group: 'Getting going',
+      test: function () { return cardsAtBox(1) >= 1; } },
+    { id: 'first-written', icon: '✍️', name: 'Pen to paper', d: 'Write and self-mark your first exam answer.', group: 'Getting going',
+      test: function () { return writtenDone() >= 1; } },
+    { id: 'first-case', icon: '📋', name: 'Case opened', d: 'Mark your first case study part.', group: 'Getting going',
+      test: function () { return caseParts('c1').done + caseParts('c2').done >= 1; } },
+
+    /* coverage */
+    { id: 'unit1', icon: '1️⃣', name: 'Understanding business activity', d: 'Read every topic in Unit 1.', group: 'Coverage',
+      test: function () { return unitAllRead(1); } },
+    { id: 'unit2', icon: '2️⃣', name: 'People in business', d: 'Read every topic in Unit 2.', group: 'Coverage',
+      test: function () { return unitAllRead(2); } },
+    { id: 'unit3', icon: '3️⃣', name: 'Marketing', d: 'Read every topic in Unit 3.', group: 'Coverage',
+      test: function () { return unitAllRead(3); } },
+    { id: 'unit4', icon: '4️⃣', name: 'Operations management', d: 'Read every topic in Unit 4.', group: 'Coverage',
+      test: function () { return unitAllRead(4); } },
+    { id: 'unit5', icon: '5️⃣', name: 'Financial information', d: 'Read every topic in Unit 5.', group: 'Coverage',
+      test: function () { return unitAllRead(5); } },
+    { id: 'unit6', icon: '6️⃣', name: 'External influences', d: 'Read every topic in Unit 6.', group: 'Coverage',
+      test: function () { return unitAllRead(6); } },
+    { id: 'all-topics', icon: '🗺', name: 'Whole syllabus', d: 'Read all 25 sub-topics.', group: 'Coverage',
+      test: function () { return readCount() >= BS.notes.length; } },
+
+    /* recall */
+    { id: 'cards-25', icon: '🌱', name: 'Taking root', d: 'Get 25 flashcards to box 4 or above.', group: 'Recall',
+      test: function () { return cardsAtBox(4) >= 25; } },
+    { id: 'cards-100', icon: '🌳', name: 'Hundred strong', d: 'Get 100 flashcards to box 4 or above.', group: 'Recall',
+      test: function () { return cardsAtBox(4) >= 100; } },
+    { id: 'cards-all', icon: '🧠', name: 'Total recall', d: 'Get every one of the 242 key terms to box 4 or above.', group: 'Recall',
+      test: function () { return cardsAtBox(4) >= BS.glossary.length; } },
+    { id: 'box5-50', icon: '💎', name: 'Locked in', d: 'Push 50 flashcards all the way to box 5.', group: 'Recall',
+      test: function () { return cardsAtBox(5) >= 50; } },
+
+    /* quiz */
+    { id: 'quiz-50', icon: '✅', name: 'Half a century', d: 'Answer 50 different quiz questions.', group: 'Quiz',
+      test: function () { return quizAnswered() >= 50; } },
+    { id: 'quiz-all', icon: '🎯', name: 'Every question asked', d: 'Attempt all 120 quiz questions.', group: 'Quiz',
+      test: function () { return quizAnswered() >= BS.quiz.length; } },
+    { id: 'quiz-100-right', icon: '🏹', name: 'Sharpshooter', d: 'Have 100 quiz questions currently correct.', group: 'Quiz',
+      test: function () { return quizRight() >= 100; } },
+    { id: 'breakeven-boss', icon: '📈', name: 'Break-even boss', d: 'Get every 4.2 question right — the topic that catches most people.', group: 'Quiz',
+      test: function () { return topicQuizPerfect('4.2'); } },
+    { id: 'spiced', icon: '💱', name: 'SPICED', d: 'Get every 6.3 exchange rate question right.', group: 'Quiz',
+      test: function () { return topicQuizPerfect('6.3'); } },
+
+    /* written and cases — the ones that actually move a grade */
+    { id: 'written-10', icon: '📝', name: 'Ten in the bank', d: 'Self-mark 10 written answers.', group: 'Written work',
+      test: function () { return writtenDone() >= 10; } },
+    { id: 'written-all', icon: '🖋', name: 'Every question written', d: 'Attempt all 27 written questions.', group: 'Written work',
+      test: function () { return writtenDone() >= BS.written.length; } },
+    { id: 'written-full-5', icon: '⭐', name: 'Full marks, five times', d: 'Score full marks on five written questions.', group: 'Written work',
+      test: function () { return writtenFull() >= 5; } },
+    { id: 'case-complete', icon: '📊', name: 'Paper finished', d: 'Mark every part of a whole case study.', group: 'Written work',
+      test: function () {
+        var a = caseParts('c1'), b = caseParts('c2');
+        return (a.parts && a.done === a.parts) || (b.parts && b.done === b.parts);
+      } },
+    { id: 'case-70', icon: '🥇', name: 'Grade A paper', d: 'Score 70% or more across a full case study.', group: 'Written work',
+      test: function () {
+        return [caseParts('c1'), caseParts('c2')].some(function (c) {
+          return c.parts && c.done === c.parts && c.max && c.got / c.max >= 0.7;
+        });
+      } },
+    { id: 'both-cases', icon: '🏆', name: 'Both papers sat', d: 'Complete every part of both case studies.', group: 'Written work',
+      test: function () {
+        var a = caseParts('c1'), b = caseParts('c2');
+        return a.parts && b.parts && a.done === a.parts && b.done === b.parts;
+      } },
+
+    /* exam rush */
+    { id: 'rush-first', icon: '⏱', name: 'Under pressure', d: 'Play your first Exam Rush.', group: 'Exam Rush',
+      test: function () { return s().rush().plays >= 1; } },
+    { id: 'rush-300', icon: '🔥', name: 'On a roll', d: 'Score 300 or more in Exam Rush.', group: 'Exam Rush',
+      test: function () { return s().rush().best >= 300; } },
+    { id: 'rush-combo', icon: '⚡', name: 'Ten in a row', d: 'Hit a 10-answer streak in Exam Rush.', group: 'Exam Rush',
+      test: function () { return (s().rush().bestCombo || 0) >= 10; } },
+
+    /* consistency */
+    { id: 'streak-3', icon: '📅', name: 'Three days', d: 'Study three days in a row.', group: 'Consistency',
+      test: function () { return s().streak() >= 3; } },
+    { id: 'streak-7', icon: '🗓', name: 'A full week', d: 'Study seven days in a row.', group: 'Consistency',
+      test: function () { return s().streak() >= 7; } },
+    { id: 'streak-30', icon: '🧗', name: 'A month of it', d: 'Study thirty days in a row.', group: 'Consistency',
+      test: function () { return s().streak() >= 30; } },
+
+    /* mastery */
+    { id: 'unit-80', icon: '🎓', name: 'Unit mastered', d: 'Reach 80% mastery in any unit.', group: 'Mastery',
+      test: function () { return BS.units.some(function (u) { return mastery(u.n) >= 80; }); } },
+    { id: 'all-70', icon: '👑', name: 'Exam ready', d: 'Reach 70% mastery in all six units.', group: 'Mastery',
+      test: function () { return BS.units.every(function (u) { return mastery(u.n) >= 70; }); } }
+  ];
+
+  function earned() {
+    return ACHIEVEMENTS.filter(function (a) {
+      try { return a.test(); } catch (e) { return false; }
+    }).map(function (a) { return a.id; });
+  }
+
+  function byId(id) {
+    return ACHIEVEMENTS.filter(function (a) { return a.id === id; })[0];
+  }
+
+  /* ---------------- daily goal ---------------- */
+
+  var DAILY_GOAL = 25;   /* study actions — a card graded, a question answered … */
+
+  function today() {
+    var d = BS.store.all().days[BS.store.today()] || 0;
+    return { done: d, goal: DAILY_GOAL, pct: Math.min(100, Math.round(d / DAILY_GOAL * 100)), met: d >= DAILY_GOAL };
+  }
+
+  /* ---------------- change detection for toasts ---------------- */
+
+  var snapshot = null;
+
+  function snap() {
+    snapshot = { xp: xp(), ach: earned(), level: level().n };
+  }
+
+  /* Returns what changed since the last snap(), for the UI to announce. */
+  function settle() {
+    if (!snapshot) { snap(); return { xp: 0, unlocked: [], levelUp: null }; }
+    var now = { xp: xp(), ach: earned(), level: level().n };
+    var before = snapshot;
+    snapshot = now;
+    var fresh = now.ach.filter(function (id) { return before.ach.indexOf(id) === -1; });
+    return {
+      xp: now.xp - before.xp,
+      unlocked: fresh.map(byId).filter(Boolean),
+      levelUp: now.level > before.level ? level() : null
+    };
+  }
+
+  return {
+    LEVELS: LEVELS,
+    ACHIEVEMENTS: ACHIEVEMENTS,
+    xp: xp,
+    level: level,
+    mastery: mastery,
+    overallMastery: overallMastery,
+    earned: earned,
+    achievement: byId,
+    today: today,
+    snap: snap,
+    settle: settle
+  };
+})();
+</script>
+<script>
 /* ===== js/render.js ===== */
 /* render.js — small helpers to turn note data into HTML */
 
@@ -6116,8 +6540,10 @@ V.topic = function (id) {
   if (!t) return '<h1>Topic not found</h1><p><a href="#/notes">Back to the syllabus</a></p>';
 
   var s = BS.store;
+  var wasRead = s.isRead(t.id);
   s.markRead(t.id);
   s.tick(1);
+  if (!wasRead) setTimeout(function () { BS.announce(); }, 60);
 
   var unit = BS.units.filter(function (u) { return u.n === t.unit; })[0];
   var all = BS.notes;
@@ -6425,6 +6851,7 @@ V.afterCards = function (root) {
     var g = state.queue[state.i];
     s.gradeCard(g.id, ok);
     s.tick(1);
+    BS.announce();
     if (ok) state.right++;
     state.done++;
     state.i++; state.flipped = false;
@@ -6572,6 +6999,7 @@ V.afterQuiz = function (root) {
     if (ok) state.score++;
     s.gradeQuestion(q.id, ok);
     s.tick(1);
+    BS.announce();
     state.log.push({ q: q, chose: idx, ok: ok });
 
     var btns = area.querySelectorAll('.opt');
@@ -6886,6 +7314,7 @@ V.afterWritten = function (root) {
       var score = Math.min(q.marks, state.got.filter(Boolean).length);
       s.saveWritten(q.id, score, q.marks, text);
       s.tick(2);
+      BS.announce();
       state.total += score; state.max += q.marks;
       state.i++;
       drawQ();
@@ -7102,6 +7531,7 @@ V.afterCase = function (root) {
         '<div class="bar' + (pctv >= 80 ? ' good' : '') + '" style="margin-top:10px"><i style="width:' + pctv + '%"></i></div>';
       s.saveCase(key, score, part.marks, ta ? ta.value : '');
       s.tick(1);
+      BS.announce();
       total();
     }
     update();
@@ -7154,6 +7584,233 @@ V.afterCase = function (root) {
     var a = s.caseAns(key);
     s.saveCase(key, a.best, a.outOf, ta.value);
   });
+};
+
+window.V = V;
+</script>
+<script>
+/* ===== js/views-game.js ===== */
+/* views-game.js — Exam Rush (timed, lives, combo) and the achievements gallery */
+
+var V = window.V || {};
+
+/* ================= Exam Rush ================= */
+
+V.rush = function () {
+  var r = BS.store.rush();
+  var h = '<div class="eyebrow">Timed challenge</div><h1>Exam Rush</h1>';
+  h += '<p class="lead">Ninety seconds. Three lives. Every correct answer in a row builds your multiplier — ' +
+    'break the streak and it resets. It is deliberately faster than you can comfortably think, ' +
+    'because recall you have to hunt for is recall that will desert you in the exam.</p>';
+
+  h += '<div class="grid g3" style="margin-bottom:16px">' +
+    stat('Best score', r.best || 0) +
+    stat('Longest streak', r.bestCombo || 0) +
+    stat('Rounds played', r.plays || 0) +
+    '</div>';
+
+  h += '<div class="card"><h3 class="mt0">How the scoring works</h3><ul>' +
+    '<li>A correct answer scores <strong>10 × your current multiplier</strong>.</li>' +
+    '<li>The multiplier goes up one step every <strong>3 correct in a row</strong>, to a maximum of <strong>5×</strong>.</li>' +
+    '<li>A wrong answer costs a life and resets the multiplier to 1×.</li>' +
+    '<li>Answers still count towards your normal quiz progress, so this is real revision, not a side game.</li>' +
+    '</ul>' +
+    '<div class="btnrow"><button class="btn primary" id="rushStart">Start the clock</button>' +
+    '<a class="btn" href="#/quiz">Untimed quiz instead</a></div></div>';
+  h += '<div id="rushArea"></div>';
+  return h;
+
+  function stat(k, v) {
+    return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
+  }
+};
+
+V.afterRush = function (root) {
+  var s = BS.store;
+  var area = root.querySelector('#rushArea');
+  var startBtn = root.querySelector('#rushStart');
+  var LEN = 90;
+  var st = null, iv = null;
+
+  V._rushCleanup = function () { if (iv) clearInterval(iv); iv = null; };
+
+  startBtn.addEventListener('click', start);
+
+  function start() {
+    st = {
+      left: LEN, score: 0, lives: 3, combo: 0, bestCombo: 0, mult: 1,
+      queue: R.shuffle(BS.quiz.slice()), i: 0, answered: false, right: 0, asked: 0
+    };
+    startBtn.disabled = true;
+    startBtn.textContent = 'Running…';
+    draw();
+    iv = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    st.left--;
+    var t = area.querySelector('#rTime');
+    if (t) {
+      t.textContent = st.left;
+      t.classList.toggle('low', st.left <= 15);
+    }
+    if (st.left <= 0) end('Time');
+  }
+
+  function multFor(combo) { return Math.min(5, 1 + Math.floor(combo / 3)); }
+
+  function draw() {
+    if (st.i >= st.queue.length) st.i = 0;
+    var q = st.queue[st.i];
+    st.answered = false;
+
+    var h = '<div class="rush-hud">' +
+      '<span><span class="r-lab">Time</span><br/><span class="r-time" id="rTime">' + st.left + '</span></span>' +
+      '<span><span class="r-lab">Score</span><br/><span class="r-score" id="rScore">' + st.score + '</span></span>' +
+      '<span><span class="r-lab">Streak</span><br/><span class="combo' + (st.combo >= 3 ? ' on' : '') +
+      (st.combo >= 9 ? ' big' : '') + '" id="rCombo">' + st.combo + ' · ' + multFor(st.combo) + '×</span></span>' +
+      '<span><span class="r-lab">Lives</span><br/><span class="lives" id="rLives">' +
+      '❤️'.repeat(st.lives) + '🖤'.repeat(3 - st.lives) + '</span></span>' +
+      '</div>';
+
+    h += '<div class="card" id="rCard"><p class="qtext">' + R.inline(q.q) + '</p><div class="opts" id="rOpts">';
+    q.o.forEach(function (o, idx) {
+      h += '<button class="opt" data-i="' + idx + '"><span class="letter">' + 'ABCD'[idx] + '</span><span>' +
+        R.inline(o) + '</span></button>';
+    });
+    h += '</div></div>';
+    area.innerHTML = h;
+
+    area.querySelector('#rOpts').addEventListener('click', function (e) {
+      var b = e.target.closest('.opt');
+      if (!b || st.answered) return;
+      answer(parseInt(b.getAttribute('data-i'), 10));
+    });
+  }
+
+  function answer(idx) {
+    var q = st.queue[st.i];
+    st.answered = true;
+    st.asked++;
+    var ok = idx === q.a;
+
+    s.gradeQuestion(q.id, ok);
+    s.tick(1);
+
+    var card = area.querySelector('#rCard');
+    var btns = area.querySelectorAll('.opt');
+    Array.prototype.forEach.call(btns, function (b, i) {
+      b.disabled = true;
+      if (i === q.a) b.classList.add('correct');
+      else if (i === idx) b.classList.add('wrong');
+    });
+
+    if (ok) {
+      st.right++;
+      st.combo++;
+      st.bestCombo = Math.max(st.bestCombo, st.combo);
+      st.score += 10 * multFor(st.combo);
+      if (card) { card.classList.remove('flash', 'bad'); void card.offsetWidth; card.classList.add('flash'); }
+    } else {
+      st.combo = 0;
+      st.lives--;
+      if (card) { card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash', 'bad'); }
+    }
+
+    /* update the HUD in place so the clock keeps reading naturally */
+    var sc = area.querySelector('#rScore'); if (sc) sc.textContent = st.score;
+    var cb = area.querySelector('#rCombo');
+    if (cb) {
+      cb.textContent = st.combo + ' · ' + multFor(st.combo) + '×';
+      cb.classList.toggle('on', st.combo >= 3);
+      cb.classList.toggle('big', st.combo >= 9);
+    }
+    var lv = area.querySelector('#rLives');
+    if (lv) lv.textContent = '❤️'.repeat(Math.max(0, st.lives)) + '🖤'.repeat(3 - Math.max(0, st.lives));
+
+    if (st.lives <= 0) { setTimeout(function () { end('Out of lives'); }, 550); return; }
+    if (st.left <= 0) return;
+    setTimeout(function () { if (st && st.left > 0 && st.lives > 0) { st.i++; draw(); } }, 550);
+  }
+
+  function end(reason) {
+    if (!st) return;
+    clearInterval(iv); iv = null;
+    var final = st.score, bc = st.bestCombo, asked = st.asked, right = st.right;
+    var prevBest = s.rush().best;
+    s.logRush(final, bc);
+    s.logSession('rush', right, asked);
+    var beat = final > prevBest && prevBest > 0;
+    st = null;
+
+    startBtn.disabled = false;
+    startBtn.textContent = 'Play again';
+
+    area.innerHTML = '<div class="card center"><div class="eyebrow">' + R.esc(reason) + '</div>' +
+      '<h2 class="mt0">' + (beat ? 'New best score' : 'Round over') + '</h2>' +
+      '<p style="font-size:44px;font-weight:800;margin:6px 0;letter-spacing:-.02em">' + final + '</p>' +
+      '<p class="small">' + right + ' correct out of ' + asked + ' · longest streak ' + bc +
+      (beat ? ' · you beat your previous best of ' + prevBest : '') + '</p>' +
+      '<div class="btnrow" style="justify-content:center">' +
+      '<button class="btn primary" id="rAgain">Go again</button>' +
+      '<a class="btn" href="#/quiz">Review these properly</a></div>' +
+      '<p class="small" style="margin:14px 0 0">Speed is a symptom, not the goal. Anything you fumbled here ' +
+      'is worth re-reading in the notes.</p></div>';
+
+    area.querySelector('#rAgain').addEventListener('click', start);
+    BS.announce();
+  }
+};
+
+/* ================= Achievements ================= */
+
+V.achievements = function () {
+  var got = BS.game.earned();
+  var all = BS.game.ACHIEVEMENTS;
+  var lv = BS.game.level();
+
+  var h = '<div class="eyebrow">Progress</div><h1>Achievements</h1>';
+  h += '<p class="lead">' + got.length + ' of ' + all.length + ' unlocked. ' +
+    'Every one of these is earned by studying — none of them unlock content, because nothing in this app is locked.</p>';
+
+  h += '<div class="bar' + (got.length === all.length ? ' good' : '') + '" style="margin-bottom:22px">' +
+    '<i style="width:' + Math.round(got.length / all.length * 100) + '%"></i></div>';
+
+  var groups = [];
+  all.forEach(function (a) { if (groups.indexOf(a.group) === -1) groups.push(a.group); });
+
+  groups.forEach(function (g) {
+    var items = all.filter(function (a) { return a.group === g; });
+    var n = items.filter(function (a) { return got.indexOf(a.id) !== -1; }).length;
+    h += '<h2>' + R.esc(g) + ' <span class="pill' + (n === items.length ? ' g' : '') + '">' +
+      n + '/' + items.length + '</span></h2><div class="ach-grid">';
+    items.forEach(function (a) {
+      var has = got.indexOf(a.id) !== -1;
+      h += '<div class="ach ' + (has ? 'got' : 'locked') + '">' +
+        '<span class="a-ico">' + a.icon + '</span><span>' +
+        '<span class="a-n">' + R.esc(a.name) + '</span>' +
+        '<span class="a-d">' + R.esc(a.d) + '</span></span></div>';
+    });
+    h += '</div>';
+  });
+
+  h += '<h2>The career ladder</h2><div class="twrap"><table><thead><tr><th>Level</th><th>Title</th><th>XP</th></tr></thead><tbody>';
+  BS.game.LEVELS.forEach(function (l) {
+    var here = l.n === lv.n;
+    h += '<tr' + (here ? ' style="background:var(--accent-soft)"' : '') + '>' +
+      '<td><strong>' + l.n + '</strong></td>' +
+      '<td>' + R.esc(l.name) + (here ? ' <span class="pill a">you are here</span>' : '') + '</td>' +
+      '<td>' + l.xp.toLocaleString() + '</td></tr>';
+  });
+  h += '</tbody></table></div>';
+
+  h += '<div class="callout"><span class="clabel">How XP works</span>' +
+    '<p>XP is calculated from your actual progress, not banked as you go. Reading a topic, ' +
+    'pushing a flashcard up a box, getting a quiz question right, and marks you score on written ' +
+    'answers and case studies all count. Re-answering something you already know does not add XP — ' +
+    'the only way the number rises is by learning something new.</p></div>';
+
+  return h;
 };
 
 window.V = V;
@@ -7521,14 +8178,11 @@ window.V = V;
 var V = window.V || {};
 
 V.home = function () {
-  var s = BS.store, d = s.all();
+  var s = BS.store, g = BS.game;
   var total = BS.notes.length;
   var read = BS.notes.filter(function (t) { return s.isRead(t.id); }).length;
 
-  var confCount = { 1: 0, 2: 0, 3: 0 };
-  BS.notes.forEach(function (t) { var c = s.conf(t.id); if (c) confCount[c]++; });
-
-  var cardIds = BS.glossary.map(function (g) { return g.id; });
+  var cardIds = BS.glossary.map(function (x) { return x.id; });
   var mastered = cardIds.filter(function (id) { return s.card(id).box >= 4; }).length;
   var due = s.dueCards(cardIds).length;
 
@@ -7543,85 +8197,128 @@ V.home = function () {
   });
 
   var streak = s.streak();
-  var pct = total ? Math.round(read / total * 100) : 0;
+  var lv = g.level();
+  var day = g.today();
+  var got = g.earned();
 
   var h = '';
   h += '<div class="eyebrow">Cambridge IGCSE 0450</div>';
   h += '<h1>Business Studies revision</h1>';
-  var caseMarks = 0;
-  BS.cases.forEach(function (c) {
-    c.questions.forEach(function (q) { q.parts.forEach(function (p) { caseMarks += p.marks; }); });
-  });
-  h += '<p class="lead">Six units and ' + total + ' syllabus topics, with ' + BS.glossary.length +
-       ' key terms, ' + BS.quiz.length + ' quiz questions, ' + BS.written.length +
-       ' written questions with mark schemes, and ' + BS.cases.length + ' full case studies worth ' +
-       caseMarks + ' marks. Everything is saved in this browser.</p>';
 
-  /* stats */
-  h += '<div class="grid g4" style="margin-bottom:18px">';
-  h += stat('Topics read', read + ' / ' + total, pct + '% of the syllabus');
+  /* ---- level ---- */
+  h += '<div class="levelcard"><div class="lv-row">' +
+    '<span class="lv-badge">' + lv.n + '</span>' +
+    '<span><span class="lv-name">' + R.esc(lv.name) + '</span>' +
+    '<span class="lv-sub">' + (lv.next
+      ? lv.toNext.toLocaleString() + ' XP to ' + R.esc(lv.next.name)
+      : 'Top of the ladder — the whole syllabus is behind you') + '</span></span>' +
+    '<span class="lv-xp"><span class="n">' + lv.xp.toLocaleString() + '</span>' +
+    '<span class="l">XP</span></span></div>' +
+    '<div class="bar' + (!lv.next ? ' good' : '') + '" style="margin-top:14px"><i style="width:' + lv.pct + '%"></i></div>' +
+    '</div>';
+
+  /* ---- today ---- */
+  h += '<div class="card goalcard">' + ring(day.pct, day.met) +
+    '<span class="g-txt"><h3 class="mt0" style="margin-bottom:3px">Today\'s goal</h3>' +
+    '<p class="small" style="margin:0">' +
+    (day.met
+      ? '<strong>Done.</strong> ' + day.done + ' study actions today. Anything more is a bonus.'
+      : day.done + ' of ' + day.goal + ' study actions. A flashcard graded, a question answered or a mark ticked all count.') +
+    '</p>' +
+    '<p class="small" style="margin:6px 0 0">🔥 ' + (streak
+      ? '<strong>' + streak + ' day' + (streak === 1 ? '' : 's') + '</strong> in a row'
+      : 'No streak yet — study today to start one') + '</p></span></div>';
+
+  /* ---- stats ---- */
+  h += '<div class="grid g4" style="margin:16px 0">';
+  h += stat('Topics read', read + ' / ' + total, Math.round(read / total * 100) + '% of the syllabus');
   h += stat('Cards mastered', mastered, due + ' due for review');
   h += stat('Quiz accuracy', acc === null ? '—' : acc + '%', tries + ' answered');
   h += stat('Written marks', wAvail ? wGot + '/' + wAvail : '—', wDone + ' of ' + BS.written.length + ' attempted');
-  h += stat('Study streak', streak + (streak === 1 ? ' day' : ' days'), streak ? 'Keep it going' : 'Study today to start');
   h += '</div>';
 
-  /* next actions */
-  h += '<div class="card"><h2 class="mt0">Pick up where you left off</h2>';
-  h += '<div class="btnrow">';
+  /* ---- next actions ---- */
+  h += '<div class="card"><h2 class="mt0">Pick up where you left off</h2><div class="btnrow">';
   if (due > 0) h += '<a class="btn primary" href="#/cards">Review ' + due + ' due flashcard' + (due === 1 ? '' : 's') + '</a>';
   else h += '<a class="btn primary" href="#/cards">Practise flashcards</a>';
   var nextTopic = BS.notes.filter(function (t) { return !s.isRead(t.id); })[0];
   if (nextTopic) h += '<a class="btn" href="#/notes/' + nextTopic.id + '">Next topic: ' + nextTopic.id + ' ' + R.esc(nextTopic.title) + '</a>';
   h += '<a class="btn" href="#/written">Write an exam answer</a>';
-  h += '<a class="btn" href="#/quiz">Take a mixed quiz</a>';
+  h += '<a class="btn" href="#/rush">⚡ Exam Rush</a>';
   h += '<a class="btn" href="#/cases">Do a case study</a>';
   h += '</div>';
   h += '<p class="small" style="margin:14px 0 0">Multiple choice is useful for checking recall, but the exam is written. ' +
-    'If you only do one thing today, do a <a href="#/written">written answer</a> and mark it yourself.</p>';
-  h += '</div>';
+    'If you only do one thing today, do a <a href="#/written">written answer</a> and mark it yourself.</p></div>';
 
-  /* weak topics */
+  /* ---- mastery ---- */
+  h += '<div class="card"><h2 class="mt0">Mastery by unit</h2>' +
+    '<p class="small" style="margin-top:-4px">Blends topics read, flashcards known, quiz questions currently right and written marks scored. ' +
+    'Reading alone cannot get you far up the bar.</p>';
+  BS.units.forEach(function (u) {
+    var m = BS.game.mastery(u.n);
+    h += '<div class="mastery-row">' +
+      '<a class="m-n" href="#/notes#u' + u.n + '" style="text-decoration:none">' + u.n + '. ' + R.esc(u.title) + '</a>' +
+      '<span style="flex:0 0 42%;max-width:230px"><span class="bar' + (m >= 70 ? ' good' : '') +
+      '"><i style="width:' + m + '%"></i></span></span>' +
+      '<span class="m-v">' + m + '%</span></div>';
+  });
+  h += '<p class="small" style="margin-bottom:0">Overall: <strong>' + BS.game.overallMastery() + '%</strong></p></div>';
+
+  /* ---- weak topics ---- */
   var weak = BS.notes.filter(function (t) { return s.conf(t.id) === 1; });
   if (weak.length) {
     h += '<div class="card"><h2 class="mt0">Topics you marked as shaky</h2>';
     weak.forEach(function (t) {
       h += '<a class="topic-row" href="#/notes/' + t.id + '"><span class="dot c1"></span>' +
-           '<span class="n">' + t.id + '</span><span class="t">' + R.esc(t.title) + '</span>' +
-           '<span class="pill b">Revise</span></a>';
+        '<span class="n">' + t.id + '</span><span class="t">' + R.esc(t.title) + '</span>' +
+        '<span class="pill b">Revise</span></a>';
     });
     h += '</div>';
   }
 
-  /* unit progress */
-  h += '<div class="card"><h2 class="mt0">Progress by unit</h2>';
-  BS.units.forEach(function (u) {
-    var ts = BS.unitTopics(u.n);
-    var r = ts.filter(function (t) { return s.isRead(t.id); }).length;
-    var p = ts.length ? Math.round(r / ts.length * 100) : 0;
-    h += '<div style="margin-bottom:14px">';
-    h += '<div style="display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:5px">' +
-         '<a href="#/notes#u' + u.n + '" style="text-decoration:none;font-weight:600">' + u.n + '. ' + R.esc(u.title) + '</a>' +
-         '<span class="small">' + r + '/' + ts.length + '</span></div>';
-    h += '<div class="bar' + (p === 100 ? ' good' : '') + '"><i style="width:' + p + '%"></i></div>';
+  /* ---- achievements ---- */
+  h += '<div class="card"><h2 class="mt0">Achievements <span class="pill' +
+    (got.length === BS.game.ACHIEVEMENTS.length ? ' g' : '') + '">' + got.length + '/' +
+    BS.game.ACHIEVEMENTS.length + '</span></h2>';
+  var recent = got.slice(-4).map(function (id) { return BS.game.achievement(id); }).filter(Boolean);
+  var nextUp = BS.game.ACHIEVEMENTS.filter(function (a) { return got.indexOf(a.id) === -1; }).slice(0, 3);
+  if (recent.length) {
+    h += '<h3>Unlocked</h3><div class="ach-grid">';
+    recent.forEach(function (a) {
+      h += '<div class="ach got"><span class="a-ico">' + a.icon + '</span><span>' +
+        '<span class="a-n">' + R.esc(a.name) + '</span><span class="a-d">' + R.esc(a.d) + '</span></span></div>';
+    });
     h += '</div>';
-  });
-  h += '</div>';
-
-  /* confidence key */
-  if (confCount[1] + confCount[2] + confCount[3] > 0) {
-    h += '<div class="card tight"><span class="small">Self-rated confidence: </span>' +
-         '<span class="pill b">' + confCount[1] + ' shaky</span> ' +
-         '<span class="pill w">' + confCount[2] + ' getting there</span> ' +
-         '<span class="pill g">' + confCount[3] + ' confident</span></div>';
   }
+  if (nextUp.length) {
+    h += '<h3>Next up</h3><div class="ach-grid">';
+    nextUp.forEach(function (a) {
+      h += '<div class="ach locked"><span class="a-ico">' + a.icon + '</span><span>' +
+        '<span class="a-n">' + R.esc(a.name) + '</span><span class="a-d">' + R.esc(a.d) + '</span></span></div>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="btnrow"><a class="btn sm" href="#/achievements">See all achievements</a></div></div>';
 
-  h += '<p class="small">Built for the Cambridge IGCSE Business Studies 0450 syllabus. Always check the current syllabus on the Cambridge website for the exact content of your exam series.</p>';
+  h += '<p class="small">Built for the Cambridge IGCSE Business Studies 0450 syllabus. Always check the current syllabus ' +
+    'on the Cambridge website for the exact content of your exam series.</p>';
 
   return h;
 
   function stat(k, v, sub) {
     return '<div class="stat"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="s">' + sub + '</div></div>';
+  }
+
+  function ring(pct, done) {
+    var r = 26, c = 2 * Math.PI * r;
+    var off = c * (1 - pct / 100);
+    return '<svg class="ring' + (done ? ' done' : '') + '" width="66" height="66" viewBox="0 0 66 66" aria-hidden="true">' +
+      '<circle class="track" cx="33" cy="33" r="' + r + '" fill="none" stroke-width="7"/>' +
+      '<circle class="fill" cx="33" cy="33" r="' + r + '" fill="none" stroke-width="7" ' +
+      'stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" ' +
+      'transform="rotate(-90 33 33)"/>' +
+      '<text x="33" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor">' +
+      (done ? '✓' : pct + '%') + '</text></svg>';
   }
 };
 window.V = V;
@@ -7634,6 +8331,42 @@ window.V = V;
   var main = document.getElementById('main');
   var sidebar = document.getElementById('sidebar');
   var unitNav = document.getElementById('unitNav');
+
+  /* ---------------- toasts ---------------- */
+  var toastBox = document.createElement('div');
+  toastBox.id = 'toasts';
+  document.body.appendChild(toastBox);
+
+  function toast(kind, icon, title, sub, ms) {
+    var el = document.createElement('div');
+    el.className = 'toast ' + kind;
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<span class="t-ico">' + icon + '</span><span><span class="t-t">' +
+      R.esc(title) + '</span>' + (sub ? '<span class="t-s">' + R.esc(sub) + '</span>' : '') + '</span>';
+    toastBox.appendChild(el);
+    setTimeout(function () {
+      el.classList.add('t-out');
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 240);
+    }, ms || 2600);
+  }
+  BS.toast = toast;
+
+  /* Announce whatever changed since the last BS.game.snap(). Views call this
+     after any action that could have moved progress forward. */
+  BS.announce = function () {
+    var d = BS.game.settle();
+    if (d.xp > 0) toast('t-xp', '✦', '+' + d.xp + ' XP', null, 1900);
+    d.unlocked.forEach(function (a, i) {
+      setTimeout(function () { toast('t-ach', a.icon, a.name, a.d, 4200); }, 300 + i * 450);
+    });
+    if (d.levelUp) {
+      setTimeout(function () {
+        toast('t-lvl', '🎉', 'Level ' + d.levelUp.n + ' — ' + d.levelUp.name, 'Keep going.', 4600);
+      }, 150);
+    }
+    return d;
+  };
+  BS.game.snap();
 
   /* ---------------- theme ---------------- */
   function applyTheme(t) {
@@ -7718,6 +8451,8 @@ window.V = V;
     else if (p[0] === 'written') { html = V.written(r.params); after = V.afterWritten; navKey = 'written'; }
     else if (p[0] === 'cases' && p[1]) { html = V.case(p[1]); after = V.afterCase; navKey = 'cases'; }
     else if (p[0] === 'cases') { html = V.cases(); navKey = 'cases'; }
+    else if (p[0] === 'rush') { html = V.rush(); after = V.afterRush; navKey = 'rush'; }
+    else if (p[0] === 'achievements') { html = V.achievements(); navKey = 'achievements'; }
     else if (p[0] === 'exam') { html = V.exam(); after = V.afterExam; navKey = 'exam'; }
     else if (p[0] === 'tools') { html = V.tools(); after = V.afterTools; navKey = 'tools'; }
     else if (p[0] === 'glossary') { html = V.glossary(); after = V.afterGlossary; navKey = 'glossary'; }
@@ -7725,6 +8460,8 @@ window.V = V;
 
     V._cardKey = null;
     if (V._caseCleanup) { V._caseCleanup(); V._caseCleanup = null; }
+    if (V._rushCleanup) { V._rushCleanup(); V._rushCleanup = null; }
+    BS.game.snap();
     main.innerHTML = linkTopics(html);
     if (after) after(main);
 

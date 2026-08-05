@@ -187,6 +187,7 @@ V.afterCase = function (root) {
         '<div class="bar' + (pctv >= 80 ? ' good' : '') + '" style="margin-top:10px"><i style="width:' + pctv + '%"></i></div>';
       s.saveCase(key, score, part.marks, ta ? ta.value : '');
       s.tick(1);
+      BS.announce();
       total();
     }
     update();

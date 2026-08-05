@@ -34,8 +34,10 @@ V.topic = function (id) {
   if (!t) return '<h1>Topic not found</h1><p><a href="#/notes">Back to the syllabus</a></p>';
 
   var s = BS.store;
+  var wasRead = s.isRead(t.id);
   s.markRead(t.id);
   s.tick(1);
+  if (!wasRead) setTimeout(function () { BS.announce(); }, 60);
 
   var unit = BS.units.filter(function (u) { return u.n === t.unit; })[0];
   var all = BS.notes;
