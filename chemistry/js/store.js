@@ -15,8 +15,15 @@
     topics: {},              /* topic number -> { boss, crown, bossBest } */
     badges: [],
     daily: { day: -1, quests: [] },
+    challenge: { day: -1, done: false, score: 0 },   /* the shared daily challenge */
+    history: {},             /* day number -> { xp, a, c } */
+    exams: [],               /* { day, ts, score, grade, total, level } */
+    records: { survival: 0, exam: 0, daily: 0 },
     settings: { supplement: true, sound: true },
-    stats: { answered: 0, correct: 0, sessions: 0, bestCombo: 0, cards: 0, bosses: 0 }
+    stats: {
+      answered: 0, correct: 0, sessions: 0, bestCombo: 0, cards: 0, bosses: 0,
+      exams: 0, survivals: 0, dailies: 0, byType: {}
+    }
   };
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -32,7 +39,10 @@
       if (obj.settings[k] === undefined) obj.settings[k] = defaults.settings[k];
     });
     Object.keys(defaults.stats).forEach(function (k) {
-      if (obj.stats[k] === undefined) obj.stats[k] = defaults.stats[k];
+      if (obj.stats[k] === undefined) obj.stats[k] = clone(defaults.stats[k]);
+    });
+    Object.keys(defaults.records).forEach(function (k) {
+      if (obj.records[k] === undefined) obj.records[k] = defaults.records[k];
     });
     return obj;
   }
@@ -252,7 +262,19 @@
     { id: "mastery100", icon: "\u{1F48E}", name: "Crystallised", desc: "Reach 100 per cent overall mastery",
       test: function () { return overallMastery() >= 0.999; } },
     { id: "sessions25", icon: "\u{1F52C}", name: "Lab Regular", desc: "Complete 25 lab sessions",
-      test: function (s) { return s.stats.sessions >= 25; } }
+      test: function (s) { return s.stats.sessions >= 25; } },
+    { id: "exam1", icon: "\u{1F4DD}", name: "Exam Nerves", desc: "Sit your first mock exam",
+      test: function (s) { return s.stats.exams >= 1; } },
+    { id: "gradeA", icon: "\u{1F947}", name: "Grade A", desc: "Score 80 per cent in a mock exam",
+      test: function (s) { return s.records.exam >= 80; } },
+    { id: "gradeAstar", icon: "\u{2728}", name: "Top Band", desc: "Score 90 per cent in a mock exam",
+      test: function (s) { return s.records.exam >= 90; } },
+    { id: "surv20", icon: "\u{1F6E1}", name: "Survivor", desc: "Reach 20 in survival mode",
+      test: function (s) { return s.records.survival >= 20; } },
+    { id: "surv50", icon: "\u{1F409}", name: "Unstoppable", desc: "Reach 50 in survival mode",
+      test: function (s) { return s.records.survival >= 50; } },
+    { id: "daily7", icon: "\u{1F4C6}", name: "Clockwork", desc: "Complete 7 daily challenges",
+      test: function (s) { return s.stats.dailies >= 7; } }
   ];
 
   function crownCount() {
@@ -274,9 +296,28 @@
     return gained;
   }
 
+  /* ---------------- Daily history ---------------- */
+  function dayRec(d) {
+    var k = String(d === undefined ? today() : d);
+    if (!state.history[k]) state.history[k] = { xp: 0, a: 0, c: 0 };
+    return state.history[k];
+  }
+
+  /* The last n days, oldest first, with zeroes filled in for days off. */
+  function historyDays(n) {
+    var t = today(), out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var d = t - i;
+      var r = state.history[String(d)];
+      out.push({ day: d, offset: i, xp: r ? r.xp : 0, a: r ? r.a : 0, c: r ? r.c : 0 });
+    }
+    return out;
+  }
+
   /* ---------------- Answer recording ---------------- */
   function addXp(n) {
     state.xp += n;
+    dayRec().xp += n;
     save();
   }
 
@@ -284,7 +325,66 @@
     state.stats.answered++;
     if (correct) state.stats.correct++;
     if (combo > state.stats.bestCombo) state.stats.bestCombo = combo;
+
+    var bt = state.stats.byType;
+    if (!bt[q.ty]) bt[q.ty] = { a: 0, c: 0 };
+    bt[q.ty].a++;
+    if (correct) bt[q.ty].c++;
+
+    var d = dayRec();
+    d.a++;
+    if (correct) d.c++;
+
     grade(q.id, correct);
+    save();
+  }
+
+  /* ---------------- Exams and records ---------------- */
+  var GRADES = [
+    [90, "A*"], [80, "A"], [70, "B"], [60, "C"],
+    [50, "D"], [40, "E"], [30, "F"], [20, "G"]
+  ];
+  function gradeFor(percent) {
+    for (var i = 0; i < GRADES.length; i++) {
+      if (percent >= GRADES[i][0]) return GRADES[i][1];
+    }
+    return "U";
+  }
+
+  function recordExam(entry) {
+    entry.day = today();
+    entry.ts = Date.now();
+    state.exams.unshift(entry);
+    if (state.exams.length > 30) state.exams.length = 30;
+    state.stats.exams++;
+    if (entry.score > state.records.exam) state.records.exam = entry.score;
+    save();
+  }
+
+  function setRecord(key, value) {
+    if (value > state.records[key]) {
+      state.records[key] = value;
+      save();
+      return true;
+    }
+    return false;
+  }
+
+  /* ---------------- Daily challenge ---------------- */
+  function challengeState() {
+    var t = today();
+    if (state.challenge.day !== t) {
+      state.challenge = { day: t, done: false, score: 0 };
+      save();
+    }
+    return state.challenge;
+  }
+  function finishChallenge(score) {
+    challengeState();
+    state.challenge.done = true;
+    state.challenge.score = score;
+    state.stats.dailies++;
+    setRecord("daily", score);
     save();
   }
 
@@ -330,6 +430,12 @@
     streakAlive: streakAlive,
     rollQuests: rollQuests,
     progressQuest: progressQuest,
+    historyDays: historyDays,
+    gradeFor: gradeFor,
+    recordExam: recordExam,
+    setRecord: setRecord,
+    challengeState: challengeState,
+    finishChallenge: finishChallenge,
     checkBadges: checkBadges,
     BADGES: BADGES,
     exportSave: exportSave,

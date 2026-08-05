@@ -28,6 +28,59 @@
     return out.slice(0, Math.min(n, out.length));
   }
 
+  /* Deterministic generator, so the daily challenge is the same set for
+     everyone on a given day and cannot be rerolled by reloading. */
+  function seeded(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffleWith(arr, rnd) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(rnd() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function pickSeeded(pool, n, seed) {
+    return shuffleWith(pool, seeded(seed)).slice(0, Math.min(n, pool.length));
+  }
+
+  /* A spread across the whole syllabus, weighted by how many questions each
+     topic has but with a floor so no topic is missed out. */
+  function pickMixed(n) {
+    var byTopic = {}, total = 0;
+    window.SYLLABUS.forEach(function (t) {
+      byTopic[t.n] = window.Store.poolForTopic(t.n);
+      total += byTopic[t.n].length;
+    });
+    var floor = Math.max(1, Math.floor(n / (window.SYLLABUS.length * 2)));
+    var out = [], spare = n;
+    window.SYLLABUS.forEach(function (t) {
+      var want = Math.max(floor, Math.round(n * byTopic[t.n].length / total));
+      want = Math.min(want, byTopic[t.n].length, spare);
+      out = out.concat(shuffle(byTopic[t.n]).slice(0, want));
+      spare -= want;
+    });
+    /* top up from anything left over if rounding came up short */
+    if (out.length < n) {
+      var used = {};
+      out.forEach(function (q) { used[q.id] = 1; });
+      var rest = shuffle(window.QUESTIONS.filter(function (q) {
+        return window.Store.allowed(q) && !used[q.id];
+      }));
+      out = out.concat(rest.slice(0, n - out.length));
+    }
+    return shuffle(out).slice(0, n);
+  }
+
   function norm(s) {
     return String(s).toLowerCase().replace(/\s+/g, " ").trim();
   }
@@ -53,7 +106,34 @@
       var n = norm(resp), tg = tight(resp);
       return q.a.some(function (acc) { return norm(acc) === n || tight(acc) === tg; });
     }
+    if (q.ty === "balance") {
+      var want = eqCoefficients(q);
+      if (!Array.isArray(resp) || resp.length !== want.length) return false;
+      return want.every(function (c, i) { return parseInt(resp[i], 10) === c; });
+    }
+    if (q.ty === "order") {
+      if (!Array.isArray(resp) || resp.length !== q.a.length) return false;
+      return q.a.every(function (v, i) { return resp[i] === v; });
+    }
+    if (q.ty === "match") {
+      if (!Array.isArray(resp) || resp.length !== q.pairs.length) return false;
+      return q.pairs.every(function (p, i) { return resp[i] === p[1]; });
+    }
     return false;
+  }
+
+  function eqCoefficients(q) {
+    return q.eq.lhs.concat(q.eq.rhs).map(function (s) { return s[1]; });
+  }
+
+  /* "2H2 + O2 gives 2H2O", with a coefficient of 1 left off as normal. */
+  function equationText(q) {
+    function side(list) {
+      return list.map(function (s) {
+        return (s[1] === 1 ? "" : s[1]) + s[0];
+      }).join(" + ");
+    }
+    return side(q.eq.lhs) + " gives " + side(q.eq.rhs);
   }
 
   function answerText(q) {
@@ -61,23 +141,39 @@
     if (q.ty === "multi") return q.a.map(function (i) { return q.o[i]; }).join("  |  ");
     if (q.ty === "num") return String(q.a);
     if (q.ty === "text") return q.disp || q.a[0];
+    if (q.ty === "balance") return equationText(q);
+    if (q.ty === "order") return q.a.join("  ›  ");
+    if (q.ty === "match") {
+      return q.pairs.map(function (p) { return p[0] + " = " + p[1]; }).join("   |   ");
+    }
     return "";
   }
 
-  /* Base value, doubled at best by a long run of correct answers. */
+  /* Base value, doubled at best by a long run of correct answers.
+     The harder question formats are worth more. */
+  var TYPE_BONUS = { mcq: 0, multi: 2, num: 2, text: 2, order: 4, match: 4, balance: 4 };
+
   function xpFor(q, combo, mode) {
-    var base = q.lv === "S" ? 14 : 10;
+    var base = (q.lv === "S" ? 14 : 10) + (TYPE_BONUS[q.ty] || 0);
     var mult = 1 + Math.min(combo, 10) * 0.1;
     if (mode === "boss") mult *= 1.5;
+    else if (mode === "survival") mult *= 1.4;
     else if (mode === "review") mult *= 1.2;
+    else if (mode === "daily") mult *= 1.3;
     return Math.round(base * mult);
   }
 
   window.Quiz = {
     pick: pick,
+    pickSeeded: pickSeeded,
+    pickMixed: pickMixed,
+    seeded: seeded,
+    shuffleWith: shuffleWith,
     shuffle: shuffle,
     check: check,
     answerText: answerText,
+    equationText: equationText,
+    eqCoefficients: eqCoefficients,
     xpFor: xpFor
   };
 })();

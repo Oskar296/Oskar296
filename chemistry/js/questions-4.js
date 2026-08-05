@@ -373,8 +373,3 @@ window.QUESTIONS_4 = [
     a: 1,
     ex: "Separation depends on the balance between solubility in the moving solvent and attraction to the stationary paper." }
 ];
-
-/* Merge every bank into the single list the app uses. */
-window.QUESTIONS = [].concat(
-  window.QUESTIONS_1, window.QUESTIONS_2, window.QUESTIONS_3, window.QUESTIONS_4
-);
