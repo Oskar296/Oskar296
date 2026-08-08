@@ -451,6 +451,41 @@ p { line-height: 1.55; color: var(--ink2); margin: 0 0 10px; }
 .review-item.ok .verdict-mini { color: var(--good); }
 .review-item.no .verdict-mini { color: var(--bad); }
 
+/* ---------- Estimated exam score ---------- */
+.predict { border-color: var(--line2); }
+.predict-top { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.predict-figure { display: flex; align-items: center; gap: 12px; flex: none; }
+.predict-score {
+  font-size: 46px; font-weight: 800; letter-spacing: -.035em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.predict-score span { font-size: 22px; font-weight: 700; color: var(--ink3); margin-left: 1px; }
+.predict-figure .grade-big { width: 54px; height: 54px; margin: 0; border-radius: 15px; font-size: 22px; }
+.predict-body { flex: 1 1 200px; min-width: 180px; }
+.predict-body h2 { font-size: 15px; margin: 0 0 3px; }
+.predict-body p { margin: 0; font-size: 13px; }
+.predict-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 11.5px; color: var(--ink3); }
+.conf {
+  text-transform: uppercase; letter-spacing: .07em; font-weight: 700;
+  padding: 2px 7px; border-radius: 5px; border: 1px solid var(--line2);
+}
+.conf.rough { color: var(--bad); border-color: hsl(350 45% 42%); }
+.conf.fair { color: var(--gold); border-color: hsl(45 50% 40%); }
+.conf.good { color: var(--good); border-color: hsl(158 45% 38%); }
+
+.coverage { display: flex; align-items: center; gap: 10px; margin: 16px 0 10px; font-size: 12px; color: var(--ink3); }
+.coverage .bar { flex: 1; }
+.muted.small { font-size: 12px; line-height: 1.5; margin: 0; }
+.gap-head { margin: 16px 0 8px; font-size: 13px; color: var(--ink2); }
+.bnum.wide { width: 82px; }
+
+.factlink {
+  font-size: 12.5px; font-weight: 650; color: var(--accent);
+  padding: 0; text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: hsl(175 60% 45% / .4);
+}
+.factlink:hover { text-decoration-color: var(--accent); }
+
 /* ---------- Stats ---------- */
 .chart {
   display: flex; align-items: flex-end; gap: 3px; height: 120px;

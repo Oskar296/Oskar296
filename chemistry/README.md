@@ -64,11 +64,33 @@ answer next to the right one.
 **Survival.** Three lives, no end. The clock starts at 30 seconds a question and
 tightens as your score climbs. Your best run is recorded.
 
+### Estimated exam score
+
+The Progress page opens with an estimate of what you would score if the whole
+syllabus came up tomorrow, with a grade and a likely range.
+
+It is deliberately not your accuracy so far. Accuracy only describes the
+questions you happen to have answered, so 90 per cent on a tenth of the syllabus
+is not a grade A. Instead the estimate runs over every question in the pool:
+
+- **Questions you have never met** count at the rate you get first-time questions
+  right, which the app tracks separately from your overall accuracy.
+- **Questions you have met** count at the rate their review box implies, from
+  about 45 per cent at box 1 up to 90 per cent at box 5, faded if the review is
+  overdue, and adjusted by that question's own record once there is some.
+- **Mock exams** pull the answer towards themselves, up to half the weight with
+  three papers sat, because a paper you actually sat beats any model of one.
+
+Coverage decides the confidence label and the width of the range, and nothing is
+shown at all until you have answered 20 questions. Underneath, the three topics
+costing you the most marks are listed with how much each is worth, so the next
+thing to revise is never a guess.
+
 ### Progress tracking
 
-The Progress page keeps a 30 day XP chart, today's quests, mastery for all 12
-topics and your awards, with records, accuracy by question format and the exam
-log tucked behind a More detail expander.
+The rest of the Progress page keeps a 30 day XP chart, today's quests, mastery
+for all 12 topics and your awards, with records, accuracy by question format and
+the exam log tucked behind a More detail expander.
 
 ## Getting around
 

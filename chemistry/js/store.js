@@ -22,7 +22,8 @@
     settings: { supplement: true, sound: true },
     stats: {
       answered: 0, correct: 0, sessions: 0, bestCombo: 0, cards: 0, bosses: 0,
-      exams: 0, survivals: 0, dailies: 0, byType: {}
+      exams: 0, survivals: 0, dailies: 0, byType: {},
+      firstTry: { a: 0, c: 0 }   /* how you do on a question you have never met */
     }
   };
 
@@ -110,6 +111,13 @@
 
   function grade(id, correct) {
     var r = rec(id);
+    /* First encounters are the closest thing to an unseen exam question,
+       so they become the prior for the parts of the syllabus you have
+       not met yet. */
+    if (r.seen === 0) {
+      state.stats.firstTry.a++;
+      if (correct) state.stats.firstTry.c++;
+    }
     r.seen++;
     if (correct) {
       r.right++;
@@ -144,6 +152,94 @@
   function subMastery(id) { return masteryOf(poolForSub(id)); }
   function overallMastery() {
     return masteryOf(window.QUESTIONS.filter(allowed));
+  }
+
+  /* ---------------- Estimated exam score ----------------
+     The honest question is not "how accurate am I", it is "if every
+     question in the syllabus came up, how many would I get". So the
+     estimate runs over the whole pool: questions you have never met
+     count at the rate you get first-time questions right, and questions
+     you have met count at the rate their review box implies, faded if
+     the review is overdue. Real mock exam scores then pull the answer
+     towards themselves, because a sat paper beats any model of one. */
+
+  var BOX_P = [0, 0.45, 0.58, 0.70, 0.81, 0.90];
+
+  function priorP() {
+    var ft = state.stats.firstTry;
+    if (!ft || ft.a < 15) return 0.30;
+    return Math.max(0.15, Math.min(0.75, ft.c / ft.a));
+  }
+
+  function questionP(q, prior) {
+    var r = state.srs[q.id];
+    if (!r || !r.box) return prior;
+    var p = BOX_P[r.box];
+    var overdue = today() - r.due;
+    if (overdue > 0) {
+      var span = Math.max(1, INTERVALS[r.box]);
+      p -= 0.18 * Math.min(1, overdue / span);
+    }
+    /* a question's own record outweighs the box once there is some of it */
+    if (r.seen >= 2) p = 0.65 * p + 0.35 * (r.right / r.seen);
+    return Math.max(0.05, Math.min(0.97, p));
+  }
+
+  function predict() {
+    var pool = window.QUESTIONS.filter(allowed);
+    if (!pool.length) return null;
+    var prior = priorP();
+    var sum = 0, met = 0;
+    pool.forEach(function (q) {
+      var r = state.srs[q.id];
+      if (r && r.box) met++;
+      sum += questionP(q, prior);
+    });
+    var model = sum / pool.length;
+
+    /* the last three papers, most recent counting most */
+    var recent = state.exams.slice(0, 3);
+    var blend = model, examWeight = 0;
+    if (recent.length) {
+      var weights = [3, 2, 1], acc = 0, tw = 0;
+      recent.forEach(function (e, i) { acc += (e.score / 100) * weights[i]; tw += weights[i]; });
+      examWeight = Math.min(0.5, 0.2 * recent.length);
+      blend = (1 - examWeight) * model + examWeight * (acc / tw);
+    }
+
+    var coverage = met / pool.length;
+    var confidence, margin;
+    if (coverage < 0.15 || state.stats.answered < 40) { confidence = "rough"; margin = 15; }
+    else if (coverage < 0.45) { confidence = "fair"; margin = 9; }
+    else { confidence = "good"; margin = 5; }
+
+    /* Where the missing marks are: how much of the whole paper each topic
+       is currently costing you. */
+    var gaps = window.SYLLABUS.map(function (t) {
+      var qs = poolForTopic(t.n);
+      var lost = 0;
+      qs.forEach(function (q) { lost += 1 - questionP(q, prior); });
+      return { n: t.n, title: t.title, gain: (lost / pool.length) * 100 };
+    }).sort(function (a, b) { return b.gain - a.gain; });
+
+    var score = Math.round(blend * 100);
+    return {
+      /* Below this there is nothing to go on, and a number would just be
+         the starting prior dressed up as a prediction. */
+      ready: state.stats.answered >= 20,
+      needed: Math.max(0, 20 - state.stats.answered),
+      score: score,
+      grade: gradeFor(score),
+      low: Math.max(0, score - margin),
+      high: Math.min(100, score + margin),
+      confidence: confidence,
+      coverage: coverage,
+      met: met,
+      total: pool.length,
+      usedExams: recent.length,
+      examWeight: examWeight,
+      gaps: gaps.slice(0, 3)
+    };
   }
 
   function topicRec(n) {
@@ -423,6 +519,7 @@
     topicMastery: topicMastery,
     subMastery: subMastery,
     overallMastery: overallMastery,
+    predict: predict,
     topicRec: topicRec,
     bossUnlocked: bossUnlocked,
     crownCount: crownCount,

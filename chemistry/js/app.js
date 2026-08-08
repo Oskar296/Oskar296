@@ -122,6 +122,7 @@
     var li = Store.levelInfo();
     var next = nextUp();
     var ch = Store.challengeState();
+    var predicted = Store.predict();
 
     var start =
       '<div class="card start-card">' +
@@ -136,8 +137,11 @@
         "</button>" +
         '<div class="factline">' +
           "<span>\u{1F525} " + s.streak.count + " day streak</span>" +
-          "<span>" + pct(Store.overallMastery()) + "% of the syllabus</span>" +
-          "<span>" + Store.crownCount() + " of 12 crowns</span>" +
+          "<span>" + pct(Store.overallMastery()) + "% mastered</span>" +
+          (predicted && predicted.ready
+            ? '<button class="factlink" data-a="nav" data-v="progress">Estimated ' +
+              predicted.score + "% · grade " + predicted.grade + "</button>"
+            : "<span>" + Store.crownCount() + " of 12 crowns</span>") +
         "</div>" +
       "</div>";
 
@@ -247,6 +251,55 @@
   }
 
   /* ---------------- stats ---------------- */
+  var CONFIDENCE_NOTE = {
+    rough: "Rough for now. It settles down once you have answered a few hundred questions across more of the syllabus.",
+    fair: "Reasonably settled. Covering more of the syllabus will tighten it.",
+    good: "Well grounded, based on most of the syllabus."
+  };
+
+  function predictionCard(p) {
+    if (!p) return "";
+    if (!p.ready) {
+      return '<div class="card predict"><h2 class="card-head">Estimated exam score</h2>' +
+        '<p class="muted small">Answer ' + p.needed + " more question" + (p.needed === 1 ? "" : "s") +
+        " and an estimate appears here. It works out what you would score if the whole syllabus came up, " +
+        "so it counts the parts you have not met yet as well as the parts you have.</p>" +
+        '<div class="btn-row" style="margin-top:12px">' +
+        '<button class="btn primary" data-a="nav" data-v="home">Start answering</button></div></div>';
+    }
+    var gaps = p.gaps.filter(function (g) { return g.gain >= 0.5; });
+    return '<div class="card predict">' +
+      '<div class="predict-top">' +
+        '<div class="predict-figure">' +
+          '<div class="predict-score">' + p.score + "<span>%</span></div>" +
+          '<div class="grade-big g' + p.grade.replace("*", "star") + '">' + p.grade + "</div>" +
+        "</div>" +
+        '<div class="predict-body">' +
+          "<h2>Estimated exam score</h2>" +
+          '<p class="muted">Likely between ' + p.low + " and " + p.high + " per cent" +
+            (p.usedExams ? ", including your last " +
+              (p.usedExams === 1 ? "mock exam" : p.usedExams + " mock exams") : "") + ".</p>" +
+          '<div class="predict-meta">' +
+            '<span class="conf ' + p.confidence + '">' + p.confidence + " estimate</span>" +
+            "<span>" + p.met + " of " + p.total + " questions met</span>" +
+          "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="coverage"><span>Syllabus covered</span>' + bar(p.coverage, "accent") +
+        '<span class="tpct">' + pct(p.coverage) + "%</span></div>" +
+      '<p class="muted small">' + h(CONFIDENCE_NOTE[p.confidence]) + "</p>" +
+      (gaps.length
+        ? '<h3 class="gap-head">Where the missing marks are</h3><div class="breakdown">' +
+          gaps.map(function (g) {
+            var t = TOPIC_BY_N[g.n];
+            return '<button class="brow rowbtn" ' + topicVars(t) + ' data-a="topic" data-n="' + g.n + '">' +
+              '<span class="bname" style="text-align:left">' + t.icon + "  " + h(t.title) + "</span>" +
+              '<span class="bnum wide">up to +' + g.gain.toFixed(1) + "%</span></button>";
+          }).join("") + "</div>"
+        : "") +
+      "</div>";
+  }
+
   function renderProgress() {
     var s = Store.state;
     var li = Store.levelInfo();
@@ -329,13 +382,14 @@
       "</div>";
 
     renderShell(
+      predictionCard(Store.predict()) +
       '<div class="card">' +
         '<div class="start-top">' +
           '<div class="ring small" style="--pct:' + pct(li.pct) + '"><span class="lv"><b>' + li.level + "</b></span></div>" +
           "<div><div class=\"rank\">" + h(li.rank) + "</div>" +
           '<div class="xpline">' + s.xp + " XP total · " +
             (s.stats.answered ? pct(s.stats.correct / s.stats.answered) : 0) + "% accuracy · " +
-            pct(Store.overallMastery()) + "% of the syllabus</div></div>" +
+            pct(Store.overallMastery()) + "% mastered</div></div>" +
         "</div>" +
         chart +
         '<p class="muted" style="margin:10px 0 0">' + totalXp30 + " XP over " + active +
@@ -1224,6 +1278,11 @@
       "</div>" +
       '<p class="muted">Grade boundaries here are a rough guide: 90 for A*, 80 A, 70 B, 60 C, 50 D, 40 E, 30 F, 20 G. ' +
         "Every question you met has been added to your review schedule.</p>" +
+      (function () {
+        var p = Store.predict();
+        return p && p.ready ? '<p class="muted">This paper moves your estimated exam score to <b>' + p.score +
+          "%</b>, grade " + p.grade + ".</p>" : "";
+      })() +
       '<div class="btn-row" style="margin-top:12px">' +
         '<button class="btn primary" data-a="examreview">' + (exam.reviewing ? "Hide" : "Go through") + " the paper</button>" +
         '<button class="btn" data-a="exam">Sit another</button>' +
