@@ -78,151 +78,96 @@
 
   /* ---------------- shell ---------------- */
   function renderShell(body) {
-    var li = Store.levelInfo();
-    var s = Store.state;
-    var streakClass = Store.streakAlive() && s.streak.count > 0 ? "chip flame" : "chip";
     app.innerHTML =
       '<header class="topbar">' +
-        '<div class="brand"><span class="logo">⚗</span><span>Chem Lab' +
-          "<small>IGCSE Chemistry 0620</small></span></div>" +
+        '<div class="brand"><span class="logo">⚗</span>Chem Lab</div>' +
         '<span class="spacer"></span>' +
-        '<span class="' + streakClass + '">\u{1F525} <b>' + s.streak.count + "</b></span>" +
-        '<span class="chip">Lv <b>' + li.level + "</b></span>" +
         '<button class="chip" data-a="settings" aria-label="Settings">⚙</button>' +
       "</header>" +
       '<main class="fade">' + body + "</main>";
     renderNav();
   }
 
+  /* Three destinations, and everything else is reached from inside them. */
+  var NAV = [
+    ["home", "\u{1F4DA}", "Study", ["topic", "review"]],
+    ["lab", "\u{1F9EA}", "Tools", []],
+    ["progress", "\u{1F4C8}", "Progress", ["badges", "stats"]]
+  ];
+
   function renderNav() {
-    var items = [
-      ["home", "\u{1F3E0}", "Home"],
-      ["review", "\u{1F501}", "Review"],
-      ["lab", "\u{1F9EA}", "Lab"],
-      ["stats", "\u{1F4C8}", "Stats"],
-      ["badges", "\u{1F3C5}", "Awards"]
-    ];
     var nav = document.getElementById("nav");
-    nav.innerHTML = items.map(function (it) {
-      var on = route.view === it[0] || (route.view === "topic" && it[0] === "home") ? " on" : "";
-      return '<button class="' + on.trim() + '" data-a="nav" data-v="' + it[0] + '">' +
+    nav.innerHTML = NAV.map(function (it) {
+      var on = route.view === it[0] || it[3].indexOf(route.view) > -1;
+      return '<button class="' + (on ? "on" : "") + '" data-a="nav" data-v="' + it[0] + '">' +
         '<span class="ic">' + it[1] + "</span>" + it[2] + "</button>";
     }).join("");
   }
 
   /* ---------------- home ---------------- */
+  /* What the one big button on the home screen should do next. */
+  function nextUp() {
+    var due = Store.dueQuestions().length;
+    if (due) return { kind: "review", label: "Review " + due + " question" + (due === 1 ? "" : "s"),
+      hint: "Due today, and this is where the marks are" };
+    var weakest = SYLLABUS.slice().sort(function (a, b) {
+      return Store.topicMastery(a.n) - Store.topicMastery(b.n);
+    })[0];
+    return { kind: "topic", topic: weakest.n, label: "Practise " + weakest.title,
+      hint: "Your weakest topic right now" };
+  }
+
   function renderHome() {
     var s = Store.state;
     var li = Store.levelInfo();
-    Store.rollQuests();
-    var due = Store.dueQuestions().length;
-    var overall = Store.overallMastery();
+    var next = nextUp();
     var ch = Store.challengeState();
 
-    var hero =
-      '<div class="card">' +
-        '<div class="hero">' +
-          '<div class="ring" style="--pct:' + pct(li.pct) + '"><span class="lv"><b>' + li.level + "</b><span>LEVEL</span></span></div>" +
-          '<div class="hero-info">' +
-            '<div class="rank">' + h(li.rank) + "</div>" +
-            '<div class="xpline">' + li.into + " / " + li.need + " XP to level " + (li.level + 1) + "</div>" +
-            '<div style="margin-top:9px">' + bar(li.pct, "accent") + "</div>" +
-          "</div>" +
+    var start =
+      '<div class="card start-card">' +
+        '<div class="start-top">' +
+          '<div class="ring small" style="--pct:' + pct(li.pct) + '"><span class="lv"><b>' + li.level + "</b></span></div>" +
+          "<div><div class=\"rank\">" + h(li.rank) + "</div>" +
+          '<div class="xpline">' + li.into + " / " + li.need + " XP to level " + (li.level + 1) + "</div></div>" +
         "</div>" +
-        '<div class="stat-row">' +
-          '<div class="stat"><b>' + pct(overall) + '%</b><span>Syllabus</span></div>' +
-          '<div class="stat"><b>' + s.stats.correct + "</b><span>Correct</span></div>" +
-          '<div class="stat"><b>' + Store.crownCount() + '/12</b><span>Crowns</span></div>' +
-          '<div class="stat"><b>' + s.streak.count + "</b><span>Day streak</span></div>" +
-          '<div class="stat"><b>' + due + "</b><span>Due now</span></div>" +
-        "</div>" +
-        '<div class="btn-row" style="margin-top:14px">' +
-          '<button class="btn primary" data-a="continue">▶ ' + (due > 0 ? "Review " + due + " due" : "Start studying") + "</button>" +
-          '<button class="btn" data-a="nav" data-v="lab">Reference lab</button>' +
+        '<button class="big-btn" data-a="continue">' +
+          '<span class="bb-label">' + h(next.label) + "</span>" +
+          '<span class="bb-hint">' + h(next.hint) + "</span>" +
+        "</button>" +
+        '<div class="factline">' +
+          "<span>\u{1F525} " + s.streak.count + " day streak</span>" +
+          "<span>" + pct(Store.overallMastery()) + "% of the syllabus</span>" +
+          "<span>" + Store.crownCount() + " of 12 crowns</span>" +
         "</div>" +
       "</div>";
 
-    var modes = '<div class="section-title">Game modes<span class="rule"></span></div>' +
-      '<div class="mode-grid">' +
-        modeCard("daily", "\u{1F5D3}", "Daily challenge", 45,
-          ch.done ? "Done today: " + ch.score + "%" : "10 questions, the same set for everyone today",
-          ch.done ? "Come back tomorrow" : "Play") +
-        modeCard("exam", "\u{1F4DD}", "Mock exam", 210,
-          EXAM_LENGTH + " questions in 45 minutes, graded A* to U" +
-            (s.records.exam ? ". Best " + s.records.exam + "%" : ""),
-          "Sit the paper") +
-        modeCard("survival", "\u{1F6E1}", "Survival", 350,
-          "Three lives, a shrinking clock, no end" +
-            (s.records.survival ? ". Best " + s.records.survival : ""),
-          "Start") +
+    var modes = '<div class="tile-row">' +
+      tile("daily", "\u{1F5D3}", "Daily", ch.done ? ch.score + "% today" : "10 questions") +
+      tile("exam", "\u{1F4DD}", "Mock exam", s.records.exam ? "best " + s.records.exam + "%" : "45 minutes") +
+      tile("survival", "\u{1F6E1}", "Survival", s.records.survival ? "best " + s.records.survival : "3 lives") +
       "</div>";
 
-    var quests = '<div class="section-title">Daily quests<span class="rule"></span>' +
-      '<span class="muted">resets each day</span></div><div class="card">' +
-      s.daily.quests.map(function (q) {
-        return '<div class="quest' + (q.done ? " done" : "") + '">' +
-          '<span class="qtick">' + (q.done ? "✓" : "") + "</span>" +
-          '<span class="qbody"><span class="qname">' + h(q.text) + "</span>" +
-            '<span class="qprog">' + bar(Math.min(1, q.n / q.target), "accent") +
-            '<span class="qnum">' + Math.min(q.n, q.target) + "/" + q.target + "</span></span></span>" +
-          '<span class="qxp">+' + q.xp + "</span>" +
-        "</div>";
-      }).join("") + "</div>";
-
-    var grid = '<div class="section-title">The syllabus<span class="rule"></span>' +
-      '<span class="muted">12 topics</span></div><div class="topic-grid">' +
+    var grid = '<h2 class="head">Topics</h2><div class="topic-grid">' +
       SYLLABUS.map(function (t) {
         var m = Store.topicMastery(t.n);
         var crowned = Store.topicRec(t.n).crown;
         return '<button class="topic-card" ' + topicVars(t) + ' data-a="topic" data-n="' + t.n + '">' +
-          '<span class="' + (crowned ? "crown" : "ticon") + '">' + (crowned ? "\u{1F451}" : t.icon) + "</span>" +
-          '<div class="tnum">TOPIC ' + t.n + "</div>" +
-          '<div class="ttitle">' + h(t.title) + "</div>" +
-          '<div class="tblurb">' + h(t.blurb) + "</div>" +
-          '<div class="tfoot">' + bar(m) + '<span class="tpct">' + pct(m) + "%</span></div>" +
+          '<span class="ticon">' + (crowned ? "\u{1F451}" : t.icon) + "</span>" +
+          '<span class="tbody"><span class="ttitle">' + t.n + ". " + h(t.title) + "</span>" +
+          '<span class="tfoot">' + bar(m) + '<span class="tpct">' + pct(m) + "%</span></span></span>" +
         "</button>";
       }).join("") + "</div>";
 
-    var weak = weakSpots();
-    var weakHtml = "";
-    if (weak.length) {
-      weakHtml = '<div class="section-title">Weak spots<span class="rule"></span></div><div class="card">' +
-        '<p class="muted" style="margin-bottom:12px">Subtopics you have started but not locked in yet.</p>' +
-        '<div class="breakdown">' + weak.map(function (w) {
-          var t = SUB_INDEX[w.id].topic;
-          return '<button class="brow rowbtn" data-a="sub" data-s="' + w.id + '">' +
-            '<span class="bname" style="text-align:left">' + h(w.id + "  " + SUB_INDEX[w.id].sub.title) + "</span>" +
-            '<span class="bar" style="--hue:' + t.hue + '"><i style="width:' + pct(w.m) + '%"></i></span>' +
-            '<span class="bnum">' + pct(w.m) + "%</span></button>";
-        }).join("") + "</div></div>";
-    }
-
-    renderShell(hero + modes + quests + weakHtml + grid);
+    renderShell(start + modes + grid);
   }
 
-  function modeCard(action, icon, title, hue, desc, cta) {
-    return '<button class="mode-card" style="--hue:' + hue + '" data-a="' + action + '">' +
-      '<span class="mic">' + icon + "</span>" +
-      '<span class="mtitle">' + h(title) + "</span>" +
-      '<span class="mdesc">' + h(desc) + "</span>" +
-      '<span class="mcta">' + h(cta) + " →</span></button>";
+  function tile(action, icon, title, sub) {
+    return '<button class="tile" data-a="' + action + '">' +
+      '<span class="tile-ic">' + icon + "</span>" +
+      '<span class="tile-t">' + h(title) + "</span>" +
+      '<span class="tile-s">' + h(sub) + "</span></button>";
   }
 
-  function weakSpots() {
-    var out = [];
-    SYLLABUS.forEach(function (t) {
-      t.subs.forEach(function (s) {
-        var pool = Store.poolForSub(s.id);
-        if (!pool.length) return;
-        var touched = pool.some(function (q) { return Store.state.srs[q.id]; });
-        if (!touched) return;
-        var m = Store.subMastery(s.id);
-        if (m < 0.85) out.push({ id: s.id, m: m });
-      });
-    });
-    out.sort(function (a, b) { return a.m - b.m; });
-    return out.slice(0, 4);
-  }
 
   /* ---------------- topic ---------------- */
   function renderTopic(n) {
@@ -232,50 +177,43 @@
     var unlocked = Store.bossUnlocked(n);
     var pool = Store.poolForTopic(n);
 
-    var head = '<div class="card" ' + topicVars(t) + '>' +
-      '<div class="topic-head">' +
-        '<span class="big">' + t.icon + "</span>" +
-        '<div style="flex:1"><div class="tnum" style="color:var(--topic);font-size:11px;font-weight:700;letter-spacing:.1em">TOPIC ' + t.n + "</div>" +
-        "<h1>" + h(t.title) + "</h1>" +
-        '<p class="muted" style="margin:0">' + h(t.blurb) + "</p></div>" +
-        (rec.crown ? '<span style="font-size:26px">\u{1F451}</span>' : "") +
-      "</div>" +
-      '<div style="display:flex;gap:10px;align-items:center;margin-top:14px">' +
-        bar(m) + '<span class="tpct">' + pct(m) + "% mastered</span></div>" +
-      '<div class="btn-row" style="margin-top:14px">' +
-        '<button class="btn topic" data-a="practice" data-n="' + n + '">▶ Lab session (10)</button>' +
-        '<button class="btn" data-a="cards" data-n="' + n + '">\u{1F5C3} Flashcards</button>' +
-        '<button class="btn" data-a="boss" data-n="' + n + '"' + (unlocked ? "" : " disabled") + ">" +
-          (unlocked ? "⚔ Topic challenge" : "\u{1F512} Challenge at 50%") + "</button>" +
-      "</div>" +
-      '<p class="muted" style="margin:12px 0 0">' + pool.length + " questions in this topic" +
-        (Store.state.settings.supplement ? " (Core and Supplement)" : " (Core only)") + "." +
-        (rec.bossBest ? " Best challenge score: " + rec.bossBest + "%." : "") + "</p>" +
-    "</div>";
+    var head = '<div class="card" ' + topicVars(t) + ">" +
+      '<div class="topic-head"><span class="big">' + (rec.crown ? "\u{1F451}" : t.icon) + "</span>" +
+        "<div><h1>" + h(t.title) + "</h1>" +
+        '<p class="muted" style="margin:2px 0 0">' + h(t.blurb) + "</p></div></div>" +
+      '<div class="mastery-line">' + bar(m) + '<span class="tpct">' + pct(m) + "%</span></div>" +
+      '<button class="big-btn topic" data-a="practice" data-n="' + n + '">' +
+        '<span class="bb-label">Practise 10 questions</span>' +
+        '<span class="bb-hint">' + pool.length + " in this topic" +
+          (Store.state.settings.supplement ? ", Core and Supplement" : ", Core only") + "</span></button>" +
+      '<div class="quiet-row">' +
+        '<button class="quiet" data-a="cards" data-n="' + n + '">\u{1F5C3} Flashcards</button>' +
+        '<button class="quiet" data-a="boss" data-n="' + n + '"' + (unlocked ? "" : " disabled") + ">" +
+          (unlocked ? "⚔ Challenge" : "\u{1F512} Challenge at 50%") +
+          (rec.bossBest ? " · best " + rec.bossBest + "%" : "") + "</button>" +
+      "</div></div>";
 
     var subs = t.subs.map(function (s) {
       var sm = Store.subMastery(s.id);
       var count = Store.poolForSub(s.id).length;
       return '<details class="sub" ' + topicVars(t) + "><summary>" +
-        '<span class="scode">' + s.id + "</span>" +
-        '<span class="stitle">' + h(s.title) + "</span>" +
+        '<span class="stitle"><b>' + s.id + "</b> " + h(s.title) + "</span>" +
         '<span class="bar sbar"><i style="width:' + pct(sm) + '%"></i></span>' +
-        '<span class="spct">' + pct(sm) + "%</span></summary>" +
+        '<span class="chev">›</span></summary>' +
         '<div class="sub-body">' +
           s.obj.filter(function (o) { return Store.state.settings.supplement || o[0] === "C"; })
             .map(function (o) {
               return '<div class="obj"><span class="pill ' + o[0] + '">' + o[0] + "</span><span>" + h(o[1]) + "</span></div>";
             }).join("") +
-          (count ? '<div class="btn-row" style="margin-top:12px">' +
-            '<button class="btn ghost" data-a="sub" data-s="' + s.id + '">Practise ' + s.id + " (" + Math.min(count, 8) + ")</button></div>" : "") +
+          (count ? '<div class="quiet-row" style="margin-top:12px">' +
+            '<button class="quiet" data-a="sub" data-s="' + s.id + '">Practise just this (' + Math.min(count, 8) + ")</button></div>" : "") +
         "</div></details>";
     }).join("");
 
     renderShell(
-      '<div class="btn-row" style="margin-bottom:12px"><button class="btn ghost" data-a="nav" data-v="home">← All topics</button></div>' +
+      '<button class="backlink" data-a="nav" data-v="home">← Topics</button>' +
       head +
-      '<div class="section-title">Learning objectives<span class="rule"></span>' +
-      '<span class="muted">' + (Store.state.settings.supplement ? "Core + Supplement" : "Core only") + "</span></div>" +
+      '<h2 class="head">What you need to know</h2>' +
       subs
     );
   }
@@ -290,29 +228,26 @@
     if (!due.length) {
       body = '<div class="card"><div class="empty"><div class="eic">✅</div>' +
         "<h2>Nothing due right now</h2>" +
-        '<p class="muted">Questions come back for review on a spacing schedule: 1 day, then 2, 4, 8 and 16 days. ' +
-        "Anything you get wrong returns straight away.</p>" +
-        '<div class="btn-row" style="justify-content:center;margin-top:12px">' +
-        '<button class="btn primary" data-a="nav" data-v="home">Pick a topic</button></div></div></div>';
+        '<p class="muted">Questions come back 1 day after you get them right, then 2, 4, 8 and 16 days later. ' +
+        "Anything you get wrong returns straight away.</p></div></div>";
     } else {
       body = '<div class="card">' +
-        "<h1>" + due.length + " question" + (due.length === 1 ? "" : "s") + " due</h1>" +
-        "<p>Spaced review is where the marks come from. Each correct answer pushes a question further into the future, " +
-        "and a wrong one brings it straight back.</p>" +
-        '<div class="btn-row"><button class="btn primary" data-a="startreview">▶ Review ' +
-        Math.min(20, due.length) + "</button></div></div>" +
-        '<div class="section-title">By topic<span class="rule"></span></div><div class="card"><div class="breakdown">' +
+        '<h1>' + due.length + " question" + (due.length === 1 ? "" : "s") + " due</h1>" +
+        '<button class="big-btn" data-a="startreview">' +
+          '<span class="bb-label">Review ' + Math.min(20, due.length) + "</span>" +
+          '<span class="bb-hint">Spaced review is where the marks come from</span></button>' +
+        '<div class="breakdown" style="margin-top:14px">' +
         Object.keys(byTopic).sort(function (a, b) { return a - b; }).map(function (k) {
           var t = TOPIC_BY_N[k];
           return '<div class="brow"><span class="bname">' + t.icon + "  " + h(t.title) + "</span>" +
             '<span class="bnum">' + byTopic[k] + "</span></div>";
         }).join("") + "</div></div>";
     }
-    renderShell(body);
+    renderShell('<button class="backlink" data-a="nav" data-v="home">← Study</button>' + body);
   }
 
   /* ---------------- stats ---------------- */
-  function renderStats() {
+  function renderProgress() {
     var s = Store.state;
     var li = Store.levelInfo();
     var days = Store.historyDays(30);
@@ -358,42 +293,80 @@
         }).join("") + "</tbody></table></div>"
       : '<p class="muted">No mock exams sat yet. There is a full paper waiting on the home screen.</p>';
 
+    Store.rollQuests();
+    var quests = '<div class="card"><h2 class="card-head">Today\'s quests</h2>' +
+      s.daily.quests.map(function (q) {
+        return '<div class="quest' + (q.done ? " done" : "") + '">' +
+          '<span class="qtick">' + (q.done ? "✓" : "") + "</span>" +
+          '<span class="qbody"><span class="qname">' + h(q.text) + "</span>" +
+            '<span class="qprog">' + bar(Math.min(1, q.n / q.target), "accent") +
+            '<span class="qnum">' + Math.min(q.n, q.target) + "/" + q.target + "</span></span></span>" +
+          '<span class="qxp">+' + q.xp + "</span></div>";
+      }).join("") + "</div>";
+
+    /* Earned first, and locked ones stay small until you go looking. */
+    var earned = [], locked = [];
+    Store.BADGES.forEach(function (b) {
+      (s.badges.indexOf(b.id) > -1 ? earned : locked).push(b);
+    });
+    function badgeTile(b, have) {
+      return '<div class="badge' + (have ? "" : " locked") + '" title="' + h(b.name + ": " + b.desc) + '">' +
+        '<div class="bic">' + (have ? b.icon : "\u{1F512}") + "</div>" +
+        '<div class="bname">' + h(have ? b.name : b.desc) + "</div></div>";
+    }
+    var badges = '<div class="card"><h2 class="card-head">Awards ' +
+      '<span class="muted" style="font-weight:500">' + earned.length + " of " + Store.BADGES.length +
+      ", plus " + Store.crownCount() + " of 12 crowns</span></h2>" +
+      (earned.length
+        ? '<div class="badge-grid">' + earned.map(function (b) { return badgeTile(b, true); }).join("") + "</div>"
+        : '<p class="muted">Nothing earned yet. Answer a question to get started.</p>') +
+      (locked.length
+        ? '<details class="sub more"><summary><span class="stitle">' + locked.length +
+          ' still to earn</span><span class="chev">›</span></summary>' +
+          '<div class="sub-body"><div class="badge-grid">' +
+          locked.map(function (b) { return badgeTile(b, false); }).join("") + "</div></div></details>"
+        : "") +
+      "</div>";
+
     renderShell(
-      '<div class="card"><h1>Progress</h1>' +
-        '<div class="stat-row">' +
-          '<div class="stat"><b>' + li.level + "</b><span>Level</span></div>" +
-          '<div class="stat"><b>' + s.xp + "</b><span>Total XP</span></div>" +
-          '<div class="stat"><b>' + (s.stats.answered ? pct(s.stats.correct / s.stats.answered) : 0) + '%</b><span>Accuracy</span></div>' +
+      '<div class="card">' +
+        '<div class="start-top">' +
+          '<div class="ring small" style="--pct:' + pct(li.pct) + '"><span class="lv"><b>' + li.level + "</b></span></div>" +
+          "<div><div class=\"rank\">" + h(li.rank) + "</div>" +
+          '<div class="xpline">' + s.xp + " XP total · " +
+            (s.stats.answered ? pct(s.stats.correct / s.stats.answered) : 0) + "% accuracy · " +
+            pct(Store.overallMastery()) + "% of the syllabus</div></div>" +
+        "</div>" +
+        chart +
+        '<p class="muted" style="margin:10px 0 0">' + totalXp30 + " XP over " + active +
+          " active day" + (active === 1 ? "" : "s") + " in the last month.</p>" +
+      "</div>" +
+      quests +
+      '<div class="card"><h2 class="card-head">Topics</h2><div class="breakdown">' + topicRows + "</div></div>" +
+      badges +
+      '<details class="sub more"><summary><span class="stitle">More detail</span>' +
+        '<span class="chev">›</span></summary><div class="sub-body">' +
+        '<div class="stat-row" style="margin-top:8px">' +
+          '<div class="stat"><b>' + s.stats.bestCombo + "</b><span>Best run</span></div>" +
+          '<div class="stat"><b>' + s.records.survival + "</b><span>Survival</span></div>" +
+          '<div class="stat"><b>' + (s.records.exam ? s.records.exam + "%" : "-") + "</b><span>Best exam</span></div>" +
+          '<div class="stat"><b>' + s.streak.best + "</b><span>Best streak</span></div>" +
           '<div class="stat"><b>' + s.stats.answered + "</b><span>Answered</span></div>" +
-          '<div class="stat"><b>' + pct(Store.overallMastery()) + '%</b><span>Syllabus</span></div>' +
-        "</div></div>" +
-      '<div class="section-title">Last 30 days<span class="rule"></span>' +
-        '<span class="muted">' + totalXp30 + " XP over " + active + " active days</span></div>" +
-      '<div class="card">' + chart + "</div>" +
-      '<div class="section-title">Records<span class="rule"></span></div>' +
-      '<div class="card"><div class="stat-row">' +
-        '<div class="stat"><b>' + s.stats.bestCombo + "</b><span>Best run</span></div>" +
-        '<div class="stat"><b>' + s.records.survival + "</b><span>Survival</span></div>" +
-        '<div class="stat"><b>' + (s.records.exam ? s.records.exam + "%" : "-") + "</b><span>Best exam</span></div>" +
-        '<div class="stat"><b>' + s.streak.best + "</b><span>Best streak</span></div>" +
-        '<div class="stat"><b>' + s.stats.sessions + "</b><span>Sessions</span></div>" +
-        '<div class="stat"><b>' + s.stats.dailies + "</b><span>Dailies</span></div>" +
-      "</div></div>" +
-      (typeRows ? '<div class="section-title">Accuracy by question type<span class="rule"></span></div>' +
-        '<div class="card"><div class="breakdown">' + typeRows + "</div></div>" : "") +
-      '<div class="section-title">Mastery by topic<span class="rule"></span></div>' +
-      '<div class="card"><div class="breakdown">' + topicRows + "</div></div>" +
-      '<div class="section-title">Exam log<span class="rule"></span></div>' +
-      '<div class="card">' + examRows + "</div>"
+          '<div class="stat"><b>' + s.stats.sessions + "</b><span>Sessions</span></div>" +
+        "</div>" +
+        (typeRows ? '<h3 style="margin:16px 0 8px">Accuracy by question type</h3>' +
+          '<div class="breakdown">' + typeRows + "</div>" : "") +
+        '<h3 style="margin:16px 0 8px">Exam log</h3>' + examRows +
+      "</div></details>"
     );
   }
 
   /* ---------------- lab ---------------- */
   function renderLab() {
-    var tabs = [["table", "Periodic table"], ["sheet", "Data sheet"],
-      ["cards", "Flashcards"], ["tools", "Calculators"]];
-    var nav = '<div class="btn-row" style="margin-bottom:14px">' + tabs.map(function (t) {
-      return '<button class="btn' + (labTab === t[0] ? " primary" : "") + '" data-a="labtab" data-t="' + t[0] + '">' + t[1] + "</button>";
+    var tabs = [["table", "Table"], ["sheet", "Data"],
+      ["cards", "Cards"], ["tools", "Maths"]];
+    var nav = '<div class="segmented">' + tabs.map(function (t) {
+      return '<button class="' + (labTab === t[0] ? "on" : "") + '" data-a="labtab" data-t="' + t[0] + '">' + t[1] + "</button>";
     }).join("") + "</div>";
 
     var body;
@@ -591,32 +564,6 @@
       "</div>" + picker;
   }
 
-  /* ---------------- badges ---------------- */
-  function renderBadges() {
-    var s = Store.state;
-    var got = Store.BADGES.filter(function (b) { return s.badges.indexOf(b.id) > -1; }).length;
-    var body = '<div class="card"><h1>Awards</h1>' +
-      "<p>" + got + " of " + Store.BADGES.length + " badges earned, and " + Store.crownCount() +
-      " of 12 topic crowns.</p></div>" +
-      '<div class="section-title">Badges<span class="rule"></span></div>' +
-      '<div class="badge-grid">' + Store.BADGES.map(function (b) {
-        var have = s.badges.indexOf(b.id) > -1;
-        return '<div class="badge' + (have ? "" : " locked") + '">' +
-          '<div class="bic">' + (have ? b.icon : "\u{1F512}") + "</div>" +
-          '<div class="bname">' + h(b.name) + "</div>" +
-          '<div class="bdesc">' + h(b.desc) + "</div></div>";
-      }).join("") + "</div>" +
-      '<div class="section-title">Topic crowns<span class="rule"></span></div>' +
-      '<div class="badge-grid">' + SYLLABUS.map(function (t) {
-        var c = Store.topicRec(t.n).crown;
-        return '<div class="badge' + (c ? "" : " locked") + '" ' + topicVars(t) + ">" +
-          '<div class="bic">' + (c ? "\u{1F451}" : t.icon) + "</div>" +
-          '<div class="bname">' + h(t.title) + "</div>" +
-          '<div class="bdesc">' + (c ? "Challenge cleared" : "Win the topic challenge") + "</div></div>";
-      }).join("") + "</div>";
-    renderShell(body);
-  }
-
   /* ---------------- question rendering, shared by quiz and exam ---------------- */
   /* A right-hand answer can legitimately be used twice, so the dropdown
      lists each distinct option once. */
@@ -641,11 +588,11 @@
     return null;
   }
 
+  /* One quiet line of context rather than a row of pills. */
   function questionMeta(q, extra) {
-    return '<div class="qmeta">' +
-      '<span class="tag" style="color:var(--topic)">' + q.s + "</span>" +
-      '<span class="tag' + (q.lv === "S" ? " s" : "") + '">' + (q.lv === "S" ? "Supplement" : "Core") + "</span>" +
-      (extra || "") + "</div>";
+    var sub = SUB_INDEX[q.s];
+    return '<div class="qmeta"><span class="qmeta-text">' + q.s + "  " + h(sub.sub.title) +
+      (q.lv === "S" ? "  ·  Supplement" : "") + "</span>" + (extra || "") + "</div>";
   }
 
   /* Renders the answer controls. `marked` shows the right and wrong states. */
@@ -1247,7 +1194,7 @@
       .filter(function (r) { return !exam.marks[r.i]; });
 
     var reviewList = exam.reviewing
-      ? '<div class="section-title">Every question<span class="rule"></span></div>' +
+      ? '<h2 class="head">Every question</h2>' +
         exam.qs.map(function (q, i) {
           var ok = exam.marks[i];
           return '<div class="card review-item ' + (ok ? "ok" : "no") + '">' +
@@ -1282,7 +1229,7 @@
         '<button class="btn" data-a="exam">Sit another</button>' +
         '<button class="btn ghost" data-a="nav" data-v="home">Done</button>' +
       "</div></div>" +
-      '<div class="section-title">By topic<span class="rule"></span></div>' +
+      '<h2 class="head">By topic</h2>' +
       '<div class="card"><div class="breakdown">' + breakdown + "</div></div>" +
       reviewList
     );
@@ -1366,13 +1313,9 @@
     }
     else if (a === "exam") startExam();
     else if (a === "continue") {
-      if (Store.dueQuestions().length) startSession({ mode: "review" });
-      else {
-        var weakest = SYLLABUS.slice().sort(function (x, y) {
-          return Store.topicMastery(x.n) - Store.topicMastery(y.n);
-        })[0];
-        startSession({ mode: "practice", topic: weakest.n });
-      }
+      var next = nextUp();
+      if (next.kind === "review") startSession({ mode: "review" });
+      else startSession({ mode: "practice", topic: next.topic });
     }
     else if (a === "opt") chooseOption(+el.dataset.i);
     else if (a === "pick" || a === "unpick") {
@@ -1496,8 +1439,7 @@
     else if (route.view === "topic") renderTopic(route.arg);
     else if (route.view === "review") renderReview();
     else if (route.view === "lab") renderLab();
-    else if (route.view === "stats") renderStats();
-    else if (route.view === "badges") renderBadges();
+    else if (route.view === "progress" || route.view === "stats" || route.view === "badges") renderProgress();
     else if (route.view === "quiz") renderQuiz();
     else if (route.view === "results") renderResults();
     else if (route.view === "exam") renderExam();

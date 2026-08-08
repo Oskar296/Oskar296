@@ -66,8 +66,22 @@ tightens as your score climbs. Your best run is recorded.
 
 ### Progress tracking
 
-The Stats page keeps a 30 day XP chart, accuracy broken down by question format,
-mastery for all 12 topics, your records, and the full exam log.
+The Progress page keeps a 30 day XP chart, today's quests, mastery for all 12
+topics and your awards, with records, accuracy by question format and the exam
+log tucked behind a More detail expander.
+
+## Getting around
+
+Three places, and everything else is reached from inside them.
+
+- **Study** is the home screen: your level, one big button that always knows what
+  to do next (review what is due, or practise your weakest topic), the three game
+  modes, and the 12 topics.
+- **Tools** holds the periodic table, data sheet, flashcards and calculators.
+- **Progress** holds your chart, quests, topic mastery and awards.
+
+Each screen has a single obvious action. Secondary things are quiet outline
+buttons, detail hides behind expanders, and tap targets are at least 40px.
 
 ## Calculators
 
