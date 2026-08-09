@@ -82,7 +82,8 @@
     html += '<div class="side-head">Reference</div>' +
       '<a class="side-link" href="#/cases"><span class="num"></span><span>Case studies</span></a>' +
       '<a class="side-link" href="#/glossary"><span class="num"></span><span>Glossary</span></a>' +
-      '<a class="side-link" href="#/quiz"><span class="num"></span><span>Test yourself</span></a>';
+      '<a class="side-link" href="#/quiz"><span class="num"></span><span>Test yourself</span></a>' +
+      '<a class="side-link" href="#/estimate"><span class="num"></span><span>Estimated score</span></a>';
 
     sideInner.innerHTML = html;
   }
@@ -289,6 +290,8 @@
     } else if (parts[0] === 'topic' && parts[1]) {
       html = G.views.topic(parts[1]);
       G.markSeen(parts[1]);
+    } else if (parts[0] === 'estimate') {
+      html = G.views.estimate();
     } else if (parts[0] === 'cases') {
       html = G.views.cases(query);
     } else if (parts[0] === 'case' && parts[1]) {
@@ -404,6 +407,13 @@
     if (t.closest('#qNext')) {
       G.quiz.next();
       main.innerHTML = G.quiz.render();
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (t.closest('#resetScores')) {
+      G.resetScores();
+      main.innerHTML = G.views.estimate();
       window.scrollTo(0, 0);
       return;
     }

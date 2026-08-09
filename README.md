@@ -19,6 +19,26 @@ Progress is stored in your browser with `localStorage`: topics you mark as revis
 and your score per topic, which the home page uses to point you at your weakest areas.
 Nothing leaves the machine.
 
+## The estimated exam score
+
+`#/estimate` turns your self-test answers into an estimated percentage. It is
+deliberately conservative:
+
+- Scores are **corrected for guessing**. With four options, random guessing already
+  scores 25%, so a raw 25% is rescaled to 0 and only 100% stays 100%. The estimate is
+  therefore always lower than your raw quiz percentage.
+- Topics are averaged **within each paper**, then the two papers are averaged
+  **equally**, so one heavily tested topic cannot dominate.
+- Untested topics are **excluded rather than counted as zero**, and instead widen the
+  confidence band.
+- Nothing is shown until you have answered 20 questions across at least 3 topics.
+
+It is a floor on your knowledge, not a predicted grade. Multiple choice cannot test
+extended answers, case study detail, command words, resource interpretation, the
+fieldwork paper, or writing fast enough to finish. The page says all of this on itself,
+and the indicative grade is labelled as a rough band because Cambridge sets real
+boundaries after each series.
+
 ## Which syllabus this follows
 
 Cambridge rewrote 0460 for first examination in 2027. The changes are substantial:

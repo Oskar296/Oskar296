@@ -91,11 +91,14 @@
         '</div>' +
       '</div></div>' +
 
-      '<div class="card">' +
-        '<h3>Your progress</h3>' +
-        '<p class="t-sub" style="color:var(--dim)">' + done + ' of ' + topics.length + ' topics marked as revised (' + pct + '%)</p>' +
-        '<div class="progress-bar" style="margin-top:.7rem"><i style="width:' + pct + '%"></i></div>' +
-        (weak ? '<h3 style="margin-top:1.2rem">Worth another look</h3><ul>' + weak + '</ul>' : '') +
+      '<div class="grid grid-2">' +
+        '<div class="card">' +
+          '<h3>Your progress</h3>' +
+          '<p class="t-sub" style="color:var(--dim)">' + done + ' of ' + topics.length + ' topics marked as revised (' + pct + '%)</p>' +
+          '<div class="progress-bar" style="margin-top:.7rem"><i style="width:' + pct + '%"></i></div>' +
+          (weak ? '<h3 style="margin-top:1.2rem">Worth another look</h3><ul>' + weak + '</ul>' : '') +
+        '</div>' +
+        V.estimateCard() +
       '</div>' +
 
       '<div class="grid grid-2">' + paperTiles + '</div>' +
@@ -109,6 +112,148 @@
           '<span class="t-sub">Command words, maps, graphs, fieldwork</span></a>' +
       '</div>' +
 
+    '</div>';
+  };
+
+  /* ---------------- estimated exam score ---------------- */
+
+  function scaleBar(e) {
+    return '<div class="est-scale">' +
+      '<div class="est-track"></div>' +
+      '<div class="est-band" style="left:' + e.low + '%;width:' + (e.high - e.low) + '%"></div>' +
+      '<div class="est-mark" style="left:calc(' + e.pct + '% - 1.25px)"></div>' +
+    '</div>' +
+    '<div class="est-ticks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>';
+  }
+
+  V.estimateCard = function () {
+    var e = G.estimate();
+
+    if (!e.ready) {
+      var need = [];
+      if (e.needQuestions) need.push(e.needQuestions + ' more question' + (e.needQuestions === 1 ? '' : 's'));
+      if (e.needTopics) need.push(e.needTopics + ' more topic' + (e.needTopics === 1 ? '' : 's'));
+      return '<div class="card"><h3>Estimated exam score</h3>' +
+        '<p style="color:var(--dim)">Not enough data yet. Answer ' + esc(need.join(' across ')) +
+        ' and an estimate will appear here.</p>' +
+        '<div class="btn-row" style="margin-top:.9rem"><a class="btn" href="#/quiz">Test yourself</a></div></div>';
+    }
+
+    return '<div class="card"><h3>Estimated exam score</h3>' +
+      '<div class="est">' +
+        '<div class="est-head">' +
+          '<span class="est-num">' + e.pct + '%</span>' +
+          '<span class="est-side">likely range <b>' + e.low + '–' + e.high + '%</b><br/>' +
+            'indicative grade <b>' + esc(G.gradeFor(e.pct)) + '</b><br/>' +
+            '<span class="muted">' + esc(e.confidence) + ' confidence · ' + e.answered + ' questions</span></span>' +
+        '</div>' +
+        scaleBar(e) +
+      '</div>' +
+      '<div class="btn-row" style="margin-top:1rem">' +
+        '<a class="btn" href="#/estimate">How this is worked out</a>' +
+        '<a class="btn" href="#/quiz">Answer more</a>' +
+      '</div></div>';
+  };
+
+  V.estimate = function () {
+    var e = G.estimate();
+
+    var head = crumbs([{ label: 'Home', href: '#/' }, { label: 'Estimated score' }]) +
+      '<div class="page-head"><span class="eyebrow">Estimate</span><h1>Estimated exam score</h1>' +
+      '<p class="lede">Worked out from your self-test answers. It estimates how much you <b>recall</b>, which is only part of what the exam measures.</p></div>';
+
+    if (!e.ready) {
+      return '<div class="wrap">' + head +
+        '<div class="card"><p style="color:var(--dim)">There is not enough data yet. Answer at least 20 questions across at least 3 topics.</p>' +
+        '<div class="btn-row" style="margin-top:.9rem"><a class="btn btn-primary" href="#/quiz">Test yourself</a></div></div></div>';
+    }
+
+    var paperRows = e.papers.map(function (p) {
+      return [
+        p.paper + ': ' + p.title,
+        p.score === null ? 'not tested' : Math.round(p.score * 100) + '%',
+        p.covered + ' of ' + p.total,
+        String(p.answered)
+      ];
+    });
+
+    var topicRows = [];
+    e.papers.forEach(function (p) {
+      p.topics.forEach(function (t) {
+        topicRows.push([
+          t.title,
+          t.n ? Math.round(t.raw * 100) + '%' : '—',
+          t.n ? Math.round(t.adj * 100) + '%' : '—',
+          t.n ? String(t.n) : 'not tested'
+        ]);
+      });
+    });
+
+    return '<div class="wrap">' + head +
+
+      '<div class="card"><div class="est">' +
+        '<div class="est-head">' +
+          '<span class="est-num">' + e.pct + '%</span>' +
+          '<span class="est-side">likely range <b>' + e.low + '–' + e.high + '%</b><br/>' +
+            'indicative grade <b>' + esc(G.gradeFor(e.pct)) + '</b><br/>' +
+            '<span class="muted">' + esc(e.confidence) + ' confidence</span></span>' +
+        '</div>' +
+        scaleBar(e) +
+      '</div></div>' +
+
+      '<div class="note">' +
+
+      '<section><h2>How the number is worked out</h2>' +
+        blocks([
+          { ol: [
+            'Your score in each topic is taken from the questions you have answered in it.',
+            'That score is **corrected for guessing**. With four options, guessing alone scores about ' +
+              Math.round(e.guessRate * 100) + '%, so a raw ' + Math.round(e.guessRate * 100) +
+              '% is rescaled to 0 and 100% stays 100%. This is why the estimate is lower than your raw quiz score.',
+            'Topics are averaged **within each paper**, so one heavily tested topic cannot dominate.',
+            'The two papers are averaged **equally**, because they carry the same marks.',
+            'The range widens when you have answered few questions, and when topics are untested.'
+          ] }
+        ]) +
+      '</section>' +
+
+      '<section><h2>By paper</h2>' +
+        blocks([{ table: { head: ['Paper', 'Adjusted score', 'Topics tested', 'Questions'], rows: paperRows } }]) +
+      '</section>' +
+
+      '<section><h2>By topic</h2>' +
+        blocks([{ table: { head: ['Topic', 'Raw', 'Adjusted', 'Questions'], rows: topicRows } }]) +
+        '<p class="muted" style="font-size:.88rem">Untested topics are left out of the score rather than counted as zero, ' +
+        'which is why testing more of them narrows the range.</p>' +
+      '</section>' +
+
+      '<section><h2>What this cannot see</h2>' +
+        blocks([
+          { p: 'Treat the number as a floor on your knowledge, not a prediction of your grade. Recognising the right answer from four options is easier than producing it on paper, and a large share of the real marks go to things no multiple-choice question can test:' },
+          { ul: [
+            '**Extended answers**, where marks come from developed points, not single facts',
+            '**Case study detail**: naming a place and quoting figures',
+            '**Command words**: describing when asked to describe, and judging when asked to evaluate',
+            '**Resource questions**: reading maps, graphs and photographs under time pressure',
+            '**The fieldwork paper**, which is a whole component this site cannot assess',
+            '**Writing quickly enough** to finish the paper'
+          ] },
+          { tip: 'If the estimate looks good but your written answers do not, the gap is almost always technique. Work through the command words page and practise full past-paper questions rather than more multiple choice.' }
+        ]) +
+      '</section>' +
+
+      '<section><h2>About the grade</h2>' +
+        blocks([
+          { p: 'The indicative grade uses rough thresholds: A* at 80%, A at 70%, B at 60%, C at 50%, D at 40%, E at 30%. Cambridge sets the real boundaries **after** each series, based on how hard the paper turned out, so they move by several marks every year. Use it as a rough band, never as a target.' }
+        ]) +
+      '</section>' +
+
+      '</div>' +
+
+      '<div class="btn-row">' +
+        '<a class="btn btn-primary" href="#/quiz">Answer more questions</a>' +
+        '<button class="btn" id="resetScores">Clear my scores</button>' +
+      '</div>' +
     '</div>';
   };
 

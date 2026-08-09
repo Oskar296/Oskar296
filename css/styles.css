@@ -396,6 +396,26 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .score-ring{font-family:var(--mono);font-size:3rem;font-weight:600;color:var(--contour);
   font-variant-numeric:tabular-nums}
 
+/* estimated exam score */
+.est{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+.est-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.est-num{font-family:var(--mono);font-size:clamp(2.4rem,7vw,3.2rem);font-weight:600;line-height:1;
+  color:var(--contour);font-variant-numeric:tabular-nums}
+.est-side{font-size:.86rem;color:var(--dim);text-align:right;line-height:1.5}
+.est-side b{color:var(--ink);font-variant-numeric:tabular-nums}
+.est-scale{position:relative;height:30px;margin-top:.5rem}
+.est-track{position:absolute;left:0;right:0;top:10px;height:10px;border-radius:99px;
+  background:var(--surface2);border:1px solid var(--line)}
+.est-band{position:absolute;top:10px;height:10px;border-radius:99px;
+  background:var(--contour-soft);border:1px solid var(--contour)}
+.est-mark{position:absolute;top:3px;width:2.5px;height:24px;border-radius:2px;background:var(--contour)}
+.est-ticks{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:.66rem;color:var(--dim2);font-variant-numeric:tabular-nums}
+@media (max-width:420px){
+  .est-head{flex-direction:column;align-items:flex-start}
+  .est-side{text-align:left}
+}
+
 .empty-state{color:var(--dim);font-size:.95rem;padding:2rem 0}
 
 /* ---------- responsive ---------- */

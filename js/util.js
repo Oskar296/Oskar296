@@ -144,6 +144,90 @@ window.GEO = {
     return rows.slice(0, n || 3);
   };
 
+  /* ---- estimated exam score ----
+     Multiple choice flatters you: with four options, random guessing already
+     scores 25%. So the raw percentage is corrected down onto a 0-100 scale
+     where 0 means "no better than guessing", then topics are averaged within
+     a paper and the two papers weighted equally, because they carry equal
+     marks. Untested topics widen the range rather than silently counting as
+     zero or being ignored. */
+
+  function guessRate() {
+    if (!G.questions.length) return 0.25;
+    var sum = G.questions.reduce(function (a, q) { return a + 1 / q.o.length; }, 0);
+    return sum / G.questions.length;
+  }
+
+  G.estimate = function () {
+    var g = guessRate();
+
+    var papers = (G.papers || []).map(function (p) {
+      var topics = p.topics.map(function (t) {
+        var q = G.progress.quiz[t.id];
+        var n = q ? q.right + q.wrong : 0;
+        var raw = n ? q.right / n : null;
+        return {
+          id: t.id, title: t.title, n: n, raw: raw,
+          adj: raw === null ? null : Math.max(0, (raw - g) / (1 - g))
+        };
+      });
+      var scored = topics.filter(function (t) { return t.n > 0; });
+      return {
+        id: p.id, paper: p.paper, title: p.title, topics: topics,
+        covered: scored.length, total: topics.length,
+        answered: topics.reduce(function (a, t) { return a + t.n; }, 0),
+        score: scored.length
+          ? scored.reduce(function (a, t) { return a + t.adj; }, 0) / scored.length
+          : null
+      };
+    });
+
+    var scoredPapers = papers.filter(function (p) { return p.score !== null; });
+    var answered = papers.reduce(function (a, p) { return a + p.answered; }, 0);
+    var covered = papers.reduce(function (a, p) { return a + p.covered; }, 0);
+    var totalTopics = papers.reduce(function (a, p) { return a + p.total; }, 0);
+
+    var pct = scoredPapers.length
+      ? Math.round(100 * scoredPapers.reduce(function (a, p) { return a + p.score; }, 0) / scoredPapers.length)
+      : null;
+
+    /* Two sources of uncertainty: a small sample of questions, and topics
+       never tested at all. Both widen the band. */
+    var sampling = answered ? 50 / Math.sqrt(answered) : 50;
+    var gap = totalTopics ? (1 - covered / totalTopics) * 18 : 18;
+    var margin = Math.min(40, Math.round(sampling + gap));
+
+    var confidence = (answered >= 100 && covered >= 8) ? 'high'
+      : (answered >= 50 && covered >= 5) ? 'moderate' : 'low';
+
+    return {
+      ready: answered >= 20 && covered >= 3,
+      needQuestions: Math.max(0, 20 - answered),
+      needTopics: Math.max(0, 3 - covered),
+      pct: pct,
+      low: pct === null ? null : Math.max(0, pct - margin),
+      high: pct === null ? null : Math.min(100, pct + margin),
+      margin: margin,
+      guessRate: g,
+      answered: answered, covered: covered, totalTopics: totalTopics,
+      confidence: confidence,
+      papers: papers
+    };
+  };
+
+  /* Indicative only. Cambridge sets boundaries after each series, and they
+     move by several marks depending on how hard the paper turned out. */
+  G.gradeFor = function (pct) {
+    var bands = [[80, 'A*'], [70, 'A'], [60, 'B'], [50, 'C'], [40, 'D'], [30, 'E'], [20, 'F']];
+    for (var i = 0; i < bands.length; i++) if (pct >= bands[i][0]) return bands[i][1];
+    return 'G';
+  };
+
+  G.resetScores = function () {
+    G.progress.quiz = {};
+    G.save();
+  };
+
   /* The topics a case study can be used in: from its old unit tags, plus any
      topic it names directly. */
   G.topicsForCase = function (c) {
