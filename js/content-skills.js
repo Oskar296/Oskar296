@@ -10,16 +10,25 @@ GEO.skills = [
       {
         h: 'Structure of the qualification',
         blocks: [
+          { p: 'This site follows the syllabus for **examination in 2027, 2028 and 2029**. It is a substantial rewrite of the previous version, so older textbooks and past papers are organised differently.' },
           { table: {
-            head: ['Paper', 'Length', 'Marks', 'Weighting', 'What it is'],
+            head: ['Paper', 'Length', 'Marks', 'What it is'],
             rows: [
-              ['1 Geographical Themes', '1 h 45', '75', '45%', 'Three structured questions, one from each of the three themes. Each has parts building from short recall to an extended answer.'],
-              ['2 Geographical Skills', '1 h 45', '60', '27.5%', 'All questions compulsory. Based on a 1:25 000 or 1:50 000 map extract plus photographs, graphs and data.'],
-              ['3 Coursework', '—', '60', '27.5%', 'A school-assessed fieldwork investigation. Taken instead of Paper 4.'],
-              ['4 Alternative to Coursework', '1 h 30', '60', '27.5%', 'A written paper testing fieldwork skills without doing fieldwork. Taken instead of Paper 3.']
+              ['1 Physical geography', '1 h 45', '75', 'Rivers, coasts, ecosystems, tectonic hazards and climate change'],
+              ['2 Human geography', '1 h 45', '75', 'Populations, towns and cities, development, economies and resource provision'],
+              ['3 Coursework', '—', '—', 'A school-assessed fieldwork investigation. Taken instead of Paper 4.'],
+              ['4 Alternative to Coursework', '—', '—', 'A written paper testing fieldwork skills without doing fieldwork. Taken instead of Paper 3.']
             ]
           } },
-          { tip: 'Syllabus details are revised from time to time. Check the paper timings and weightings against the syllabus document for your own exam year before relying on them.' }
+          { p: 'All candidates take **three components**: Paper 1, Paper 2, and then either Paper 3 or Paper 4.' },
+          { h3: 'What changed from the old syllabus' },
+          { ul: [
+            'The three themes (Population and settlement, The natural environment, Economic development) are gone, replaced by **ten topics**',
+            'Papers 1 and 2 are now split **physical / human**, rather than one themes paper and one skills paper',
+            'The separate **Geographical Skills paper has been removed**. Map, graph and data skills are still worth learning, because they are examined within the two content papers',
+            '**Climate change is new content**, and sustainability runs more strongly through the whole syllabus'
+          ] },
+          { tip: 'Cambridge revises syllabuses periodically and the detail below was assembled without access to the official PDF. Check paper timings, marks and the sub-topic breakdown against the syllabus document for your own exam year before relying on them.' }
         ]
       },
       {

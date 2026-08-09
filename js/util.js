@@ -120,16 +120,19 @@ window.GEO = {
     G.save();
   };
 
-  /* Record a quiz answer per unit so the home page can point at weak topics. */
+  /* Questions carry the old unit tag, which is stable as prose is re-filed.
+     Scores are stored against the topic that tag now belongs to, so the home
+     page can point at weak topics using the same ids as the navigation. */
   G.recordAnswer = function (unitId, correct) {
     if (!unitId) return;
-    var q = G.progress.quiz[unitId] || { right: 0, wrong: 0 };
+    var key = (G.topicForUnit && G.topicForUnit(unitId)) || unitId;
+    var q = G.progress.quiz[key] || { right: 0, wrong: 0 };
     if (correct) q.right++; else q.wrong++;
-    G.progress.quiz[unitId] = q;
+    G.progress.quiz[key] = q;
     G.save();
   };
 
-  G.weakUnits = function (n) {
+  G.weakTopics = function (n) {
     var rows = [];
     Object.keys(G.progress.quiz).forEach(function (id) {
       var q = G.progress.quiz[id];
@@ -139,6 +142,20 @@ window.GEO = {
     });
     rows.sort(function (a, b) { return a.pct - b.pct; });
     return rows.slice(0, n || 3);
+  };
+
+  /* The topics a case study can be used in: from its old unit tags, plus any
+     topic it names directly. */
+  G.topicsForCase = function (c) {
+    var out = [];
+    (c.units || []).forEach(function (u) {
+      var t = G.topicForUnit && G.topicForUnit(u);
+      if (t && out.indexOf(t) < 0) out.push(t);
+    });
+    (c.topics || []).forEach(function (t) {
+      if (out.indexOf(t) < 0) out.push(t);
+    });
+    return out.map(function (id) { return G.topic(id); }).filter(Boolean);
   };
 
 })(window.GEO);

@@ -43,7 +43,7 @@
 
   function sections(list) {
     return '<div class="note">' + (list || []).map(function (s) {
-      return '<section><h2>' + inline(s.h) + '</h2>' + blocks(s.blocks) + '</section>';
+      return '<section id="s-' + G.slug(s.h) + '"><h2>' + inline(s.h) + '</h2>' + blocks(s.blocks) + '</section>';
     }).join('') + '</div>';
   }
 
@@ -57,49 +57,48 @@
   /* ---------------- home ---------------- */
 
   V.home = function () {
-    var units = G.allUnits();
-    var done = G.doneCount();
-    var pct = Math.round(done / units.length * 100);
+    var topics = G.allTopics();
+    var done = topics.filter(function (t) { return G.topicDone(t.id); }).length;
+    var pct = Math.round(done / topics.length * 100);
 
-    var themeTiles = G.themes.map(function (t) {
-      var td = t.units.filter(function (u) { return G.isDone(u.id); }).length;
-      return '<a class="tile" href="#/theme/' + t.id + '">' +
-        '<span class="eyebrow">Theme ' + esc(t.id) + '</span>' +
-        '<span class="t-title">' + esc(t.title) + '</span>' +
-        '<span class="t-sub">' + esc(t.blurb) + '</span>' +
-        '<span class="t-sub"><b>' + td + ' of ' + t.units.length + '</b> units marked revised</span>' +
+    var paperTiles = G.papers.map(function (p) {
+      var pd = p.topics.filter(function (t) { return G.topicDone(t.id); }).length;
+      return '<a class="tile" href="#/paper/' + p.id + '">' +
+        '<span class="eyebrow">' + esc(p.paper) + '</span>' +
+        '<span class="t-title">' + esc(p.title) + '</span>' +
+        '<span class="t-sub">' + esc(p.blurb) + '</span>' +
+        '<span class="t-sub"><b>' + pd + ' of ' + p.topics.length + '</b> topics marked revised</span>' +
         '</a>';
     }).join('');
 
-    var weak = G.weakUnits(3).map(function (w) {
-      var u = G.unit(w.id) || G.skill(w.id);
-      var label = u ? (u.id + ' ' + u.title) : w.id;
-      var href = G.unit(w.id) ? '#/unit/' + w.id : '#/skills/' + w.id;
-      return '<li><a href="' + href + '">' + esc(label) + '</a> — ' +
+    var weak = G.weakTopics(3).map(function (w) {
+      var t = G.topic(w.id) || G.skill(w.id);
+      var href = G.topic(w.id) ? '#/topic/' + w.id : '#/skills/' + w.id;
+      return '<li><a href="' + href + '">' + esc(t ? t.title : w.id) + '</a> — ' +
              Math.round(w.pct * 100) + '% correct over ' + w.total + ' questions</li>';
     }).join('');
 
     return '<div class="wrap-wide">' +
 
       '<div class="hero"><canvas id="heroCanvas" aria-hidden="true"></canvas><div class="hero-in">' +
-        '<span class="eyebrow">Cambridge IGCSE · 0460</span>' +
+        '<span class="eyebrow">Cambridge IGCSE · 0460 · 2027–2029</span>' +
         '<h1>Geography revision, organised the way the syllabus is.</h1>' +
-        '<p class="lede">Notes for all ' + units.length + ' units, ' + G.cases.length + ' case studies with the figures examiners want, ' +
+        '<p class="lede">Notes for all ' + topics.length + ' topics, ' + G.cases.length + ' case studies with the figures examiners want, ' +
         G.glossary.length + ' definitions and ' + G.questions.length + ' practice questions.</p>' +
         '<div class="btn-row" style="margin-top:.5rem">' +
           '<a class="btn btn-primary" href="#/quiz">Test yourself</a>' +
-          '<a class="btn" href="#/unit/1.1">Start at 1.1</a>' +
+          '<a class="btn" href="#/topic/rivers">Start with rivers</a>' +
         '</div>' +
       '</div></div>' +
 
       '<div class="card">' +
         '<h3>Your progress</h3>' +
-        '<p class="t-sub" style="color:var(--dim)">' + done + ' of ' + units.length + ' units marked as revised (' + pct + '%)</p>' +
+        '<p class="t-sub" style="color:var(--dim)">' + done + ' of ' + topics.length + ' topics marked as revised (' + pct + '%)</p>' +
         '<div class="progress-bar" style="margin-top:.7rem"><i style="width:' + pct + '%"></i></div>' +
         (weak ? '<h3 style="margin-top:1.2rem">Worth another look</h3><ul>' + weak + '</ul>' : '') +
       '</div>' +
 
-      '<div class="grid grid-2">' + themeTiles + '</div>' +
+      '<div class="grid grid-2">' + paperTiles + '</div>' +
 
       '<div class="grid grid-3">' +
         '<a class="tile" href="#/cases"><span class="t-title">Case studies</span>' +
@@ -113,41 +112,49 @@
     '</div>';
   };
 
-  /* ---------------- theme ---------------- */
+  /* ---------------- paper ---------------- */
 
-  V.theme = function (id) {
-    var t = G.theme(id);
-    if (!t) return V.notFound();
+  V.paper = function (id) {
+    var p = G.paper(id);
+    if (!p) return V.notFound();
 
-    var list = t.units.map(function (u) {
-      return '<a class="tile" href="#/unit/' + u.id + '">' +
-        '<span class="eyebrow">' + esc(u.id) + (G.isDone(u.id) ? ' · revised' : '') + '</span>' +
-        '<span class="t-title">' + esc(u.title) + '</span>' +
-        '<span class="t-sub">' + u.sections.length + ' sections' +
-          (u.cases && u.cases.length ? ' · ' + u.cases.length + ' case ' + (u.cases.length === 1 ? 'study' : 'studies') : '') +
-        '</span></a>';
+    var list = p.topics.map(function (t) {
+      var nCase = t.cases.length;
+      return '<a class="tile" href="#/topic/' + t.id + '">' +
+        '<span class="eyebrow">' + (G.topicDone(t.id) ? 'Revised ✓' : 'Topic') + '</span>' +
+        '<span class="t-title">' + esc(t.title) + '</span>' +
+        '<span class="t-sub">' + esc(t.blurb) + '</span>' +
+        '<span class="t-sub" style="margin-top:.3rem">' + t.sections.length + ' sections' +
+          (nCase ? ' · ' + nCase + ' case ' + (nCase === 1 ? 'study' : 'studies') : '') + '</span></a>';
     }).join('');
 
     return '<div class="wrap-wide">' +
-      crumbs([{ label: 'Home', href: '#/' }, { label: 'Theme ' + t.id }]) +
-      '<div class="page-head"><span class="eyebrow">Theme ' + esc(t.id) + '</span>' +
-        '<h1>' + esc(t.title) + '</h1><p class="lede">' + esc(t.blurb) + '</p></div>' +
+      crumbs([{ label: 'Home', href: '#/' }, { label: p.paper }]) +
+      '<div class="page-head"><span class="eyebrow">' + esc(p.paper) + ' · 1 h 45 · 75 marks</span>' +
+        '<h1>' + esc(p.title) + '</h1><p class="lede">' + esc(p.blurb) + '</p></div>' +
       '<div class="grid grid-2">' + list + '</div>' +
     '</div>';
   };
 
-  /* ---------------- unit ---------------- */
+  /* ---------------- topic ---------------- */
 
-  V.unit = function (id) {
-    var u = G.unit(id);
-    if (!u) return V.notFound();
+  V.topic = function (id) {
+    var t = G.topic(id);
+    if (!t) return V.notFound();
 
-    var objectives = u.objectives && u.objectives.length
-      ? '<div class="objectives"><span class="eyebrow">What the syllabus asks</span><ul>' +
-        u.objectives.map(function (o) { return '<li>' + inline(o) + '</li>'; }).join('') + '</ul></div>'
+    var covers = t.covers && t.covers.length
+      ? '<div class="objectives"><span class="eyebrow">What this covers</span><ul>' +
+        t.covers.map(function (o) { return '<li>' + inline(o) + '</li>'; }).join('') + '</ul></div>'
       : '';
 
-    var linkedCases = (u.cases || []).map(function (cid) {
+    /* Merged topics run long, so give them a jump list. */
+    var contents = t.sections.length > 6
+      ? '<div class="card"><h3>On this page</h3><ul>' + t.sections.map(function (s) {
+          return '<li><a href="#" data-jump="s-' + G.slug(s.h) + '">' + esc(s.h) + '</a></li>';
+        }).join('') + '</ul></div>'
+      : '';
+
+    var linkedCases = t.cases.map(function (cid) {
       var c = G.caseById(cid);
       if (!c) return '';
       return '<a class="tile" href="#/case/' + c.id + '">' +
@@ -156,16 +163,16 @@
         '<span class="t-sub">' + esc(c.place) + '</span></a>';
     }).join('');
 
-    var terms = G.glossary.filter(function (t) { return t.unit === id; });
+    var terms = G.topicItems(t.id, G.glossary, 'unit');
     var termList = terms.length
-      ? '<div class="card"><h3>Key terms in this unit</h3><dl>' + terms.map(function (t) {
-          return '<div class="defn"><dt>' + esc(t.term) + '</dt><dd>' + esc(t.def) + '</dd></div>';
+      ? '<div class="card"><h3>Key terms in this topic</h3><dl>' + terms.map(function (x) {
+          return '<div class="defn"><dt>' + esc(x.term) + '</dt><dd>' + esc(x.def) + '</dd></div>';
         }).join('') + '</dl></div>'
       : '';
 
-    var nQ = G.questions.filter(function (q) { return q.u === id; }).length;
+    var nQ = G.topicItems(t.id, G.questions, 'u').length;
 
-    var all = G.allUnits();
+    var all = G.allTopics();
     var i = all.map(function (x) { return x.id; }).indexOf(id);
     var prev = i > 0 ? all[i - 1] : null;
     var next = i < all.length - 1 ? all[i + 1] : null;
@@ -173,23 +180,25 @@
     return '<div class="wrap">' +
       crumbs([
         { label: 'Home', href: '#/' },
-        { label: 'Theme ' + u.theme.id, href: '#/theme/' + u.theme.id },
-        { label: u.id }
+        { label: t.paperTitle, href: '#/paper/' + t.paperId },
+        { label: t.title }
       ]) +
-      '<div class="page-head"><span class="eyebrow">Unit ' + esc(u.id) + '</span><h1>' + esc(u.title) + '</h1></div>' +
-      objectives +
-      sections(u.sections) +
-      (linkedCases ? '<h2 style="margin-top:.5rem">Case studies for this unit</h2><div class="grid grid-2">' + linkedCases + '</div>' : '') +
+      '<div class="page-head"><span class="eyebrow">' + esc(t.paperTitle) + '</span><h1>' + esc(t.title) + '</h1>' +
+        '<p class="lede">' + esc(t.blurb) + '</p></div>' +
+      covers +
+      contents +
+      sections(t.sections) +
+      (linkedCases ? '<h2 style="margin-top:.5rem">Case studies for this topic</h2><div class="grid grid-2">' + linkedCases + '</div>' : '') +
       termList +
       '<div class="btn-row">' +
-        '<button class="btn' + (G.isDone(id) ? ' btn-primary' : '') + '" data-done="' + esc(id) + '">' +
-          (G.isDone(id) ? 'Revised ✓' : 'Mark as revised') + '</button>' +
-        (nQ ? '<a class="btn" href="#/quiz?unit=' + encodeURIComponent(id) + '">Test this unit (' + nQ + ')</a>' : '') +
+        '<button class="btn' + (G.topicDone(id) ? ' btn-primary' : '') + '" data-done="' + esc(id) + '">' +
+          (G.topicDone(id) ? 'Revised ✓' : 'Mark as revised') + '</button>' +
+        (nQ ? '<a class="btn" href="#/quiz?scope=' + encodeURIComponent(id) + '">Test this topic (' + nQ + ')</a>' : '') +
       '</div>' +
       '<hr class="hr"/>' +
       '<div class="btn-row">' +
-        (prev ? '<a class="btn" href="#/unit/' + prev.id + '">← ' + esc(prev.id + ' ' + prev.title) + '</a>' : '') +
-        (next ? '<a class="btn" href="#/unit/' + next.id + '">' + esc(next.id + ' ' + next.title) + ' →</a>' : '') +
+        (prev ? '<a class="btn" href="#/topic/' + prev.id + '">← ' + esc(prev.title) + '</a>' : '') +
+        (next ? '<a class="btn" href="#/topic/' + next.id + '">' + esc(next.title) + ' →</a>' : '') +
       '</div>' +
     '</div>';
   };
@@ -215,7 +224,9 @@
         '<span class="t-sub">' + esc(c.place) + '</span>' +
         '<span class="t-sub" style="margin-top:.3rem">' + esc(c.summary) + '</span>' +
         '<span class="chips" style="margin-top:.55rem">' +
-          c.units.map(function (u) { return '<span class="chip static">' + esc(u) + '</span>'; }).join('') +
+          G.topicsForCase(c).map(function (tp) {
+            return '<span class="chip static">' + esc(tp.title) + '</span>';
+          }).join('') +
         '</span></a>';
     }).join('');
 
@@ -239,9 +250,8 @@
         }).join('') + '</div>'
       : '';
 
-    var links = c.units.map(function (u) {
-      var unit = G.unit(u);
-      return unit ? '<a class="btn" href="#/unit/' + u + '">' + esc(u + ' ' + unit.title) + '</a>' : '';
+    var links = G.topicsForCase(c).map(function (tp) {
+      return '<a class="btn" href="#/topic/' + tp.id + '">' + esc(tp.title) + '</a>';
     }).join('');
 
     return '<div class="wrap">' +
@@ -259,20 +269,31 @@
 
   V.glossary = function () {
     var groups = {};
-    G.glossary.forEach(function (t) {
-      var key = t.unit;
-      (groups[key] = groups[key] || []).push(t);
+    var order = [];
+
+    function push(key, label, href, term) {
+      if (!groups[key]) { groups[key] = { label: label, href: href, items: [] }; order.push(key); }
+      groups[key].items.push(term);
+    }
+
+    /* Walk the topics in syllabus order so the glossary reads in the same
+       order as the sidebar, rather than alphabetically by tag. */
+    G.allTopics().forEach(function (t) {
+      G.topicItems(t.id, G.glossary, 'unit').forEach(function (term) {
+        push(t.id, t.title, '#/topic/' + t.id, term);
+      });
+    });
+    G.skills.forEach(function (s) {
+      G.glossary.filter(function (term) { return term.unit === s.id; }).forEach(function (term) {
+        push(s.id, s.title, '#/skills/' + s.id, term);
+      });
     });
 
-    var order = Object.keys(groups).sort();
     var body = order.map(function (key) {
-      var unit = G.unit(key);
-      var skill = G.skill(key);
-      var label = unit ? key + ' ' + unit.title : (skill ? skill.title : key);
-      var href = unit ? '#/unit/' + key : (skill ? '#/skills/' + key : null);
+      var g = groups[key];
       return '<section class="gl-group" data-group="' + esc(key) + '">' +
-        '<h2>' + (href ? '<a href="' + href + '" style="text-decoration:none;color:inherit">' + esc(label) + '</a>' : esc(label)) + '</h2>' +
-        '<dl>' + groups[key].map(function (t) {
+        '<h2><a href="' + g.href + '" style="text-decoration:none;color:inherit">' + esc(g.label) + '</a></h2>' +
+        '<dl>' + g.items.map(function (t) {
           return '<div class="defn" id="term-' + esc(t.id) + '" data-term="' + esc(t.term.toLowerCase()) + '">' +
             '<dt>' + esc(t.term) + '</dt><dd>' + esc(t.def) + '</dd></div>';
         }).join('') + '</dl></section>';
@@ -282,7 +303,7 @@
       crumbs([{ label: 'Home', href: '#/' }, { label: 'Glossary' }]) +
       '<div class="page-head"><span class="eyebrow">Definitions</span><h1>Glossary</h1>' +
         '<p class="lede">' + G.glossary.length + ' terms. Definitions carry marks on their own, so learn the wording, including the units.</p></div>' +
-      '<input type="search" id="glFilter" class="gl-filter" placeholder="Filter terms" aria-label="Filter glossary terms" ' +
+      '<input type="search" id="glFilter" placeholder="Filter terms" aria-label="Filter glossary terms" ' +
         'style="width:100%;height:42px;padding:0 .9rem;border:1px solid var(--line);border-radius:10px;' +
         'background:var(--surface);color:var(--ink);font:inherit"/>' +
       '<div id="glList">' + body + '</div>' +
@@ -301,8 +322,8 @@
 
     return '<div class="wrap-wide">' +
       crumbs([{ label: 'Home', href: '#/' }, { label: 'Exam skills' }]) +
-      '<div class="page-head"><span class="eyebrow">Papers 2 and 4</span><h1>Exam skills</h1>' +
-        '<p class="lede">Most lost marks are technique, not knowledge: answering a different command word, or ignoring the resource.</p></div>' +
+      '<div class="page-head"><span class="eyebrow">Technique</span><h1>Exam skills</h1>' +
+        '<p class="lede">The separate skills paper has gone, but map, graph and data questions are still set inside Papers 1 and 2, and fieldwork is still assessed. Most lost marks are technique, not knowledge.</p></div>' +
       '<div class="grid grid-2">' + tiles + '</div>' +
     '</div>';
   };
@@ -317,7 +338,7 @@
       '<div class="page-head"><span class="eyebrow">Exam skills</span><h1>' + esc(s.title) + '</h1>' +
         '<p class="lede">' + esc(s.blurb) + '</p></div>' +
       sections(s.sections) +
-      (nQ ? '<div class="btn-row"><a class="btn" href="#/quiz?unit=' + encodeURIComponent(id) + '">Test this (' + nQ + ')</a></div>' : '') +
+      (nQ ? '<div class="btn-row"><a class="btn" href="#/quiz?scope=' + encodeURIComponent(id) + '">Test this (' + nQ + ')</a></div>' : '') +
     '</div>';
   };
 

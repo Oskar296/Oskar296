@@ -59,15 +59,17 @@
   /* ---------------- sidebar ---------------- */
 
   function buildSidebar() {
-    var html = '<div class="side-head">Syllabus</div>';
+    var html = '<div class="side-head">Syllabus 2027–2029</div>';
+    var n = 0;
 
-    G.themes.forEach(function (t) {
-      html += '<div class="side-theme"><span class="t-num">' + esc(t.id) + '</span>' +
-              '<a href="#/theme/' + t.id + '" style="color:inherit;text-decoration:none">' + esc(t.title) + '</a></div>';
-      t.units.forEach(function (u) {
-        html += '<a class="side-link" href="#/unit/' + u.id + '" data-unit="' + esc(u.id) + '">' +
-          '<span class="num">' + esc(u.id) + '</span><span>' + esc(u.title) + '</span>' +
-          '<span class="tick" data-tick="' + esc(u.id) + '">' + (G.isDone(u.id) ? '✓' : '') + '</span></a>';
+    G.papers.forEach(function (p) {
+      html += '<div class="side-theme"><span class="t-num">' + esc(p.paper.replace('Paper ', 'P')) + '</span>' +
+              '<a href="#/paper/' + p.id + '" style="color:inherit;text-decoration:none">' + esc(p.title) + '</a></div>';
+      p.topics.forEach(function (t) {
+        n++;
+        html += '<a class="side-link" href="#/topic/' + t.id + '" data-topic="' + esc(t.id) + '">' +
+          '<span class="num">' + n + '</span><span>' + esc(t.title) + '</span>' +
+          '<span class="tick" data-tick="' + esc(t.id) + '">' + (G.isDone(t.id) ? '✓' : '') + '</span></a>';
       });
     });
 
@@ -118,11 +120,20 @@
   function buildIndex() {
     var idx = [];
 
-    G.allUnits().forEach(function (u) {
+    G.allTopics().forEach(function (t) {
       idx.push({
-        kind: 'Unit ' + u.id, title: u.title, href: '#/unit/' + u.id,
-        sub: u.sections.map(function (s) { return s.h; }).join(' · '),
-        hay: (u.id + ' ' + u.title + ' ' + u.sections.map(function (s) { return s.h; }).join(' ')).toLowerCase()
+        kind: t.paperTitle, title: t.title, href: '#/topic/' + t.id,
+        sub: t.sections.map(function (s) { return s.h; }).join(' · '),
+        hay: (t.title + ' ' + t.blurb + ' ' + t.sections.map(function (s) { return s.h; }).join(' ')).toLowerCase()
+      });
+
+      /* Topics are long, so index their sections separately and deep-link. */
+      t.sections.forEach(function (s) {
+        idx.push({
+          kind: t.title, title: s.h, href: '#/topic/' + t.id + '?s=' + encodeURIComponent(G.slug(s.h)),
+          sub: 'Section of ' + t.title,
+          hay: s.h.toLowerCase()
+        });
       });
     });
 
@@ -273,10 +284,10 @@
 
     if (path === '/' || parts[0] === '') {
       html = G.views.home();
-    } else if (parts[0] === 'theme' && parts[1]) {
-      html = G.views.theme(parts[1]);
-    } else if (parts[0] === 'unit' && parts[1]) {
-      html = G.views.unit(parts[1]);
+    } else if (parts[0] === 'paper' && parts[1]) {
+      html = G.views.paper(parts[1]);
+    } else if (parts[0] === 'topic' && parts[1]) {
+      html = G.views.topic(parts[1]);
       G.markSeen(parts[1]);
     } else if (parts[0] === 'cases') {
       html = G.views.cases(query);
@@ -308,8 +319,10 @@
     if (canvas) G.drawContours(canvas);
 
     /* Keep the position when stepping through quiz questions, otherwise start
-       at the top of the new page. */
-    if (!(parts[0] === 'quiz' && parts[1] === 'run')) window.scrollTo(0, 0);
+       at the top of the new page — unless a section was deep-linked. */
+    var section = query.s ? document.getElementById('s-' + query.s) : null;
+    if (section) section.scrollIntoView({ block: 'start' });
+    else if (!(parts[0] === 'quiz' && parts[1] === 'run')) window.scrollTo(0, 0);
     main.focus({ preventScroll: true });
 
     var title = main.querySelector('h1');
@@ -339,6 +352,14 @@
       doneBtn.textContent = now ? 'Revised ✓' : 'Mark as revised';
       doneBtn.classList.toggle('btn-primary', now);
       refreshTicks();
+      return;
+    }
+
+    var jump = t.closest('[data-jump]');
+    if (jump) {
+      e.preventDefault();
+      var target = document.getElementById(jump.getAttribute('data-jump'));
+      if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
       return;
     }
 

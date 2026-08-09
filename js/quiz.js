@@ -14,41 +14,59 @@
     return a;
   }
 
-  function labelFor(unitId) {
-    var u = G.unit(unitId);
-    if (u) return u.id + ' ' + u.title;
-    var s = G.skill(unitId);
-    return s ? s.title : unitId;
+  /* Questions are tagged with the old unit ids; resolve those to the topic
+     they now live in, so the quiz speaks the same language as the site. */
+  function labelFor(unitTag) {
+    var topicId = G.topicForUnit(unitTag);
+    if (topicId) {
+      var t = G.topic(topicId);
+      if (t) return t.title;
+    }
+    var s = G.skill(unitTag);
+    return s ? s.title : unitTag;
   }
+
+  function notesHref(unitTag) {
+    var topicId = G.topicForUnit(unitTag);
+    return topicId ? '#/topic/' + topicId : '#/skills/' + unitTag;
+  }
+
+  Q.notesHref = notesHref;
 
   function pool(scope) {
     if (!scope || scope === 'all') return G.questions;
-    if (scope.indexOf('theme:') === 0) {
-      var t = G.theme(scope.slice(6));
-      if (!t) return [];
-      var ids = t.units.map(function (u) { return u.id; });
-      return G.questions.filter(function (q) { return ids.indexOf(q.u) >= 0; });
+
+    if (scope.indexOf('paper:') === 0) {
+      var p = G.paper(scope.slice(6));
+      if (!p) return [];
+      var ids = p.topics.map(function (t) { return t.id; });
+      return G.questions.filter(function (q) { return ids.indexOf(G.topicForUnit(q.u)) >= 0; });
     }
+
     if (scope === 'skills') {
       var sIds = G.skills.map(function (s) { return s.id; });
       return G.questions.filter(function (q) { return sIds.indexOf(q.u) >= 0; });
     }
+
+    if (G.topic(scope)) return G.topicItems(scope, G.questions, 'u');
+
     return G.questions.filter(function (q) { return q.u === scope; });
   }
 
   /* ---------------- setup screen ---------------- */
 
   Q.setup = function (query) {
-    var preset = query.unit || 'all';
+    var preset = query.scope || 'all';
     var opts = [{ v: 'all', label: 'Everything', n: G.questions.length }];
 
-    G.themes.forEach(function (t) {
-      opts.push({ v: 'theme:' + t.id, label: 'Theme ' + t.id + ': ' + t.title, n: pool('theme:' + t.id).length });
+    G.papers.forEach(function (p) {
+      opts.push({ v: 'paper:' + p.id, label: p.paper + ': ' + p.title, n: pool('paper:' + p.id).length });
     });
     opts.push({ v: 'skills', label: 'Exam skills', n: pool('skills').length });
 
-    if (preset !== 'all' && preset.indexOf('theme:') !== 0 && preset !== 'skills') {
-      opts.unshift({ v: preset, label: labelFor(preset), n: pool(preset).length });
+    if (preset !== 'all' && preset.indexOf('paper:') !== 0 && preset !== 'skills') {
+      var t = G.topic(preset) || G.skill(preset);
+      opts.unshift({ v: preset, label: t ? t.title : preset, n: pool(preset).length });
     }
 
     var chips = opts.map(function (o) {
@@ -63,7 +81,7 @@
     return '<div class="wrap">' +
       '<nav class="crumbs"><a href="#/">Home</a><span aria-hidden="true">/</span><span>Test yourself</span></nav>' +
       '<div class="page-head"><span class="eyebrow">Self-test</span><h1>Test yourself</h1>' +
-        '<p class="lede">Multiple choice with an explanation on every answer. Scores are kept per unit, so the home page can point you at your weakest topics.</p></div>' +
+        '<p class="lede">Multiple choice with an explanation on every answer. Scores are kept per topic, so the home page can point you at your weakest topics.</p></div>' +
       '<div class="card"><h3>What do you want to be asked about?</h3>' +
         '<div class="chips" style="margin-top:.6rem" id="scopeChips">' + chips + '</div>' +
         '<h3 style="margin-top:1.2rem">How many?</h3>' +
@@ -147,7 +165,7 @@
         '<div class="btn-row" style="margin-top:1rem">' +
           '<button class="btn btn-primary" id="qNext">' +
             (s.i + 1 >= s.qs.length ? 'See results' : 'Next question') + '</button>' +
-          '<a class="btn" href="#/' + (G.unit(q.u) ? 'unit/' + q.u : 'skills/' + q.u) + '">Read the notes</a>' +
+          '<a class="btn" href="' + notesHref(q.u) + '">Read the notes</a>' +
         '</div>';
     }
   };
@@ -166,7 +184,7 @@
 
     var verdict = pct >= 85 ? 'Strong. Move on to a topic you have not tested yet.'
       : pct >= 65 ? 'Solid, but the misses below are worth rereading.'
-      : pct >= 40 ? 'Patchy. Read the notes for the units listed, then retake this.'
+      : pct >= 40 ? 'Patchy. Read the notes for the topics listed, then retake this.'
       : 'Start with the notes rather than more questions.';
 
     var review = s.wrong.map(function (w) {
@@ -177,7 +195,7 @@
         '<p style="color:var(--veg)">Correct: ' + inline(w.q.o[w.q.a]) + '</p>' +
         '<div class="explain" style="margin-top:.7rem">' + inline(w.q.e) + '</div>' +
         '<div class="btn-row" style="margin-top:.9rem">' +
-          '<a class="btn" href="#/' + (G.unit(w.q.u) ? 'unit/' + w.q.u : 'skills/' + w.q.u) + '">Read the notes</a>' +
+          '<a class="btn" href="' + notesHref(w.q.u) + '">Read the notes</a>' +
         '</div></div>';
     }).join('');
 

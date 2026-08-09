@@ -459,6 +459,7 @@ GEO.cases = [
   place: 'Queensland, Australia',
   type: 'Coral reef',
   units: ['2.3'],
+  topics: ['climate-change'],
   summary: 'The world\'s largest reef system, and the clearest example of a coastal ecosystem under multiple simultaneous threats.',
   stats: [
     ['~2,300 km', 'length'],
@@ -545,6 +546,7 @@ GEO.cases = [
   place: 'Brazil and neighbouring states',
   type: 'Deforestation and sustainability',
   units: ['2.5', '3.7'],
+  topics: ['climate-change'],
   summary: 'The largest rainforest on Earth, cleared mainly for cattle, and the standard case for the causes and effects of deforestation.',
   stats: [
     ['~5.5 m km²', 'total rainforest area'],
@@ -720,6 +722,98 @@ GEO.cases = [
         'Small eco-lodges built from local materials, using solar power and recycling water',
         'Entry fees ring-fenced for conservation and for schools and clinics in surrounding communities'
       ] }
+    ] }
+  ]
+},
+
+{
+  id: 'maldives-climate',
+  name: 'The Maldives and sea level rise',
+  place: 'The Maldives, Indian Ocean',
+  type: 'Climate change',
+  units: [],
+  topics: ['climate-change'],
+  summary: 'The lowest-lying country on Earth, and the standard example of a state that did almost nothing to cause climate change but is among the first to be threatened by it.',
+  stats: [
+    ['~1.5 m', 'average land height above sea level'],
+    ['~2.4 m', 'the highest natural point in the country'],
+    ['~1,190', 'coral islands, about 190 inhabited'],
+    ['~80%', 'of the land area under 1 m above sea level']
+  ],
+  sections: [
+    { h: 'Why it is so exposed', blocks: [
+      { p: 'The Maldives is a chain of low coral atolls. Almost the entire country sits within a metre or two of sea level, so a change measured in centimetres has consequences measured in lost land. It has no high ground to retreat to.' },
+      { ul: [
+        'Rising sea level from thermal expansion and melting land ice',
+        '**Saltwater intrusion** into the freshwater lens beneath each island, which contaminates drinking water and kills crops',
+        'Coral bleaching as sea temperatures rise, which matters doubly here: the reef is both the tourist attraction and the natural breakwater that absorbs wave energy',
+        'More intense storms and storm surge, with no natural shelter',
+        'Coastal erosion undermining buildings and infrastructure'
+      ] },
+      { p: 'The country\'s own greenhouse gas emissions are negligible in global terms. This is the clearest illustration that the countries most exposed to climate change are often those least responsible for it, and least able to afford protection.' }
+    ] },
+    { h: 'Adaptation', blocks: [
+      { ul: [
+        '**Hulhumalé**, an artificial island built up to around 2 m above sea level, higher than the natural islands, now houses tens of thousands of people and is intended as a long-term refuge',
+        'A sea wall around the capital, Malé, funded largely by Japanese aid',
+        'Beach nourishment and coastal defences at resort islands',
+        'Rainwater harvesting and desalination to replace contaminated groundwater',
+        'Coral restoration and marine protected areas to keep the natural breakwater alive',
+        'Proposals for floating housing developments',
+        'A former government explored the idea of buying land abroad as an eventual relocation option'
+      ] }
+    ] },
+    { h: 'Mitigation and diplomacy', blocks: [
+      { p: 'Because it cannot solve the problem alone, the Maldives has concentrated on international pressure: it has led the Alliance of Small Island States in arguing for tighter global temperature targets, and held a cabinet meeting underwater in 2009 to publicise the threat. It has also pledged large cuts to its own emissions, which is symbolic rather than significant given its size.' },
+      { tip: 'This is the best case study for "who should pay?" and for the difference between mitigation and adaptation: the Maldives can only adapt, because the cause of its problem lies almost entirely outside its borders.' }
+    ] }
+  ]
+},
+
+{
+  id: 'bangladesh-development',
+  name: 'Bangladesh: development progress',
+  place: 'Bangladesh, South Asia',
+  type: 'Development',
+  units: [],
+  topics: ['development'],
+  summary: 'A country that improved its social indicators far faster than its income, which is exactly why GNI per capita is a poor measure of development on its own.',
+  stats: [
+    ['~74', 'years life expectancy, up from about 47 in 1970'],
+    ['~2.1', 'children per woman, down from about 6.9 in 1970'],
+    ['~24', 'infant deaths per 1000 live births, down from over 140'],
+    ['~85%', 'of export earnings from ready-made garments']
+  ],
+  sections: [
+    { h: 'What changed', blocks: [
+      { p: 'Bangladesh was, on independence in 1971, one of the poorest countries in the world and widely written off. It has since moved from low income to lower-middle income status, and its social indicators improved faster than its income did.' },
+      { ul: [
+        'Life expectancy rose by roughly 27 years',
+        'Infant mortality fell by around 80%',
+        'Fertility fell to roughly replacement level, one of the fastest declines recorded anywhere',
+        'Primary school enrolment reached near-universal levels, with girls now enrolling at least as much as boys',
+        'Extreme poverty fell sharply'
+      ] }
+    ] },
+    { h: 'How', blocks: [
+      { ul: [
+        '**Family planning**: a large network of female community health workers delivered contraception and advice directly to homes, in a conservative rural society where women could not easily travel to clinics',
+        '**Female education**: stipends kept girls in secondary school, which raised the age of marriage and lowered fertility',
+        '**The garment industry** employs millions, overwhelmingly women, giving them independent income and a reason to delay marriage',
+        '**Microfinance**, pioneered by Grameen Bank, gave small loans to rural women without collateral',
+        '**Oral rehydration therapy** and vaccination programmes cut child deaths cheaply',
+        'Large, effective non-governmental organisations delivered services where the state was weak'
+      ] }
+    ] },
+    { h: 'The limits', blocks: [
+      { ul: [
+        'Garment work is low paid, and safety has been a serious problem: the Rana Plaza factory collapse in 2013 killed over 1,100 people',
+        'The economy depends heavily on a single export sector, which is vulnerable to changing fashion and to competition from cheaper producers',
+        'Rapid, largely unplanned urban growth in Dhaka has produced severe congestion, air pollution and squatter settlements',
+        'Corruption and weak infrastructure hold back investment',
+        'The country is among the most exposed in the world to flooding and sea level rise, which threatens the gains it has made'
+      ] },
+      { tip: 'Use this against GNI per capita. Bangladesh scores better on life expectancy and fertility than several countries with higher incomes, which is precisely the argument for composite measures like the HDI.' }
     ] }
   ]
 },
