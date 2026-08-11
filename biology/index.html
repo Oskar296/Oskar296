@@ -7,6 +7,8 @@
 <meta name="description" content="Revision notes, flashcards and quizzes for the whole Pearson Edexcel International GCSE Biology (4BI1) specification."/>
 <meta name="theme-color" content="#0d1b17"/>
 <link rel="stylesheet" href="css/styles.css"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%A7%AC%3C/text%3E%3C/svg%3E"/>
 </head>
 <body>
@@ -47,6 +49,7 @@
       <a class="side-link" href="#/syllabus" data-nav="syllabus"><span class="si">☰</span> Syllabus</a>
       <a class="side-link" href="#/cards" data-nav="cards"><span class="si">▣</span> Flashcards <em class="due-pill" id="duePill" hidden></em></a>
       <a class="side-link" href="#/quiz" data-nav="quiz"><span class="si">✓</span> Quiz</a>
+      <a class="side-link" href="#/mock" data-nav="mock"><span class="si">⏱</span> Mock exam</a>
 
       <p class="side-label">Reference</p>
       <a class="side-link" href="#/practicals" data-nav="practicals"><span class="si">⚗</span> Core practicals</a>
@@ -81,6 +84,14 @@
 <script src="js/views.js"></script>
 <script src="js/cards.js"></script>
 <script src="js/quiz.js"></script>
+<script src="js/mock.js"></script>
 <script src="js/app.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline support is optional */ });
+  });
+}
+</script>
 </body>
 </html>

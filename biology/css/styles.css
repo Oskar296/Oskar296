@@ -111,7 +111,7 @@ code{font-family:var(--mono);font-size:.9em;background:var(--bg-2);padding:.1em 
 .topbar{
   position:sticky;top:0;z-index:40;height:var(--top-h);
   display:flex;align-items:center;gap:10px;padding:0 12px;
-  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  background:color-mix(in srgb, var(--surface) 96%, transparent);
   backdrop-filter:blur(10px);
   border-bottom:1px solid var(--line);
 }
@@ -421,3 +421,55 @@ select,input[type=number]{
 .fig-legend li{margin:.35em 0}
 .fig-legend li::marker{color:var(--accent);font-weight:700}
 .fig-legend b{color:var(--text)}
+
+/* ---------- mock exam ---------- */
+.papercard{background:var(--surface);border:1px solid var(--line);cursor:pointer;width:100%;font:inherit}
+.papercard.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.papercard.on .tn{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .papercard.on .tn{color:#06231a}
+
+.exam-bar{
+  position:sticky;top:var(--top-h);z-index:20;margin:-26px -30px 20px;padding:12px 30px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  background:color-mix(in srgb, var(--surface) 97%, transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)
+}
+@media (max-width:940px){.exam-bar{margin:-20px -16px 16px;padding:10px 16px}}
+.clock{
+  font-family:var(--mono);font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums;
+  padding:4px 12px;border-radius:9px;background:var(--accent-soft);color:var(--accent)
+}
+.clock.low{background:var(--rose-soft);color:var(--rose)}
+.score{
+  font-family:var(--mono);font-size:1rem;font-weight:700;padding:4px 12px;
+  border-radius:9px;background:var(--accent-soft);color:var(--accent)
+}
+.exam-q{
+  border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+  padding:16px 18px;margin-bottom:14px
+}
+.exam-qhead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.exam-qhead .qn{
+  flex:none;width:26px;height:26px;display:grid;place-items:center;border-radius:7px;
+  background:var(--bg-2);font-size:.82rem;font-weight:800;color:var(--text-2)
+}
+.exam-qhead .qbody{flex:1;min-width:0;font-weight:600;line-height:1.5}
+.exam-qhead .qm{flex:none;font-family:var(--mono);font-size:.85rem;color:var(--text-3);font-weight:700}
+.exam-ans{
+  width:100%;padding:11px;border-radius:var(--radius-s);border:1px solid var(--line);
+  background:var(--surface-2);color:var(--text);font:inherit;font-size:.94rem;margin-bottom:8px;resize:vertical
+}
+.exam-ans:focus{outline:2px solid var(--accent);outline-offset:-1px;background:var(--surface)}
+.opt.picked{border-color:var(--accent);background:var(--accent-soft)}
+.opt.picked .lt{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .opt.picked .lt{color:#06231a}
+.exam-q.marked{border-color:var(--line-soft)}
+.your-answer{
+  border-left:3px solid var(--line);padding:8px 0 8px 13px;margin-bottom:12px;font-size:.92rem
+}
+.your-answer b{display:block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);margin-bottom:4px}
+.your-answer p{margin:0;white-space:pre-wrap}
+.award{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.award-btn{min-width:38px;font-variant-numeric:tabular-nums}
+.award-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .award-btn.on{color:#06231a}

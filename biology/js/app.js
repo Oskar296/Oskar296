@@ -44,7 +44,9 @@
   sidebar.addEventListener('click', function (e) { if (e.target.closest('a')) closeMenu(); });
 
   /* ---------- render ---------- */
+  var cleanups = [];
   function render(v) {
+    cleanups.splice(0).forEach(function (f) { try { f(); } catch (e) { /* ignore */ } });
     main.innerHTML = v.html;
     if (v.mount) v.mount(main);
   }
@@ -80,6 +82,7 @@
         v = window.VIEWS.sub(p[1]); break;
       case 'cards': current = 'cards'; v = window.CARDS.view(r.params); break;
       case 'quiz': current = 'quiz'; v = window.QUIZ.view(r.params); break;
+      case 'mock': current = 'mock'; v = window.MOCK.view(r.params); break;
       case 'practicals': current = 'practicals'; v = window.VIEWS.practicals(); break;
       case 'exam': current = 'exam'; v = window.VIEWS.exam(); break;
       case 'glossary': current = 'glossary'; v = window.VIEWS.glossary(); break;
@@ -97,7 +100,7 @@
   function titleFor(page, id) {
     if (page === 'sub') { var s = S.sub(id); return s ? s.id.toUpperCase() + ' ' + s.title : 'Not found'; }
     if (page === 'topic') { var t = S.topic(id); return t ? 'Topic ' + t.id : 'Not found'; }
-    return { home: 'Dashboard', syllabus: 'Syllabus', cards: 'Flashcards', quiz: 'Quiz', practicals: 'Core practicals', exam: 'Exam skills', glossary: 'Glossary', progress: 'Progress', search: 'Search' }[page] || 'Not found';
+    return { home: 'Dashboard', syllabus: 'Syllabus', cards: 'Flashcards', quiz: 'Quiz', mock: 'Mock exam', practicals: 'Core practicals', exam: 'Exam skills', glossary: 'Glossary', progress: 'Progress', search: 'Search' }[page] || 'Not found';
   }
 
   /* ---------- search ---------- */
@@ -126,6 +129,7 @@
   window.APP = {
     render: render,
     refreshSidebar: buildSidebar,
+    onCleanup: function (fn) { cleanups.push(fn); },
     go: function (hash, force) {
       if (force && location.hash === hash) route();
       else location.hash = hash;

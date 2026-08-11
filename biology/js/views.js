@@ -39,7 +39,8 @@
         '<span class="st">' + R.esc(next.title) + '</span><span class="sm">Topic ' + next.topicId + '</span></a>'
         : '<p class="muted">Every section is marked as studied. Time to test yourself.</p>') +
       '<div class="row mt-s"><a class="btn primary" href="#/cards">Review ' + cs.due + ' cards</a>' +
-      '<a class="btn" href="#/quiz">Start a quiz</a></div></div>';
+      '<a class="btn" href="#/quiz">Start a quiz</a>' +
+      '<a class="btn" href="#/mock">Sit a timed paper</a></div></div>';
 
     h += '<div class="card"><h2>Topic progress</h2><div style="display:flex;flex-direction:column;gap:11px">';
     S.TOPICS.forEach(function (t) {
@@ -72,6 +73,7 @@
       '<li><b>Read a sub-topic</b>, then tick <i>Mark as studied</i> at the bottom.</li>' +
       '<li><b>Review the flashcards</b> daily. Cards you get right come back less often; ones you miss come straight back.</li>' +
       '<li><b>Quiz yourself</b> by topic. Multiple choice marks itself; longer answers show a mark scheme so you can mark honestly.</li>' +
+      '<li><b>Sit a timed paper</b> once you have covered a few topics. Timing is what most people lose marks to, not knowledge.</li>' +
       '<li>Check <b>Core practicals</b> and <b>Exam skills</b> before the paper — a lot of marks live there.</li>' +
       '</ol></div>';
 
@@ -85,6 +87,7 @@
   }
   function scopeName(sc) {
     if (!sc || sc === 'all') return 'Whole syllabus';
+    if (sc.indexOf('mock:') === 0) return 'Mock paper — ' + scopeName(sc.slice(5));
     var s = S.sub(sc); if (s) return s.id.toUpperCase() + ' ' + s.title;
     var t = S.topic(sc); if (t) return 'Topic ' + t.id;
     return sc;
