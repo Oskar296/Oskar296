@@ -16,9 +16,13 @@ Live at `/physics/` once the repo is served.
 | **Practicals** | The 12 core practicals: aim, numbered method, variables, and sources of error with improvements. |
 | **Definitions** | 90 definitions worth learning close to word for word. |
 | **Flashcards** | The definitions as a shuffled deck, filterable by section. Cards you miss come round again. |
-| **Quiz** | 87 multiple-choice questions with worked explanations. Ten at a time, filterable by section. |
+| **Quiz** | 173 multiple-choice questions with worked explanations. Ten at a time, filterable by section — or by **Weak spots**, which draws from the three sections with the fewest points marked confident. |
+| **Exam Qs** | 25 structured exam-style questions, 91 parts, 232 marks. Each part reveals its mark scheme and an examiner's note on its own, so you can attempt before you look. |
+| **Drills** | 31 randomised calculation drills. Fresh numbers every time, answers marked within 1% so rounding is not punished, full working shown afterwards, with a running streak. |
+| **Technique** | Command words, how to lay out a calculation, graph skills, a unit-conversion table, six-mark question strategy, and the traps that cost the most marks. |
 
-Search (top right) covers spec points, equations, definitions and practicals at once.
+Search (top right) covers spec points, equations, definitions, practicals, exam
+questions and technique notes at once.
 
 ## Tags
 
@@ -46,10 +50,23 @@ js/data/equations.js    equation list
 js/data/practicals.js   core practical write-ups
 js/data/glossary.js     definitions / flashcard deck
 js/data/questions.js    multiple-choice bank
+js/data/questions-2.js  second MCQ bank, appended to the first
+js/data/exam-1-4.js     structured exam questions, sections 1-4
+js/data/exam-5-8.js     structured exam questions, sections 5-8
+js/data/technique.js    command words, graph skills, unit table, traps
+js/data/drills.js       randomised calculation drill generators
 ```
 
-To add a question, append to `js/data/questions.js`: `s` is the section number,
+To add an MCQ, append to `js/data/questions-2.js`: `s` is the section number,
 `o` the four options, `a` the index of the correct one, `e` the explanation.
+
+To add an exam question, push onto `EXAMQS` with a `context` and a `parts` array;
+each part needs `q`, `marks`, an `ms` array of mark-scheme points, and a `tip`.
+
+To add a drill, push onto `DRILLS` with a `gen()` that returns fresh random values
+each call: `given` (rows of label/value/unit), `ask` (label and unit), `ans` (the
+numeric answer) and `work` (the worked solution shown afterwards). Keep working
+lines at 3 significant figures — the `sf()` helper in that file does it.
 
 ## A caveat worth reading
 
