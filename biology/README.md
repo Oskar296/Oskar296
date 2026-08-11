@@ -4,6 +4,8 @@ A self-contained revision app covering the whole **Pearson Edexcel International
 
 Open `biology/index.html` in a browser. No build step, no server, no dependencies — it works from a file:// path or from GitHub Pages.
 
+`bio4bi1-single.html` is the same app bundled into one file with everything inlined: hand it to someone, email it, drop it on a USB stick, open it anywhere. Rebuild it with `python3 build-single.py` after changing anything.
+
 ## What is in it
 
 | | |
@@ -54,6 +56,7 @@ biology/
   index.html          shell, loads everything with plain <script> tags
   manifest.webmanifest, icon.svg, icon-maskable.svg, sw.js   install + offline
   css/styles.css      theme tokens, layout, components
+  build-single.py     bundles everything into bio4bi1-single.html
   js/
     diagrams.js       inline SVG diagrams + numbered legends
     syllabus.js       assembles topic files, lookup helpers

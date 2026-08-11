@@ -9,8 +9,10 @@
   var searchInput = document.getElementById('searchInput');
   var current = 'home';
 
-  /* ---------- theme ---------- */
-  ST.setTheme(ST.theme());
+  /* ---------- theme ----------
+     On 'auto' we leave the root element alone, so a data-theme set by
+     whatever is hosting the page survives. Picking a theme still wins. */
+  if (ST.theme() !== 'auto') ST.setTheme(ST.theme());
   document.getElementById('themeBtn').addEventListener('click', function () { ST.cycleTheme(); });
 
   /* ---------- sidebar ---------- */
