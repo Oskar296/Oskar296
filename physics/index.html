@@ -11,6 +11,22 @@
 </head>
 <body>
 
+<!-- Shared arrowhead markers for the inline SVG diagrams. Markers do not inherit
+     the referencing element's stroke, so each is given its own colour in CSS. -->
+<svg id="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+    <marker id="ah-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+    <marker id="ah-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+  </defs>
+</svg>
+
 <header id="hdr">
   <div class="hdr-in">
     <div class="brand">
@@ -56,6 +72,7 @@
 <script src="./js/data/exam-5-8.js"></script>
 <script src="./js/data/technique.js"></script>
 <script src="./js/data/drills.js"></script>
+<script src="./js/data/diagrams.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

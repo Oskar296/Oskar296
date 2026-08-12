@@ -23,7 +23,10 @@ var state = load();
 var route = { tab:'home', section:null };
 
 function load() {
-  var d = { progress:{}, theme:'dark' };
+  /* stats[sectionId] = { qa: quiz answered, qc: quiz correct,
+                          da: drills answered, dc: drills correct,
+                          em: exam marks scored, eo: exam marks out of } */
+  var d = { progress:{}, theme:'dark', stats:{}, seen:0 };
   try {
     var raw = localStorage.getItem(KEY);
     if (raw) {
@@ -31,10 +34,31 @@ function load() {
       if (p && typeof p === 'object') {
         d.progress = p.progress || {};
         d.theme = p.theme === 'light' ? 'light' : 'dark';
+        d.stats = p.stats || {};
+        d.seen = p.seen || 0;
       }
     }
   } catch (e) { /* storage blocked or corrupt - carry on with defaults */ }
   return d;
+}
+/* Record an attempt against a section. kind is 'q' (quiz), 'd' (drill) or 'e' (exam). */
+function record(sectionId, kind, scored, outOf) {
+  var s = state.stats[sectionId] || (state.stats[sectionId] = {});
+  if (kind === 'e') {
+    s.em = (s.em || 0) + scored;
+    s.eo = (s.eo || 0) + outOf;
+  } else {
+    s[kind + 'a'] = (s[kind + 'a'] || 0) + (outOf || 1);
+    s[kind + 'c'] = (s[kind + 'c'] || 0) + scored;
+  }
+  save();
+}
+function statsFor(id) {
+  var s = state.stats[id] || {};
+  var attempted = (s.qa || 0) + (s.da || 0) + (s.eo || 0);
+  var correct = (s.qc || 0) + (s.dc || 0) + (s.em || 0);
+  return { attempted:attempted, correct:correct,
+           pct: attempted ? correct / attempted : null };
 }
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
@@ -121,9 +145,19 @@ function renderHeaderProgress() {
   document.getElementById('hdrProg').innerHTML =
     track(pct) + '<span class="mono">' + done + '/' + pts.length + ' confident</span>';
 }
+/* Routing runs through location.hash so the browser back button works and any
+   view can be linked to directly. go() only writes the hash; hashchange renders. */
 function go(tab, section) {
+  var h = '#' + tab + (section ? '/' + section : '');
+  if (location.hash === h) applyRoute(); else location.hash = h;
+}
+function applyRoute() {
+  var m = /^#([a-z]+)(?:\/(\d+))?/.exec(location.hash || '#home');
+  var tab = m && m[1], section = m && m[2] ? Number(m[2]) : null;
+  if (!TABS.some(function (t) { return t.id === tab; })) tab = 'home';
+  if (section !== null && !SPEC.sections.some(function (s) { return s.id === section; })) section = null;
   route.tab = tab;
-  route.section = section === undefined ? null : section;
+  route.section = section;
   searchEl.value = '';
   renderTabs();
   render();
@@ -170,6 +204,7 @@ function viewHome() {
       '<div class="stat"><div class="v">' + examMarks + '</div><div class="k">Exam marks</div></div>' +
       '<div class="stat"><div class="v">' + GLOSSARY.length + '</div><div class="k">Definitions</div></div>' +
     '</div>' +
+    '<h2>Start here</h2><div id="nextUp"></div>' +
     '<h2>Sections</h2><div class="grid" id="secGrid"></div>' +
     '<h2>How the exam works</h2>' +
     '<div class="row"><div class="rt">Paper 1 · 2 hours · 110 marks · 61.1%</div>' +
@@ -184,22 +219,66 @@ function viewHome() {
       'Check the front page of your most recent past paper to confirm what your series provides.</div></div>';
 
   view.innerHTML = h;
+  renderNextUp(document.getElementById('nextUp'));
+
   var grid = document.getElementById('secGrid');
   SPEC.sections.forEach(function (sec) {
     var sp = sectionPoints(sec);
     var d = countBy(sp, 2);
     var pct = Math.round(d / sp.length * 100);
+    var st = statsFor(sec.id);
     var card = el(
       '<button class="sec-card" style="border-top:3px solid ' + secColour(sec) + '">' +
         '<span class="num" style="color:' + secColour(sec) + '">SECTION ' + sec.id + '</span>' +
         '<span class="ttl">' + esc(sec.title) + '</span>' +
         '<span class="sub">' + sp.length + ' spec points · ' + sec.topics.length + ' topics</span>' +
         track(pct, secColour(sec)) +
-        '<span class="foot"><span>' + pct + '% confident</span><span>' + d + '/' + sp.length + '</span></span>' +
+        '<span class="foot"><span>' + pct + '% confident</span>' +
+          '<span>' + (st.attempted
+            ? Math.round(st.pct * 100) + '% scored'
+            : d + '/' + sp.length) + '</span></span>' +
       '</button>');
-    card.onclick = function () { route.tab = 'home'; go('home', sec.id); };
+    card.onclick = function () { go('home', sec.id); };
     grid.appendChild(card);
   });
+}
+
+/* Turns the section ranking into a concrete next action. */
+function renderNextUp(host) {
+  if (!host) return;
+  var ranked = rankedSections();
+  var top = ranked.slice(0, 3);
+  var totalAttempted = SPEC.sections.reduce(function (n, s) { return n + statsFor(s.id).attempted; }, 0);
+
+  host.innerHTML = '<p class="lede" style="margin:0 0 12px">' +
+    (totalAttempted === 0
+      ? 'Nothing tracked yet — this is ordered by the checklist alone. Answer some quiz questions or drills and it will start using how you actually score.'
+      : 'Ranked by how much work each section still needs, from ' + totalAttempted +
+        ' recorded attempts alongside the checklist.') +
+    '</p><div class="nextgrid"></div>' +
+    '<div class="btnrow"><button class="btn" id="goWeak">Quiz my weak spots</button>' +
+    '<button class="btn ghost" id="goDrill">Practise calculations</button></div>';
+
+  var g = host.querySelector('.nextgrid');
+  top.forEach(function (r, i) {
+    var sec = SPEC.sections.filter(function (s) { return s.id === r.id; })[0];
+    var why = r.untested
+      ? (r.ticked > 0.5 ? 'ticked off but never tested' : 'barely started')
+      : Math.round(r.st.pct * 100) + '% scored from ' + r.st.attempted + ' attempts';
+    var b = el('<button class="nextcard">' +
+      '<span class="rank">' + (i + 1) + '</span>' +
+      '<span class="nb"><b style="color:' + secColour(sec) + '">' + sec.id + '. ' + esc(sec.title) + '</b>' +
+      '<i>' + esc(why) + '</i></span></button>');
+    b.onclick = function () { go('home', sec.id); };
+    g.appendChild(b);
+  });
+
+  host.querySelector('#goWeak').onclick = function () {
+    qz.filter = 'weak'; dealQuiz(); go('quiz');
+  };
+  host.querySelector('#goDrill').onclick = function () {
+    dr.filter = 'all'; dr.drill = null; nextDrill(); go('drills');
+  };
 }
 
 function viewSection(id) {
@@ -213,8 +292,16 @@ function viewSection(id) {
     '<h1 style="color:' + secColour(sec) + '">' + sec.id + '. ' + esc(sec.title) + '</h1>' +
     '<p class="lede">' + esc(sec.blurb) + '</p>' +
     track(pct, secColour(sec)) +
-    '<p style="font-size:12px;color:var(--dim);margin:7px 0 24px">' + countBy(sp, 2) + ' of ' + sp.length +
+    '<p style="font-size:12px;color:var(--dim);margin:7px 0 6px">' + countBy(sp, 2) + ' of ' + sp.length +
     ' points marked confident · ' + countBy(sp, 1) + ' still learning</p>' +
+    (function () {
+      var st = statsFor(sec.id);
+      if (!st.attempted) return '<p style="font-size:12px;color:var(--dim2);margin:0 0 24px">' +
+        'No quiz, drill or exam attempts recorded for this section yet.</p>';
+      return '<p style="font-size:12px;color:var(--dim2);margin:0 0 24px">Scored ' +
+        st.correct + ' of ' + st.attempted + ' (' + Math.round(st.pct * 100) +
+        '%) across quiz questions, drills and self-marked exam answers.</p>';
+    })() +
     '<div id="topics"></div>';
 
   document.getElementById('back').onclick = function () { go('home'); };
@@ -228,12 +315,21 @@ function viewSection(id) {
   });
 }
 
+function diagramsFor(ref) {
+  return DIAGRAMS.filter(function (d) { return d.points.indexOf(ref) > -1; });
+}
+function diagramHTML(d) {
+  return '<figure class="dgwrap"><figcaption class="dgt">' + esc(d.title) + '</figcaption>' +
+    d.svg + '<p class="dgc">' + esc(d.caption) + '</p></figure>';
+}
+
 function pointNode(p, sec) {
   var st = statusOf(p.n);
   var tags = '';
   if (p.p2) tags += '<span class="pill p2">Physics only</span> ';
   if (p.cp) tags += '<span class="pill cp">Core practical</span> ';
   if (p.eq) tags += '<span class="pill eq">Equation</span> ';
+  if (diagramsFor(p.n).length) tags += '<span class="pill dg">Diagram</span> ';
 
   var node = el(
     '<div class="pt' + (st ? ' s' + st : '') + '">' +
@@ -245,6 +341,7 @@ function pointNode(p, sec) {
       '<div class="pt-b">' +
         (p.eq ? '<code class="eqbox">' + esc(p.eq) + '</code>' : '') +
         (p.note ? '<div>' + esc(p.note) + '</div>' : '') +
+        diagramsFor(p.n).map(diagramHTML).join('') +
         '<div class="status">' +
           '<button data-v="0">Not started</button>' +
           '<button data-v="1">Learning</button>' +
@@ -451,6 +548,7 @@ function drawQ() {
       qz.answered = true;
       var k = Number(this.dataset.k);
       if (k === q.a) qz.score++;
+      record(q.s, 'q', k === q.a ? 1 : 0, 1);
       for (var j = 0; j < opts.length; j++) {
         opts[j].disabled = true;
         if (j === q.a) opts[j].classList.add('right');
@@ -504,12 +602,32 @@ function viewExam() {
         '<div class="ans">' +
           '<ul>' + p.ms.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>' +
           '<div class="tip"><b>Examiner’s note:</b> ' + esc(p.tip) + '</div>' +
+          '<div class="selfmark"><span>Mark your answer:</span>' +
+            (function () {
+              var out = '';
+              for (var k = 0; k <= p.marks; k++) out += '<button data-m="' + k + '">' + k + '</button>';
+              return out;
+            })() +
+          '</div>' +
         '</div></div>');
       var btn = pn.querySelector('.reveal');
       btn.onclick = function () {
         var open = pn.classList.toggle('open');
         btn.textContent = open ? 'Hide mark scheme' : 'Show mark scheme';
       };
+      var marks = pn.querySelectorAll('.selfmark button');
+      for (var mi = 0; mi < marks.length; mi++) {
+        marks[mi].onclick = function () {
+          if (pn.dataset.marked) return;
+          pn.dataset.marked = '1';
+          var got = Number(this.dataset.m);
+          this.classList.add('on');
+          for (var j = 0; j < marks.length; j++) marks[j].disabled = true;
+          record(q.s, 'e', got, p.marks);
+          renderHeaderProgress();
+          toast(got + '/' + p.marks + ' recorded for section ' + q.s);
+        };
+      }
       parts.appendChild(pn);
     });
     body.appendChild(card);
@@ -580,6 +698,7 @@ function drawDrill() {
     var ok = Math.abs(val - g.ans) <= tol;
     if (ok) { dr.right++; dr.streak++; if (dr.streak > dr.best) dr.best = dr.streak; }
     else dr.streak = 0;
+    record(d.s, 'd', ok ? 1 : 0, 1);
 
     input.disabled = true;
     input.className = ok ? 'ok' : 'no';
@@ -642,14 +761,22 @@ function viewTechnique() {
   view.innerHTML = h;
 }
 
-/* Sections where the fewest points are marked confident — used by the quiz's
-   "Weak spots" filter to target revision where it is needed. */
+/* Ranks sections by how much work they still need. Measured performance (quiz,
+   drills, self-marked exam questions) is the better signal, so it is weighted
+   twice as heavily as the self-ticked checklist. Sections you have never
+   attempted score as unknown rather than as perfect, so they surface too. */
+function sectionNeed(sec) {
+  var sp = sectionPoints(sec);
+  var ticked = countBy(sp, 2) / sp.length;
+  var st = statsFor(sec.id);
+  if (st.attempted < 4) return { id:sec.id, need:1 - ticked * 0.5, untested:true, ticked:ticked, st:st };
+  return { id:sec.id, need:1 - (ticked + 2 * st.pct) / 3, untested:false, ticked:ticked, st:st };
+}
+function rankedSections() {
+  return SPEC.sections.map(sectionNeed).sort(function (a, b) { return b.need - a.need; });
+}
 function weakSections(n) {
-  return SPEC.sections.map(function (s) {
-    var sp = sectionPoints(s);
-    return { id:s.id, pct:countBy(sp, 2) / sp.length };
-  }).sort(function (a, b) { return a.pct - b.pct; })
-    .slice(0, n || 3).map(function (x) { return x.id; });
+  return rankedSections().slice(0, n || 3).map(function (x) { return x.id; });
 }
 
 function chipRow(id, current, onPick, extra) {
@@ -747,14 +874,62 @@ document.getElementById('themeBtn').onclick = function () {
   save(); applyTheme(); render();
 };
 document.getElementById('resetBtn').onclick = function () {
-  if (!confirm('Clear every tick on the syllabus checklist? This cannot be undone.')) return;
+  if (!confirm('Clear the syllabus checklist and every recorded quiz, drill and exam score? This cannot be undone.')) return;
   state.progress = {};
+  state.stats = {};
   save(); render();
   toast('Progress cleared');
 };
 
+/* Keyboard shortcuts. Ignored while the user is typing in a field. */
+document.addEventListener('keydown', function (e) {
+  var t = e.target.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA' || e.metaKey || e.ctrlKey || e.altKey) return;
+
+  if (e.key === '/') { e.preventDefault(); searchEl.focus(); return; }
+  if (e.key === '?') { e.preventDefault(); toggleHelp(); return; }
+
+  if (route.tab === 'quiz' && qz.running) {
+    if (e.key >= '1' && e.key <= '4' && !qz.answered) {
+      var opt = view.querySelectorAll('.opt')[Number(e.key) - 1];
+      if (opt) { e.preventDefault(); opt.click(); }
+    } else if ((e.key === 'Enter' || e.key === ' ') && qz.answered) {
+      var nx = document.getElementById('nx');
+      if (nx) { e.preventDefault(); nx.click(); }
+    }
+  }
+
+  if (route.tab === 'cards') {
+    if (e.key === ' ' || e.key === 'Enter') {
+      var card = document.getElementById('card');
+      if (card) { e.preventDefault(); card.click(); }
+    } else if (fc.flipped && (e.key === 'ArrowRight' || e.key === 'y')) {
+      var yes = document.getElementById('yes'); if (yes) yes.click();
+    } else if (fc.flipped && (e.key === 'ArrowLeft' || e.key === 'n')) {
+      var no = document.getElementById('no'); if (no) no.click();
+    }
+  }
+});
+
+function toggleHelp() {
+  var open = document.getElementById('helpbox');
+  if (open) { open.remove(); return; }
+  var box = el('<div id="helpbox"><div class="hpanel">' +
+    '<div class="hh">Keyboard shortcuts</div>' +
+    '<dl>' +
+      '<dt>/</dt><dd>focus search</dd>' +
+      '<dt>1 – 4</dt><dd>answer the current quiz question</dd>' +
+      '<dt>Enter</dt><dd>next question · check a drill answer</dd>' +
+      '<dt>Space</dt><dd>flip the current flashcard</dd>' +
+      '<dt>← / →</dt><dd>flashcard: not yet / knew it</dd>' +
+      '<dt>?</dt><dd>show or hide this list</dd>' +
+    '</dl></div></div>');
+  box.onclick = function () { box.remove(); };
+  document.body.appendChild(box);
+}
+
+window.addEventListener('hashchange', applyRoute);
 applyTheme();
-renderTabs();
-render();
+applyRoute();
 
 })();
