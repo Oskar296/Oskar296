@@ -557,6 +557,102 @@ select{ font-family:var(--sans); cursor:pointer; }
   .streak{ display:none; }
 }
 
+/* ================= pseudocode runner ================= */
+.runner{ display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:18px; align-items:start; }
+.runner label{ display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em;
+  color:var(--ink-3); margin-bottom:5px; font-weight:700; }
+.editor-wrap{ display:flex; border:1px solid var(--line); border-radius:11px; background:var(--bg-2); overflow:hidden; }
+.editor-wrap:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px var(--glow); }
+.gutter{
+  flex:0 0 auto; padding:11px 8px 11px 12px; margin:0; overflow:hidden;
+  font-family:var(--mono); font-size:13px; line-height:1.65; text-align:right;
+  color:var(--ink-3); background:var(--panel-2); white-space:pre; user-select:none;
+  border-right:1px solid var(--line); min-width:38px;
+}
+/* must out-specify "textarea.input", or the gutter and the code drift apart */
+textarea.code-area{
+  flex:1; border:0; border-radius:0; background:transparent; resize:vertical;
+  font-family:var(--mono); font-size:13px; line-height:1.65; padding:11px 12px; tab-size:2;
+}
+textarea.code-area:focus{ box-shadow:none; border-color:transparent; }
+.runner-side textarea.code-area{ border:1px solid var(--line); border-radius:11px; background:var(--bg-2); }
+.runner-side textarea.code-area:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--glow); }
+.run-out{
+  margin:0; min-height:150px; max-height:340px; overflow:auto; white-space:pre-wrap;
+  font-size:13px; line-height:1.6;
+}
+.run-out.bad{ border-color:var(--bad); color:var(--bad); background:color-mix(in srgb,var(--bad) 8%,transparent); }
+@media (max-width: 860px){ .runner{ grid-template-columns:1fr; } }
+
+/* ================= notes: contents rail + reading progress ================= */
+.read-bar{ position:fixed; top:var(--topbar-h); left:0; height:2px; z-index:39;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2)); width:0; transition:width .1s linear; }
+
+.with-toc{ display:grid; grid-template-columns:minmax(0,1fr) 208px; gap:34px; align-items:start; }
+.toc{ position:sticky; top:calc(var(--topbar-h) + 22px); font-size:12.5px; }
+.toc .toc-head{ font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:700; margin-bottom:9px; }
+.toc a{ display:block; padding:5px 0 5px 11px; color:var(--ink-3); border-left:2px solid var(--line);
+  line-height:1.35; transition:color .15s, border-color .15s; }
+.toc a:hover{ color:var(--ink); text-decoration:none; }
+.toc a.on{ color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+@media (max-width: 1100px){ .with-toc{ grid-template-columns:1fr; } .toc{ display:none; } }
+
+/* copy button on code blocks */
+.pre-wrap{ position:relative; }
+.pre-wrap .copy{
+  position:absolute; top:8px; right:8px; opacity:0; transition:opacity .15s;
+  padding:4px 9px; font-size:11px; font-family:var(--sans); border-radius:7px;
+  border:1px solid var(--line-2); background:var(--panel-2); color:var(--ink-2); cursor:pointer;
+}
+.pre-wrap:hover .copy, .pre-wrap .copy:focus{ opacity:1; }
+.pre-wrap .copy:hover{ color:var(--ink); border-color:var(--accent); }
+
+/* heading anchors in notes */
+.notes-body h3{ scroll-margin-top: calc(var(--topbar-h) + 18px); }
+
+/* ================= keyboard shortcuts sheet ================= */
+.sheet{ position:fixed; inset:0; z-index:60; background:rgba(4,7,13,.6); backdrop-filter:blur(4px);
+  display:grid; place-items:center; padding:20px; }
+.sheet-panel{ width:min(480px,100%); background:var(--bg-2); border:1px solid var(--line-2);
+  border-radius:18px; box-shadow:var(--shadow); padding:22px 24px; }
+.sheet-panel h3{ margin:0 0 14px; }
+.keys{ display:grid; gap:8px; }
+.keys div{ display:flex; justify-content:space-between; align-items:center; gap:14px; font-size:13.5px; color:var(--ink-2); }
+
+/* ================= mobile bottom bar ================= */
+.tabbar{ display:none; }
+@media (max-width: 900px){
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:38;
+    display:flex; justify-content:space-around; align-items:stretch;
+    background:color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter:blur(14px) saturate(140%);
+    border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .tabbar a{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:8px 4px 7px; font-size:10px; color:var(--ink-3); text-decoration:none;
+  }
+  .tabbar a .em{ font-size:17px; line-height:1.1; }
+  .tabbar a.on{ color:var(--accent); }
+  .main{ padding-bottom:104px; }
+}
+
+/* ================= timed mock clock ================= */
+.exam-timer{
+  position:sticky; top:calc(var(--topbar-h) + 8px); z-index:35;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  max-width:760px; margin:0 auto 16px; padding:9px 16px;
+  border:1px solid var(--line); border-radius:12px; background:var(--panel-solid);
+  box-shadow:var(--shadow);
+}
+.exam-timer .lbl{ font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); font-weight:700; }
+.exam-timer b{ font-family:var(--mono); font-size:20px; font-variant-numeric:tabular-nums; }
+.exam-timer.low{ border-color:var(--bad); }
+.exam-timer.low b{ color:var(--bad); }
+
 </style>
 </head>
 <body>
@@ -2744,7 +2840,146 @@ window.QUESTIONS = [
 {t:"10.1",ty:"mcq",m:1,q:"For X = (A OR B) AND NOT C, what is X when A = 0, B = 1, C = 0?",o:["1","0","Cannot be determined","2"],a:0,e:"A OR B = 1, NOT C = 1, and 1 AND 1 = 1."},
 {t:"10.1",ty:"mcq",m:1,q:"A NOR gate outputs 1 when:",o:["Both inputs are 0","Both inputs are 1","The inputs are different","At least one input is 1"],a:0,e:"NOR is the opposite of OR, and OR only gives 0 when both inputs are 0."},
 {t:"10.1",ty:"txt",m:4,q:"A machine sounds an alarm (X = 1) when the temperature is too high (A = 1) and the lid is open (B = 1), or when the emergency button is pressed (C = 1). Write the logic expression and describe the gates needed.",a:"The expression is X = (A AND B) OR C. An AND gate takes inputs A and B, because both the high temperature and the open lid must be true together. The output of that AND gate becomes one input of an OR gate, and C is the other input, because either that combination or the emergency button alone will sound the alarm. The output of the OR gate is X.",pts:["Correct expression X = (A AND B) OR C","An AND gate with inputs A and B","An OR gate taking the AND output and C","Correct explanation of why AND is used for the pair and OR for the alternative"]},
-{t:"10.1",ty:"txt",m:3,q:"Explain how to complete the input columns of a truth table for a three-input logic circuit so that no combination is missed.",a:"There are three inputs, so there are 2 to the power 3 = 8 rows. In the first input column write four 0s followed by four 1s. In the second column write two 0s, two 1s, two 0s and two 1s. In the third column alternate 0 and 1 down the whole column. This halving pattern guarantees that every one of the eight combinations appears exactly once.",pts:["States that 3 inputs need 2^3 = 8 rows","Describes the halving pattern 4/4, 2/2, 1/1","Explains that this guarantees every combination appears once"]}
+{t:"10.1",ty:"txt",m:3,q:"Explain how to complete the input columns of a truth table for a three-input logic circuit so that no combination is missed.",a:"There are three inputs, so there are 2 to the power 3 = 8 rows. In the first input column write four 0s followed by four 1s. In the second column write two 0s, two 1s, two 0s and two 1s. In the third column alternate 0 and 1 down the whole column. This halving pattern guarantees that every one of the eight combinations appears exactly once.",pts:["States that 3 inputs need 2^3 = 8 rows","Describes the halving pattern 4/4, 2/2, 1/1","Explains that this guarantees every combination appears once"]},
+/* ===================== second wave ===================== */
+
+/* ---------- 1.1 ---------- */
+{t:"1.1",ty:"mcq",m:1,q:"Which denary number is represented by the hexadecimal value A7?",o:["167","157","177","107"],a:0,e:"(10 x 16) + 7 = 160 + 7 = 167."},
+{t:"1.1",ty:"mcq",m:1,q:"An 8-bit register holds 0000 0111. It is shifted left 5 places. What is the result?",o:["1110 0000","0000 0000","0011 1000","1000 0111"],a:0,e:"7 becomes 224, which is 7 x 32. The three 1s move to the top of the register without falling off."},
+{t:"1.1",ty:"txt",m:3,q:"Explain what happens, and what it means for the value, when 1010 0000 is shifted left by 2 places in an 8-bit register.",a:"Every bit moves two places to the left and two zeros are shifted in at the right hand end, giving 1000 0000. The two bits shifted out of the left hand end are lost, and one of them was a 1. A left shift of 2 should multiply the value by 4, so 160 should become 640, but 640 cannot be stored in 8 bits, so the value held is 128 and it is incorrect.",pts:["All bits move 2 places left and zeros fill in on the right","The result is 1000 0000","Bits shifted out of the left are lost, including a 1","A left shift of 2 multiplies by 4, but the answer is now wrong because the value no longer fits"]},
+
+/* ---------- 1.2 ---------- */
+{t:"1.2",ty:"mcq",m:1,q:"A 3 minute stereo recording uses a sample rate of 44 100 Hz and a resolution of 16 bits. Which calculation gives the file size in bits?",o:["44100 x 16 x 180 x 2","44100 x 16 x 3","44100 x 16 x 180 / 2","44100 + 16 + 180"],a:0,e:"Rate x resolution x seconds, then x 2 because stereo has two channels. 3 minutes is 180 seconds."},
+{t:"1.2",ty:"mcq",m:1,q:"Why is a character set needed?",o:["So every device represents the same character with the same binary code","To compress text files","To encrypt text before it is sent","To check text for spelling errors"],a:0,e:"Without an agreed set, the same binary value would display as a different character on another machine."},
+{t:"1.2",ty:"txt",m:3,q:"A photograph looks blocky when it is enlarged on screen. Explain why.",a:"The image is a bitmap made of a fixed number of pixels. Enlarging it does not create any new detail, so each pixel is simply displayed as a larger block of a single colour. Once the pixels become big enough to see individually the image appears blocky, which is called pixelation. An image with a higher resolution has more pixels, so it can be enlarged further before this happens.",pts:["A bitmap has a fixed number of pixels","Enlarging does not add detail, so each pixel is drawn larger","The individual pixels become visible, which is pixelation"]},
+
+/* ---------- 1.3 ---------- */
+{t:"1.3",ty:"mcq",m:1,q:"Which is the correct order, smallest first?",o:["byte, kibibyte, mebibyte, gibibyte","byte, mebibyte, kibibyte, gibibyte","kibibyte, byte, gibibyte, mebibyte","bit, byte, gibibyte, mebibyte"],a:0,e:"Each step up multiplies by 1024."},
+{t:"1.3",ty:"mcq",m:1,q:"A music streaming service uses lossy compression. What is the main consequence?",o:["Some audio data is permanently removed, so the original cannot be restored","The file can always be restored to its exact original","The file gets larger","The audio becomes impossible to play"],a:0,e:"Lossy discards data the listener is unlikely to notice, which is acceptable for streaming but irreversible."},
+{t:"1.3",ty:"txt",m:3,q:"Explain how run length encoding compresses an image without losing data.",a:"Run length encoding looks for runs of identical consecutive pixels. Instead of storing every pixel separately, it stores the number of times the value repeats followed by the value itself, so a run of twenty identical white pixels is stored as one count and one colour value rather than twenty values. No data is discarded, because the original run can be rebuilt exactly from the count and the value, which is why it is lossless. It works best on images with large areas of the same colour.",pts:["Finds runs of repeated identical values","Stores a count together with the value instead of every value","The original can be rebuilt exactly, so no data is lost"]},
+
+/* ---------- 2.1 ---------- */
+{t:"2.1",ty:"mcq",m:1,q:"Which is stored in a packet trailer?",o:["An error checking method such as a checksum","The sender's IP address","The packet number","The receiver's IP address"],a:0,e:"The trailer holds the end of packet marker and error checking. Addresses and packet numbers are in the header."},
+{t:"2.1",ty:"mcq",m:1,q:"Data is being sent from a computer to a printer in one direction only, one bit at a time. This is:",o:["Simplex serial transmission","Half-duplex parallel transmission","Full-duplex serial transmission","Simplex parallel transmission"],a:0,e:"One direction only is simplex, and one bit at a time is serial."},
+{t:"2.1",ty:"txt",m:3,q:"A user copies a large file from a USB flash drive. Give three advantages of USB for this.",a:"The connector is designed so it can only be inserted one way round, so it cannot be connected incorrectly. USB is a universally supported industry standard, so the same drive works on almost any computer. The device is detected automatically and the correct driver is loaded, so no set up is needed, and USB supports several transmission speeds so large files transfer quickly.",pts:["The connector only fits one way, so it cannot be connected incorrectly","It is a universal industry standard supported by almost all devices","Devices are detected automatically and the driver is loaded","It supports several, including high, transmission speeds"]},
+
+/* ---------- 2.2 ---------- */
+{t:"2.2",ty:"mcq",m:1,q:"A system uses odd parity. Which byte has been received correctly?",o:["1011 0011","1100 1100","0110 0110","1111 0000"],a:0,e:"1011 0011 contains five 1s. Five is odd, so it passes an odd parity check. The other three each contain four 1s, which is even, so each of them has been corrupted in transmission."},
+{t:"2.2",ty:"mcq",m:1,q:"What does a parity block check allow that a single parity byte does not?",o:["It locates the exact bit that is incorrect","It repairs the data automatically without a resend","It removes the need for any acknowledgement","It compresses the data as it checks it"],a:0,e:"Parity is checked across rows and down columns, and the incorrect bit sits where the failing row meets the failing column."},
+{t:"2.2",ty:"txt",m:3,q:"Explain one limitation of using an echo check.",a:"With an echo check the receiver sends the data back to the sender, which compares it with what it originally sent. If the two are different you know an error has occurred, but you cannot tell whether it happened while the data was being sent to the receiver or while the copy was being sent back. It also doubles the amount of data on the network and takes twice as long.",pts:["You cannot tell whether the error happened on the way there or on the way back","It doubles the traffic or takes twice as long"]},
+
+/* ---------- 2.3 ---------- */
+{t:"2.3",ty:"mcq",m:1,q:"What is the correct term for data before it has been encrypted?",o:["Plaintext","Ciphertext","Cleartext key","Payload"],a:0,e:"Plaintext goes in, ciphertext comes out."},
+{t:"2.3",ty:"mcq",m:1,q:"What is the main drawback of symmetric encryption?",o:["The key has to be sent to the recipient, so it could be intercepted","It cannot be used on large files","It produces ciphertext that cannot be decrypted","It requires two different keys to be published"],a:0,e:"This is the key distribution problem, and it is why asymmetric encryption exists."},
+{t:"2.3",ty:"txt",m:2,q:"A company encrypts its customer database. Explain why encryption alone does not stop a hacker stealing the data.",a:"Encryption does not prevent someone gaining access to the system or copying the file, so the data can still be stolen. What encryption does is scramble the contents so that the stolen file is meaningless without the decryption key, which limits the damage rather than preventing the theft. Other measures such as firewalls, access levels and strong authentication are needed to stop the access happening in the first place.",pts:["Encryption does not prevent access to or copying of the data","It only makes the stolen data meaningless without the key","Other measures are needed to prevent the access itself"]},
+
+/* ---------- 3.1 ---------- */
+{t:"3.1",ty:"mcq",m:1,q:"During the decode stage of the cycle, which component decodes the instruction?",o:["The control unit","The arithmetic logic unit","The accumulator","The address bus"],a:0,e:"The CU decodes the instruction held in the CIR and sends the control signals needed to carry it out."},
+{t:"3.1",ty:"mcq",m:1,q:"What is the effect of increasing the width of the address bus?",o:["More memory locations can be addressed","More data can be carried at once","The clock speed increases","The cache becomes larger"],a:0,e:"The address bus width determines how many distinct addresses the CPU can reference. Data volume per transfer is the data bus."},
+{t:"3.1",ty:"txt",m:3,q:"Explain why a washing machine uses an embedded system rather than a general purpose computer.",a:"A washing machine only needs to carry out one specific set of tasks, so an embedded system built for that job is much cheaper, much smaller and uses far less power than a general purpose computer. Because it is dedicated to that single function it is also very reliable and responds quickly, and it does not need a screen, keyboard or operating system for a user to run other software.",pts:["It performs one specific, dedicated function","Cheaper, smaller or lower power than a general purpose computer","More reliable or faster for that dedicated task"]},
+
+/* ---------- 3.2 ---------- */
+{t:"3.2",ty:"mcq",m:1,q:"Which output device builds a solid object layer by layer?",o:["3D printer","Laser printer","Inkjet printer","Plotter"],a:0,e:"This is additive manufacturing, built from a CAD design."},
+{t:"3.2",ty:"mcq",m:1,q:"An OLED screen does not need a backlight because:",o:["Its organic layers emit their own light","Its liquid crystals reflect ambient light","It uses a laser to light each pixel","It only displays black and white"],a:0,e:"This gives OLED true blacks, better contrast, thinner screens and wider viewing angles."},
+{t:"3.2",ty:"txt",m:4,q:"A supermarket uses a barcode scanner at its checkouts. Describe what happens after the barcode is scanned.",a:"The scanner reads the pattern of black bars and white spaces and converts it into a binary number. This number is used to search the stock database for the record with the matching product code. If the record is found, the price and the product description are sent back and printed on the receipt and shown on the display. The quantity in stock for that product is then reduced by one, and if the stock level falls below the reorder level more stock is automatically ordered. If no matching record is found, an error message is displayed.",pts:["The scanned pattern is converted into a number","The number is looked up in the stock database","The price and description are returned and displayed or printed","The stock level is reduced by one, and reordering may be triggered"]},
+
+/* ---------- 3.3 ---------- */
+{t:"3.3",ty:"mcq",m:1,q:"Which storage medium uses pits and lands read by a laser?",o:["Optical","Magnetic","Solid state","Virtual"],a:0,e:"The reflection differs between a pit and a land, which is read as 1 or 0."},
+{t:"3.3",ty:"mcq",m:1,q:"A computer slows down badly when many programs are open. Which is the most likely explanation?",o:["Heavy use of virtual memory, causing disk thrashing","The ROM has become full","The clock speed has decreased","The MAC address has changed"],a:0,e:"When RAM is full, pages are swapped to and from much slower secondary storage."},
+{t:"3.3",ty:"txt",m:3,q:"Explain why a computer needs both RAM and ROM.",a:"ROM is non-volatile, so it keeps its contents when the power is off. This is essential for the start up instructions such as the BIOS, which must be available the moment the computer is switched on and must not be changed. RAM is volatile but can be read from and written to quickly and is much larger, so it holds the operating system, applications and data currently in use. Neither on its own would work: ROM cannot be written to during normal use, and RAM would be empty at switch on.",pts:["ROM is non-volatile and holds the start up instructions available at power on","ROM cannot be changed, which protects those instructions","RAM is volatile but can be written to and holds programs and data currently in use"]},
+
+/* ---------- 3.4 ---------- */
+{t:"3.4",ty:"mcq",m:1,q:"How many hexadecimal digits are there in a MAC address?",o:["12","8","6","32"],a:0,e:"48 bits divided into 12 hex digits, usually shown as six pairs."},
+{t:"3.4",ty:"mcq",m:1,q:"Which address identifies a device's location on a network rather than the hardware itself?",o:["IP address","MAC address","Serial number","Manufacturer identifier"],a:0,e:"An IP address is assigned by the network and changes if the device joins a different network."},
+{t:"3.4",ty:"txt",m:3,q:"Explain the purpose of a router in a home network.",a:"A router connects the home network to another network, normally the internet through the ISP. It reads the destination IP address in the header of each packet and uses a routing table to decide the best route to forward it along, so traffic reaches the correct destination. In a home it also assigns private IP addresses to the devices on the local network.",pts:["It connects one network to another, such as the LAN to the internet","It reads the destination IP address in each packet","It forwards packets along the best route, or assigns private IP addresses"]},
+
+/* ---------- 4.1 ---------- */
+{t:"4.1",ty:"mcq",m:1,q:"Where are the contents of the interrupted job stored while an interrupt is dealt with?",o:["On a stack","In the ROM","In the interrupt service routine","On the hard disk in virtual memory"],a:0,e:"Register contents are pushed onto the stack and restored afterwards so the job resumes exactly where it stopped."},
+{t:"4.1",ty:"mcq",m:1,q:"Which task is NOT carried out by an operating system?",o:["Translating high-level source code into machine code","Managing memory allocation","Managing files and directories","Providing a user interface"],a:0,e:"Translation is done by a compiler or interpreter. That is system software, but it is not part of the OS's own management tasks."},
+{t:"4.1",ty:"txt",m:4,q:"Describe two tasks carried out by an operating system.",a:"Memory management: the operating system allocates memory to each program that is running, keeps track of which areas are in use, and keeps programs separate so that one cannot overwrite another's data. File management: it names, saves, opens, moves and deletes files, organises them into directories, and controls access rights so users can only reach the files they are allowed to.",pts:["First task named","First task described correctly","Second task named","Second task described correctly"]},
+
+/* ---------- 4.2 ---------- */
+{t:"4.2",ty:"mcq",m:1,q:"Which translator has a one to one relationship between the source instructions and machine code instructions?",o:["Assembler","Compiler","Interpreter","Linker"],a:0,e:"Each assembly mnemonic corresponds to exactly one machine code instruction."},
+{t:"4.2",ty:"mcq",m:1,q:"A finished program is sold to customers who do not have the source code. Which translator was most likely used?",o:["A compiler, because it produces an executable file","An interpreter, because it runs line by line","An assembler, because it produces mnemonics","No translator is needed"],a:0,e:"Compiling produces a distributable executable and keeps the source code private."},
+{t:"4.2",ty:"txt",m:3,q:"Give one situation where a low-level language would be chosen instead of a high-level language, and explain why.",a:"A device driver or the software for an embedded system such as a washing machine controller would be written in a low-level language. A low-level language gives direct control over the hardware and over individual memory locations, which is necessary when the code has to talk to specific hardware. It can also be written to use very little memory and to run very quickly, which matters when the processor and memory are small.",pts:["A sensible situation, such as a device driver or embedded system","Gives direct control of the hardware or specific memory locations","More efficient in speed or memory use"]},
+
+/* ---------- 5.1 ---------- */
+{t:"5.1",ty:"mcq",m:1,q:"In the URL https://www.example.com/notes/binary.html, what is www.example.com?",o:["The domain name","The protocol","The file path","The web page"],a:0,e:"The protocol is https, and /notes/binary.html is the path and file name."},
+{t:"5.1",ty:"mcq",m:1,q:"A user closes their browser and their shopping basket is emptied. Which type of cookie was being used?",o:["A session cookie","A persistent cookie","A tracking cookie","A secure cookie"],a:0,e:"Session cookies are held in memory only and are deleted when the browser closes."},
+{t:"5.1",ty:"txt",m:4,q:"Describe two ways a website uses persistent cookies to improve a user's experience.",a:"A persistent cookie can store the user's log in details so they are recognised and signed in automatically the next time they visit, saving them from typing their details again. It can also store preferences such as the language, currency or theme the user chose, so the site appears the way they left it. Some sites use them to remember the contents of a basket between visits, or to recommend items based on pages the user previously viewed.",pts:["First use named, such as remembering log in details","Explanation of how that helps the user","Second use named, such as saving preferences or basket contents","Explanation of how that helps the user"]},
+
+/* ---------- 5.2 ---------- */
+{t:"5.2",ty:"mcq",m:1,q:"What does each block in a blockchain store, in addition to its transactions?",o:["Its own hash, the previous block's hash and a timestamp","The private keys of everyone involved","A full copy of the internet","The IP addresses of every user"],a:0,e:"Storing the previous block's hash is what chains the blocks together."},
+{t:"5.2",ty:"mcq",m:1,q:"What does it mean to say a cryptocurrency is decentralised?",o:["No single bank or government controls it","It can only be spent in one country","It is stored on a single central server","It has no transaction record"],a:0,e:"The ledger is duplicated across the whole network rather than held by one authority."},
+{t:"5.2",ty:"txt",m:3,q:"Explain one advantage and one disadvantage of digital currency compared with cash.",a:"An advantage is that a digital currency can be transferred instantly to anyone anywhere with an internet connection, without needing to physically hand over notes or coins, and transactions are recorded so they can be traced. A disadvantage is that it depends entirely on technology, so it cannot be used without a device and a connection, and if the value is not backed by a central bank it can change very quickly, meaning what someone holds may suddenly be worth much less.",pts:["A valid advantage, such as instant transfer over any distance or a permanent record","A valid disadvantage, such as needing a device and connection","A second valid point, such as volatility or no central authority to appeal to"]},
+
+/* ---------- 5.3 ---------- */
+{t:"5.3",ty:"mcq",m:1,q:"Malware that disguises itself as useful software and releases other malware once installed is a:",o:["Trojan horse","Worm","Virus","Adware"],a:0,e:"The disguise is the defining feature of a trojan."},
+{t:"5.3",ty:"mcq",m:1,q:"Which threat relies on manipulating a person rather than exploiting the technology?",o:["Social engineering","A DDoS attack","Data interception","A brute force attack"],a:0,e:"Social engineering uses fear, curiosity or urgency to get someone to break security procedures themselves."},
+{t:"5.3",ty:"mcq",m:1,q:"What does a proxy server do that helps protect a web server from a DDoS attack?",o:["It acts as an intermediary and takes the flood of requests instead of the web server","It encrypts all the traffic so the attack fails","It permanently deletes the attacker's IP address","It compresses incoming requests so they use less bandwidth"],a:0,e:"The proxy sits between users and the web server, so it absorbs the traffic and can filter it."},
+{t:"5.3",ty:"txt",m:4,q:"A school is worried about ransomware. Describe how ransomware works and two measures that reduce the risk.",a:"Ransomware is malware that encrypts the files on the system so the user can no longer open them, and then displays a demand for payment in return for the decryption key. Keeping regular backups on separate, disconnected storage means the school can restore its files without paying anything. Up to date anti-malware software scans files against known signatures and quarantines threats before they run, and automatic software updates close the security weaknesses ransomware uses to get in. Staff training also helps, because ransomware often arrives through a phishing email attachment.",pts:["It encrypts the user's files so they cannot be accessed","A payment is demanded for the decryption key","A valid measure, such as regular separate backups","A second valid measure, such as anti-malware, updates or staff training"]},
+
+/* ---------- 6.1 ---------- */
+{t:"6.1",ty:"mcq",m:1,q:"In an automated car park barrier, which component raises the barrier?",o:["An actuator, such as a motor","An infrared sensor","The analogue to digital converter","The microprocessor"],a:0,e:"The microprocessor decides, but the actuator performs the physical movement."},
+{t:"6.1",ty:"mcq",m:1,q:"Which is a disadvantage of an automated system?",o:["It can fail completely if a sensor develops a fault","It cannot work continuously","It responds more slowly than a human","It is always less accurate than a human"],a:0,e:"Automated systems are faster, more consistent and work continuously. The drawbacks are set up cost, maintenance and reliance on the sensors."},
+{t:"6.1",ty:"txt",m:5,q:"Describe how an automated system controls the temperature in a chicken shed, where the temperature must stay between 18 and 22 degrees.",a:"A temperature sensor continuously measures the temperature inside the shed and sends its readings to the microprocessor, passing through an analogue to digital converter because the readings are analogue. The microprocessor compares each reading with the stored pre-set values of 18 and 22 degrees. If the reading is above 22, the microprocessor sends a signal to an actuator that switches on a fan or opens a vent. If the reading is below 18, a signal is sent to an actuator that switches on a heater. If the reading is within range no action is taken. The process repeats continuously without any human intervention.",pts:["The sensor continuously sends readings to the microprocessor","An ADC converts the analogue readings to digital","The reading is compared with stored pre-set values","Above the range, a signal operates a fan or vent; below it, a heater","The process repeats continuously with no human needed"]},
+
+/* ---------- 6.2 ---------- */
+{t:"6.2",ty:"mcq",m:1,q:"Which task is a robot least suited to?",o:["Dealing with an unexpected situation that it was not programmed for","Welding the same joint thousands of times","Working in a radioactive environment","Lifting heavy loads repeatedly"],a:0,e:"Lack of flexibility is the key limitation. A robot only does what it has been programmed to do."},
+{t:"6.2",ty:"mcq",m:1,q:"A robot that works without any human operator is described as:",o:["Autonomous","Embedded","Asynchronous","Volatile"],a:0,e:"Autonomous means it operates on its own, using its sensors and programming."},
+{t:"6.2",ty:"txt",m:3,q:"Give three characteristics of a robot.",a:"A robot has a mechanical structure or framework, and electrical components such as motors and a power supply. It contains programmable instructions, so what it does can be changed. It uses sensors to gather information about its surroundings, and actuators such as motors to move. It may be autonomous or controlled by a human operator.",pts:["A mechanical structure and electrical components","Programmable instructions that can be changed","Sensors to gather information about its surroundings","Actuators that produce movement"]},
+
+/* ---------- 6.3 ---------- */
+{t:"6.3",ty:"mcq",m:1,q:"Which part of an expert system holds the facts gathered from human experts?",o:["The knowledge base","The rule base","The inference engine","The user interface"],a:0,e:"The rule base holds the IF THEN rules, and the inference engine applies them to the knowledge base."},
+{t:"6.3",ty:"mcq",m:1,q:"Which is a disadvantage of using an expert system for medical diagnosis?",o:["It has no common sense and cannot handle a situation outside its knowledge base","It can never be as fast as a human doctor","It cannot store more than a few facts","It gives a different answer every time for the same input"],a:0,e:"Expert systems are fast and consistent, but they only know what is in the knowledge base."},
+{t:"6.3",ty:"txt",m:3,q:"Explain the difference between artificial intelligence and machine learning.",a:"Artificial intelligence is the broad idea of a computer simulating human intelligence: gathering data, applying rules and reaching conclusions or decisions in a way that mimics human reasoning. Machine learning is a particular type of artificial intelligence in which the system automatically improves its own performance as it is given more data, without a programmer rewriting its instructions. So all machine learning is AI, but not all AI learns.",pts:["AI simulates human intelligence by applying rules to data to reach conclusions","Machine learning improves its own performance as it receives more data","Machine learning is a type of AI, or does not need reprogramming to improve"]},
+
+/* ---------- 7.1 ---------- */
+{t:"7.1",ty:"mcq",m:1,q:"A program crashes when it tries to read element 11 of an array declared as ARRAY[1:10]. This is a:",o:["Run-time error","Syntax error","Logic error","Transposition error"],a:0,e:"The code is valid, so it runs, but the program stops while running."},
+{t:"7.1",ty:"txt",m:4,q:"Explain what is meant by abstraction and decomposition, giving an example of each.",a:"Abstraction means keeping only the details that matter for solving the problem and removing everything else. An underground train map is an example: it keeps the order of the stations and the lines connecting them, and drops the real distances and the exact geography, because those do not help a passenger. Decomposition means breaking a problem into smaller sub-problems that can each be solved separately and then combined. Writing a game could be decomposed into handling player input, updating the score, drawing the screen and saving the high score, with each part written and tested on its own.",pts:["Abstraction defined as keeping only the relevant details","A valid abstraction example","Decomposition defined as breaking into smaller sub-problems","A valid decomposition example"]},
+
+/* ---------- 7.2 ---------- */
+{t:"7.2",ty:"mcq",m:1,q:"Which flowchart symbol is used for INPUT and OUTPUT?",o:["A parallelogram","A rectangle","A diamond","A rounded rectangle"],a:0,e:"A rectangle is a process, a diamond is a decision, a rounded rectangle is a terminator."},
+{t:"7.2",ty:"mcq",m:1,q:"On Paper 2, in which question may you write your answer in Python instead of pseudocode?",o:["Only the 15 mark scenario question","Any question that asks for code","No question at all","Only questions about arrays"],a:0,e:"Everywhere else, a solution written in a programming language is not awarded marks."},
+{t:"7.2",ty:"txt",m:3,q:"Describe what a structure diagram shows, and how it differs from a flowchart.",a:"A structure diagram shows a system broken down into its sub-systems as a hierarchy, with the whole system at the top and each level below showing the parts it decomposes into. It shows what the parts of the system are and how they relate to one another. A flowchart is different because it shows the order in which the steps are carried out, including the decisions and loops, rather than the structure of the system.",pts:["Shows a system broken into sub-systems in a hierarchy","Shows what the parts are and how they relate","A flowchart shows the order or sequence of steps instead"]},
+
+/* ---------- 7.3 ---------- */
+{t:"7.3",ty:"mcq",m:1,q:"Trace: A = 1; B = 1; FOR i = 1 TO 4: T = A + B; A = B; B = T; NEXT i. What is B at the end?",o:["8","5","13","6"],a:0,e:"The values run 1,1 then 2, 3, 5, 8. This builds the Fibonacci sequence."},
+{t:"7.3",ty:"mcq",m:1,q:"In a trace table, what should you write for a variable on a row where its value does not change?",o:["Leave the cell blank","Repeat the previous value","Write a zero","Write the word same"],a:0,e:"Only record a value when the variable actually changes. Repeating values across rows loses marks."},
+{t:"7.3",ty:"txt",m:3,q:"An algorithm is meant to output the number of values entered that are above 50, but it always outputs 0. Suggest two possible causes.",a:"The counter may be being reset to zero inside the loop instead of once before it, so every increment is thrown away and the final value is zero. The condition may use the wrong comparison, for example testing whether the value is less than 50, or testing against the wrong variable, so the counter is never incremented. The output statement may also be placed before the loop rather than after it, so it prints the starting value.",pts:["The counter is initialised inside the loop instead of before it","The condition is wrong, so the counter is never incremented","The output happens before the loop rather than after it"]},
+
+/* ---------- 7.4 ---------- */
+{t:"7.4",ty:"mcq",m:1,q:"A date must be entered as dd/mm/yyyy. Which validation check enforces this?",o:["Format check","Range check","Presence check","Type check"],a:0,e:"A format check tests that the data follows a required pattern."},
+{t:"7.4",ty:"txt",m:4,q:"Write an algorithm in pseudocode that inputs 100 numbers and outputs how many were negative, how many were zero and how many were positive.",a:"Set NegCount, ZeroCount and PosCount to 0. Use a FOR loop from 1 to 100 that inputs a number each pass. Inside the loop, use IF Number < 0 THEN add 1 to NegCount, ELSE IF Number = 0 THEN add 1 to ZeroCount, ELSE add 1 to PosCount. After the loop finishes, output all three counters with suitable messages.",pts:["All three counters initialised to 0 before the loop","A count-controlled loop repeating 100 times with an INPUT inside","Correct selection testing negative, zero and positive, incrementing the right counter","All three totals output after the loop, with messages"]},
+
+/* ---------- 8.1 ---------- */
+{t:"8.1",ty:"mcq",m:1,q:"What is the value of 7 ^ 2 + 10 DIV 4?",o:["51","51.5","14","24"],a:0,e:"7 squared is 49, and 10 DIV 4 is 2 because DIV discards the remainder. 49 + 2 = 51."},
+{t:"8.1",ty:"mcq",m:1,q:"Which loop should be used to keep asking for a password until the correct one is entered?",o:["REPEAT ... UNTIL, because the user must be asked at least once","FOR ... NEXT, because the number of attempts is known","A loop is not needed","WHILE ... ENDWHILE, because it must run zero times"],a:0,e:"The prompt has to happen before the input can be tested, so a post-condition loop fits."},
+{t:"8.1",ty:"mcq",m:1,q:"What does UCASE(SUBSTRING(\"binary\", 1, 3)) return?",o:["\"BIN\"","\"binary\"","\"BINARY\"","\"bin\""],a:0,e:"SUBSTRING takes 3 characters from position 1, giving bin, and UCASE converts it to BIN."},
+{t:"8.1",ty:"txt",m:3,q:"Explain the difference between a parameter and an argument.",a:"A parameter is the variable named in the definition of a procedure or function, which receives a value when the subroutine is called. An argument is the actual value that is passed in at the point of the call. So in FUNCTION Cube(n), n is the parameter, and in the call Cube(3) the number 3 is the argument that n takes.",pts:["A parameter is named in the subroutine definition","An argument is the actual value passed in when it is called","A correct example showing both"]},
+
+/* ---------- 8.2 ---------- */
+{t:"8.2",ty:"mcq",m:1,q:"An array is declared as ARRAY[1:5, 1:3]. How many elements does it hold in total?",o:["15","8","5","3"],a:0,e:"5 rows x 3 columns = 15 elements."},
+{t:"8.2",ty:"mcq",m:1,q:"In the 2D array Table[Row, Column], which loop should be the outer one to process the array row by row?",o:["The Row loop","The Column loop","Either, it makes no difference to the order","Neither, a single loop is enough"],a:0,e:"The outer loop fixes a row while the inner loop moves across every column of that row."},
+{t:"8.2",ty:"txt",m:4,q:"Write pseudocode that totals every element of a 2D array Sales[1:4, 1:12] and outputs the result.",a:"Set Total to 0 before the loops. Use an outer FOR loop for Row from 1 to 4 and an inner FOR loop for Month from 1 to 12. Inside the inner loop, add Sales[Row, Month] to Total. After both loops have finished, output Total with a suitable message.",pts:["Total initialised to 0 before the loops","Outer loop covering rows 1 to 4","Inner loop covering columns 1 to 12","Total updated using both indexes, and output after the loops"]},
+
+/* ---------- 8.3 ---------- */
+{t:"8.3",ty:"mcq",m:1,q:"What does EOF stand for and what does it do?",o:["End of file: it shows the end of the file has been reached","Error on file: it reports a read failure","Entry on file: it marks a new record","End of field: it separates two fields"],a:0,e:"Looping until EOF is how you read a file whose length you do not know."},
+{t:"8.3",ty:"mcq",m:1,q:"A file is opened FOR WRITE when the programmer meant FOR APPEND. What happens?",o:["The existing contents of the file are overwritten and lost","The new data is added to the end as intended","The file cannot be opened at all","The file is automatically backed up first"],a:0,e:"FOR WRITE creates a new file or overwrites an existing one."},
+{t:"8.3",ty:"txt",m:4,q:"Write pseudocode that reads every line of a file called Scores.txt and outputs each one.",a:"Open the file Scores.txt FOR READ. Use a WHILE loop that continues while NOT EOF(\"Scores.txt\"). Inside the loop, READFILE from Scores.txt into a variable such as LineOfText, then OUTPUT that variable. After the loop ends, CLOSEFILE Scores.txt.",pts:["The file is opened FOR READ","A loop that continues until EOF is reached","READFILE into a variable and OUTPUT it inside the loop","CLOSEFILE after the loop"]},
+
+/* ---------- 9.1 ---------- */
+{t:"9.1",ty:"mcq",m:1,q:"Which query shows all fields for students whose Mark is at least 40 and at most 70?",o:["SELECT * FROM Students WHERE Mark >= 40 AND Mark <= 70;","SELECT * FROM Students WHERE Mark > 40 OR Mark < 70;","SELECT ALL FROM Students BETWEEN 40 AND 70;","SELECT * WHERE Mark >= 40 AND Mark <= 70 FROM Students;"],a:0,e:"Both conditions must hold, so AND is needed, and the clause order is SELECT, FROM, WHERE."},
+{t:"9.1",ty:"mcq",m:1,q:"Which data type is most appropriate for a field storing whether a book has been returned?",o:["Boolean","Text","Integer","Date/time"],a:0,e:"There are only two possible values, yes or no."},
+{t:"9.1",ty:"mcq",m:1,q:"What does SUM(Price) return in a query with a WHERE clause?",o:["The total of the Price field for the records matching the condition","The number of records matching the condition","The largest price in the table","The average price of every record"],a:0,e:"COUNT gives the number of records. SUM totals a numeric field for the filtered records only."},
+{t:"9.1",ty:"txt",m:3,q:"A library database stores a Members table. Explain why storing the member's age is a poor design choice compared with storing their date of birth.",a:"An age is only correct on the day it is entered, because it changes every year, so the data becomes out of date and every record would have to be updated regularly to stay accurate. A date of birth never changes, so it only has to be entered once and remains correct. The current age can always be calculated from the date of birth and today's date whenever it is needed.",pts:["Age changes over time, so the stored value quickly becomes incorrect","Every record would need updating to keep it accurate","Date of birth never changes and age can be calculated from it when needed"]},
+
+/* ---------- 10.1 ---------- */
+{t:"10.1",ty:"mcq",m:1,q:"For X = A NAND B, what is X when A = 1 and B = 0?",o:["1","0","Undefined","2"],a:0,e:"NAND only gives 0 when both inputs are 1, so any other combination gives 1."},
+{t:"10.1",ty:"mcq",m:1,q:"Which single gate gives the same output as NOT (A OR B)?",o:["NOR","NAND","XOR","AND"],a:0,e:"NOR is precisely OR followed by NOT."},
+{t:"10.1",ty:"mcq",m:1,q:"A circuit gives output 1 only when exactly one of its two inputs is 1. Which gate is it?",o:["XOR","OR","AND","NOR"],a:0,e:"An OR gate would also give 1 when both inputs are 1, so it is exclusive OR."},
+{t:"10.1",ty:"txt",m:4,q:"A lift door will only close (X = 1) when the door sensor shows nothing blocking it (A = 0) and either the close button is pressed (B = 1) or the lift is called to another floor (C = 1). Write the logic expression for X.",a:"The expression is X = (NOT A) AND (B OR C). A NOT gate is needed on input A, because the door closes when A is 0 rather than 1. An OR gate combines B and C, because either the button or the call is enough on its own. An AND gate then combines the output of the NOT gate with the output of the OR gate, because the clear sensor and one of those two conditions must both be true.",pts:["NOT applied to A, because the condition is true when A is 0","B OR C, because either one is sufficient","The two parts combined with AND","Correct complete expression X = NOT A AND (B OR C)"]},
+{t:"10.1",ty:"txt",m:3,q:"Explain why a truth table for a circuit with three inputs needs eight rows, and how you fill the input columns.",a:"Each input can take one of two values, 0 or 1, so with three inputs the number of different combinations is 2 to the power 3, which is 8. To make sure every combination appears exactly once, fill the first input column with four 0s followed by four 1s, the second with two 0s, two 1s, two 0s and two 1s, and the third by alternating 0 and 1 all the way down.",pts:["Each input has 2 possible values, so 3 inputs give 2^3 = 8 combinations","The halving pattern 4/4, then 2/2, then 1/1","This guarantees each combination appears exactly once"]}
 ];
 
 </script>
@@ -2868,6 +3103,735 @@ const Store = (function () {
     save, mastery, topicMastery, overall, recordQuiz, setConf, markRead,
     cardState, gradeCard, dueCount, addXp, touchStreak, reset, todayKey
   };
+})();
+
+</script>
+<script>
+/* ---- js/pseudocode.js ---- */
+/* A small interpreter for Cambridge IGCSE pseudocode.
+
+   Paper 2 requires solutions in pseudocode, so students need somewhere to run it.
+   Supports: DECLARE / CONSTANT, assignment, INPUT / OUTPUT, IF / CASE,
+   FOR / WHILE / REPEAT, 1D and 2D arrays, PROCEDURE / FUNCTION, and the
+   library routines named in the syllabus.
+
+   Errors carry a line number and say what to do about it, because a runner that
+   only says "syntax error" teaches nothing.
+*/
+
+const Pseudo = (function () {
+
+  const KEYWORDS = new Set([
+    "DECLARE", "CONSTANT", "INPUT", "OUTPUT", "PRINT", "IF", "THEN", "ELSE", "ENDIF",
+    "CASE", "OF", "OTHERWISE", "ENDCASE", "FOR", "TO", "STEP", "NEXT", "WHILE", "DO",
+    "ENDWHILE", "REPEAT", "UNTIL", "PROCEDURE", "ENDPROCEDURE", "CALL", "FUNCTION",
+    "RETURNS", "RETURN", "ENDFUNCTION", "ARRAY", "AND", "OR", "NOT", "MOD", "DIV",
+    "TRUE", "FALSE", "INTEGER", "REAL", "CHAR", "STRING", "BOOLEAN"
+  ]);
+
+  const TYPES = new Set(["INTEGER", "REAL", "CHAR", "STRING", "BOOLEAN"]);
+
+  class PseudoError extends Error {
+    constructor(msg, line) { super(msg); this.line = line; }
+  }
+  const err = (msg, line) => { throw new PseudoError(msg, line); };
+
+  /* ---------------------------------------------------------------- */
+  /* tokenizer                                                         */
+  /* ---------------------------------------------------------------- */
+  function tokenize(src) {
+    const out = [];
+    let i = 0, line = 1;
+    const push = (type, value) => out.push({ type, value, line });
+
+    while (i < src.length) {
+      const c = src[i];
+
+      if (c === "\n") { push("nl"); line++; i++; continue; }
+      if (c === " " || c === "\t" || c === "\r") { i++; continue; }
+
+      // comments
+      if (c === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i++; continue; }
+
+      // assignment arrow, written either way
+      if (c === "←") { push("op", "<-"); i++; continue; }
+      if (c === "<" && src[i + 1] === "-") { push("op", "<-"); i += 2; continue; }
+
+      // strings and chars
+      if (c === '"' || c === "'") {
+        const quote = c; let s = ""; i++;
+        while (i < src.length && src[i] !== quote) {
+          if (src[i] === "\n") err("A text value is missing its closing " + quote, line);
+          s += src[i++];
+        }
+        if (i >= src.length) err("A text value is missing its closing " + quote, line);
+        i++;
+        push("str", s);
+        continue;
+      }
+
+      // numbers
+      if (/[0-9]/.test(c)) {
+        let s = "";
+        while (i < src.length && /[0-9.]/.test(src[i])) s += src[i++];
+        if ((s.match(/\./g) || []).length > 1) err('"' + s + '" is not a valid number', line);
+        push("num", parseFloat(s));
+        continue;
+      }
+
+      // identifiers and keywords
+      if (/[A-Za-z_]/.test(c)) {
+        let s = "";
+        while (i < src.length && /[A-Za-z0-9_]/.test(src[i])) s += src[i++];
+        const up = s.toUpperCase();
+        if (KEYWORDS.has(up)) push("kw", up); else push("id", s);
+        continue;
+      }
+
+      // multi-character operators
+      const two = src.substr(i, 2);
+      if (two === "<=" || two === ">=" || two === "<>") { push("op", two); i += 2; continue; }
+
+      if ("+-*/^=<>(),[]:&".includes(c)) { push("op", c); i++; continue; }
+
+      err('The character "' + c + '" does not mean anything in pseudocode', line);
+    }
+    push("eof");
+    return out;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* parser                                                            */
+  /* ---------------------------------------------------------------- */
+  function parse(tokens) {
+    let p = 0;
+    const peek = () => tokens[p];
+    const at = (type, value) => tokens[p].type === type && (value === undefined || tokens[p].value === value);
+    const atKw = k => at("kw", k);
+    const next = () => tokens[p++];
+    const line = () => tokens[p].line;
+
+    function expect(type, value, what) {
+      if (!at(type, value)) {
+        err("Expected " + (what || value) + " but found " + describe(tokens[p]), tokens[p].line);
+      }
+      return next();
+    }
+    function describe(t) {
+      if (t.type === "eof") return "the end of the program";
+      if (t.type === "nl") return "the end of the line";
+      return '"' + t.value + '"';
+    }
+    const skipNl = () => { while (at("nl")) next(); };
+    function endOfStatement() {
+      if (at("nl") || at("eof")) { skipNl(); return; }
+      err("Unexpected " + describe(tokens[p]) + " at the end of the statement", tokens[p].line);
+    }
+
+    /* ---- expressions ---- */
+    function expression() { return orExpr(); }
+
+    function orExpr() {
+      let l = andExpr();
+      while (atKw("OR")) { const ln = line(); next(); l = { k: "bin", op: "OR", l, r: andExpr(), line: ln }; }
+      return l;
+    }
+    function andExpr() {
+      let l = notExpr();
+      while (atKw("AND")) { const ln = line(); next(); l = { k: "bin", op: "AND", l, r: notExpr(), line: ln }; }
+      return l;
+    }
+    function notExpr() {
+      if (atKw("NOT")) { const ln = line(); next(); return { k: "not", e: notExpr(), line: ln }; }
+      return compare();
+    }
+    function compare() {
+      let l = addSub();
+      while (at("op", "=") || at("op", "<>") || at("op", "<") || at("op", "<=") || at("op", ">") || at("op", ">=")) {
+        const ln = line(), op = next().value;
+        l = { k: "bin", op, l, r: addSub(), line: ln };
+      }
+      return l;
+    }
+    function addSub() {
+      let l = mulDiv();
+      while (at("op", "+") || at("op", "-") || at("op", "&")) {
+        const ln = line(), op = next().value;
+        l = { k: "bin", op, l, r: mulDiv(), line: ln };
+      }
+      return l;
+    }
+    function mulDiv() {
+      let l = power();
+      while (at("op", "*") || at("op", "/") || atKw("MOD") || atKw("DIV")) {
+        const ln = line(), op = next().value;
+        l = { k: "bin", op, l, r: power(), line: ln };
+      }
+      return l;
+    }
+    function power() {
+      const l = unary();
+      if (at("op", "^")) { const ln = line(); next(); return { k: "bin", op: "^", l, r: power(), line: ln }; }
+      return l;
+    }
+    function unary() {
+      if (at("op", "-")) { const ln = line(); next(); return { k: "neg", e: unary(), line: ln }; }
+      return primary();
+    }
+    function primary() {
+      const t = peek(), ln = t.line;
+      if (t.type === "num") { next(); return { k: "num", v: t.value, line: ln }; }
+      if (t.type === "str") { next(); return { k: "str", v: t.value, line: ln }; }
+      if (atKw("TRUE")) { next(); return { k: "bool", v: true, line: ln }; }
+      if (atKw("FALSE")) { next(); return { k: "bool", v: false, line: ln }; }
+      if (at("op", "(")) { next(); const e = expression(); expect("op", ")", "a closing bracket )"); return e; }
+      if (t.type === "id") {
+        next();
+        if (at("op", "(")) {                                  // function call
+          next();
+          const args = [];
+          if (!at("op", ")")) { do { args.push(expression()); } while (at("op", ",") && next()); }
+          expect("op", ")", "a closing bracket )");
+          return { k: "call", name: t.value, args, line: ln };
+        }
+        if (at("op", "[")) {                                  // array element
+          next();
+          const idx = [expression()];
+          while (at("op", ",")) { next(); idx.push(expression()); }
+          expect("op", "]", "a closing bracket ]");
+          return { k: "index", name: t.value, idx, line: ln };
+        }
+        return { k: "var", name: t.value, line: ln };
+      }
+      err("Expected a value but found " + describe(t), ln);
+    }
+
+    /* ---- statements ---- */
+    function block(stops) {
+      const list = [];
+      for (;;) {
+        skipNl();
+        if (at("eof")) break;
+        if (peek().type === "kw" && stops.includes(peek().value)) break;
+        list.push(statement());
+      }
+      return list;
+    }
+
+    function statement() {
+      const t = peek(), ln = t.line;
+
+      if (atKw("DECLARE")) {
+        next();
+        const name = expect("id", undefined, "a variable name").value;
+        expect("op", ":", "a colon");
+        if (atKw("ARRAY")) {
+          next();
+          expect("op", "[", "a square bracket [");
+          const bounds = [];
+          do {
+            const lo = expression();
+            expect("op", ":", "a colon between the bounds, as in [1:10]");
+            bounds.push({ lo, hi: expression() });
+          } while (at("op", ",") && next());
+          expect("op", "]", "a closing bracket ]");
+          expect("kw", "OF", "the word OF");
+          const type = next().value;
+          endOfStatement();
+          return { k: "declareArray", name, bounds, type, line: ln };
+        }
+        const type = next().value;
+        if (!TYPES.has(String(type))) err('"' + type + '" is not a data type. Use INTEGER, REAL, CHAR, STRING or BOOLEAN', ln);
+        endOfStatement();
+        return { k: "declare", name, type, line: ln };
+      }
+
+      if (atKw("CONSTANT")) {
+        next();
+        const name = expect("id", undefined, "a name").value;
+        if (at("op", "=")) next(); else if (at("op", "<-")) next(); else err("Expected = after the constant name", ln);
+        const value = expression();
+        endOfStatement();
+        return { k: "constant", name, value, line: ln };
+      }
+
+      if (atKw("INPUT")) {
+        next();
+        const target = lvalue();
+        endOfStatement();
+        return { k: "input", target, line: ln };
+      }
+
+      if (atKw("OUTPUT") || atKw("PRINT")) {
+        next();
+        const parts = [expression()];
+        while (at("op", ",")) { next(); parts.push(expression()); }
+        endOfStatement();
+        return { k: "output", parts, line: ln };
+      }
+
+      if (atKw("IF")) {
+        next();
+        const cond = expression();
+        skipNl();
+        expect("kw", "THEN", "the word THEN");
+        const then = block(["ELSE", "ENDIF"]);
+        let other = null;
+        if (atKw("ELSE")) { next(); other = block(["ENDIF"]); }
+        expect("kw", "ENDIF", "the word ENDIF");
+        endOfStatement();
+        return { k: "if", cond, then, other, line: ln };
+      }
+
+      if (atKw("CASE")) {
+        next();
+        expect("kw", "OF", "the word OF");
+        const subject = expression();
+        skipNl();
+        const arms = [];
+        let otherwise = null;
+        for (;;) {
+          skipNl();
+          if (atKw("ENDCASE") || at("eof")) break;
+          if (atKw("OTHERWISE")) {
+            next();
+            if (at("op", ":")) next();
+            otherwise = [statement()];
+            continue;
+          }
+          const match = expression();
+          expect("op", ":", "a colon after the case value");
+          arms.push({ match, body: [statement()] });
+        }
+        expect("kw", "ENDCASE", "the word ENDCASE");
+        endOfStatement();
+        return { k: "case", subject, arms, otherwise, line: ln };
+      }
+
+      if (atKw("FOR")) {
+        next();
+        const name = expect("id", undefined, "the counter name").value;
+        if (at("op", "<-")) next(); else if (at("op", "=")) next(); else err("Expected an assignment arrow after the counter", ln);
+        const from = expression();
+        expect("kw", "TO", "the word TO");
+        const to = expression();
+        let step = null;
+        if (atKw("STEP")) { next(); step = expression(); }
+        const body = block(["NEXT"]);
+        expect("kw", "NEXT", "the word NEXT");
+        if (peek().type === "id") next();                      // NEXT i, counter name optional
+        endOfStatement();
+        return { k: "for", name, from, to, step, body, line: ln };
+      }
+
+      if (atKw("WHILE")) {
+        next();
+        const cond = expression();
+        if (atKw("DO")) next();
+        const body = block(["ENDWHILE"]);
+        expect("kw", "ENDWHILE", "the word ENDWHILE");
+        endOfStatement();
+        return { k: "while", cond, body, line: ln };
+      }
+
+      if (atKw("REPEAT")) {
+        next();
+        const body = block(["UNTIL"]);
+        expect("kw", "UNTIL", "the word UNTIL");
+        const cond = expression();
+        endOfStatement();
+        return { k: "repeat", cond, body, line: ln };
+      }
+
+      if (atKw("PROCEDURE") || atKw("FUNCTION")) {
+        const isFn = peek().value === "FUNCTION";
+        next();
+        const name = expect("id", undefined, "a name").value;
+        const params = [];
+        if (at("op", "(")) {
+          next();
+          if (!at("op", ")")) {
+            do {
+              const pn = expect("id", undefined, "a parameter name").value;
+              if (at("op", ":")) { next(); next(); }           // type is optional here
+              params.push(pn);
+            } while (at("op", ",") && next());
+          }
+          expect("op", ")", "a closing bracket )");
+        }
+        if (atKw("RETURNS")) { next(); next(); }
+        const body = block([isFn ? "ENDFUNCTION" : "ENDPROCEDURE"]);
+        expect("kw", isFn ? "ENDFUNCTION" : "ENDPROCEDURE", "the word END" + (isFn ? "FUNCTION" : "PROCEDURE"));
+        endOfStatement();
+        return { k: "subroutine", isFn, name, params, body, line: ln };
+      }
+
+      if (atKw("RETURN")) {
+        next();
+        const value = (at("nl") || at("eof")) ? null : expression();
+        endOfStatement();
+        return { k: "return", value, line: ln };
+      }
+
+      if (atKw("CALL")) {
+        next();
+        const name = expect("id", undefined, "a procedure name").value;
+        const args = [];
+        if (at("op", "(")) {
+          next();
+          if (!at("op", ")")) { do { args.push(expression()); } while (at("op", ",") && next()); }
+          expect("op", ")", "a closing bracket )");
+        }
+        endOfStatement();
+        return { k: "call", name, args, line: ln };
+      }
+
+      if (t.type === "id") {
+        const target = lvalue();
+        if (at("op", "<-") || at("op", "=")) {
+          next();
+          const value = expression();
+          endOfStatement();
+          return { k: "assign", target, value, line: ln };
+        }
+        if (at("op", "(")) {                                   // bare procedure call
+          next();
+          const args = [];
+          if (!at("op", ")")) { do { args.push(expression()); } while (at("op", ",") && next()); }
+          expect("op", ")", "a closing bracket )");
+          endOfStatement();
+          return { k: "call", name: target.name, args, line: ln };
+        }
+        err("Expected an assignment arrow after " + target.name + ". Write " + target.name + " ← value", ln);
+      }
+
+      err("A statement cannot start with " + describe(t), ln);
+    }
+
+    function lvalue() {
+      const t = expect("id", undefined, "a variable name");
+      if (at("op", "[")) {
+        next();
+        const idx = [expression()];
+        while (at("op", ",")) { next(); idx.push(expression()); }
+        expect("op", "]", "a closing bracket ]");
+        return { k: "index", name: t.value, idx, line: t.line };
+      }
+      return { k: "var", name: t.value, line: t.line };
+    }
+
+    const program = block([]);
+    return program;
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* interpreter                                                       */
+  /* ---------------------------------------------------------------- */
+  const RETURN = Symbol("return");
+
+  function run(src, inputLines, opts) {
+    opts = opts || {};
+    const output = [];
+    const inputs = (inputLines || []).slice();
+    const subs = Object.create(null);
+    const globals = new Map();
+    const consts = new Set();
+    let steps = 0;
+    const LIMIT = opts.stepLimit || 2000000;
+    const LOOP_LIMIT = 50000;   // a teaching program never legitimately spins this long
+
+    const ast = parse(tokenize(src));
+    ast.forEach(s => { if (s.k === "subroutine") subs[s.name.toLowerCase()] = s; });
+
+    const fmt = v => {
+      if (v === null || v === undefined) return "";
+      if (typeof v === "boolean") return v ? "TRUE" : "FALSE";
+      if (typeof v === "number") return Number.isInteger(v) ? String(v) : String(Math.round(v * 1e10) / 1e10);
+      return String(v);
+    };
+
+    function scopeGet(scope, name, line) {
+      const key = name.toLowerCase();
+      if (scope.has(key)) return scope.get(key);
+      if (globals.has(key)) return globals.get(key);
+      err('The variable "' + name + '" has not been given a value yet. Declare it or assign to it first.', line);
+    }
+    function scopeSet(scope, name, value, line) {
+      const key = name.toLowerCase();
+      if (consts.has(key)) err('"' + name + '" is a constant, so its value cannot be changed', line);
+      if (scope.has(key) || scope === globals) scope.set(key, value);
+      else if (globals.has(key)) globals.set(key, value);
+      else scope.set(key, value);
+    }
+
+    function makeArray(node, scope) {
+      const dims = node.bounds.map(b => ({ lo: Math.trunc(evalExpr(b.lo, scope)), hi: Math.trunc(evalExpr(b.hi, scope)) }));
+      dims.forEach(d => { if (d.hi < d.lo) err("An array cannot have an upper bound below its lower bound", node.line); });
+      return { array: true, dims, data: new Map(), type: node.type };
+    }
+    function arrayKey(arr, idx, line, name) {
+      if (idx.length !== arr.dims.length) {
+        err('"' + name + '" is a ' + arr.dims.length + "-dimensional array, so it needs " + arr.dims.length + " index value" + (arr.dims.length > 1 ? "s" : ""), line);
+      }
+      return idx.map((v, i) => {
+        const n = Math.trunc(v);
+        const d = arr.dims[i];
+        if (n < d.lo || n > d.hi) {
+          err("Index " + n + " is outside the array " + name + ", which runs from " + d.lo + " to " + d.hi, line);
+        }
+        return n;
+      }).join(",");
+    }
+
+    const BUILTINS = {
+      length: (a, line) => String(a[0] === undefined ? err("LENGTH needs a value", line) : a[0]).length,
+      substring: (a, line) => {
+        const s = String(a[0]), start = Math.trunc(a[1]), len = Math.trunc(a[2]);
+        if (start < 1 || start > s.length) err("SUBSTRING was asked to start at position " + start + ", but the text is " + s.length + " characters long", line);
+        return s.substr(start - 1, len);
+      },
+      ucase: a => String(a[0]).toUpperCase(),
+      lcase: a => String(a[0]).toLowerCase(),
+      round: a => { const p = Math.pow(10, Math.trunc(a[1] || 0)); return Math.round(a[0] * p) / p; },
+      random: a => a.length ? Math.random() * a[0] : Math.random(),
+      int: a => Math.trunc(a[0]),
+      div: a => Math.trunc(a[0] / a[1]),
+      mod: a => a[0] % a[1],
+      num_to_string: a => String(a[0]),
+      string_to_num: a => parseFloat(a[0])
+    };
+
+    function evalExpr(n, scope) {
+      if (++steps > LIMIT) err("The program ran for too long. Check that every loop can actually finish.", n.line);
+      switch (n.k) {
+        case "num": case "str": case "bool": return n.v;
+        case "var": {
+          const v = scopeGet(scope, n.name, n.line);
+          if (v && v.array) return v;
+          return v;
+        }
+        case "neg": return -toNum(evalExpr(n.e, scope), n.line);
+        case "not": return !truthy(evalExpr(n.e, scope), n.line);
+        case "index": {
+          const arr = scopeGet(scope, n.name, n.line);
+          if (!arr || !arr.array) err('"' + n.name + '" is not an array', n.line);
+          const key = arrayKey(arr, n.idx.map(e => evalExpr(e, scope)), n.line, n.name);
+          if (!arr.data.has(key)) err("Nothing has been stored in " + n.name + "[" + key + "] yet", n.line);
+          return arr.data.get(key);
+        }
+        case "call": {
+          const key = n.name.toLowerCase();
+          const args = n.args.map(a => evalExpr(a, scope));
+          if (BUILTINS[key]) return BUILTINS[key](args, n.line);
+          const sub = subs[key];
+          if (!sub) err('There is no function called "' + n.name + '"', n.line);
+          return callSub(sub, args, n.line);
+        }
+        case "bin": {
+          const op = n.op;
+          if (op === "AND") return truthy(evalExpr(n.l, scope), n.line) && truthy(evalExpr(n.r, scope), n.line);
+          if (op === "OR") return truthy(evalExpr(n.l, scope), n.line) || truthy(evalExpr(n.r, scope), n.line);
+          const a = evalExpr(n.l, scope), b = evalExpr(n.r, scope);
+          switch (op) {
+            case "+":
+              if (typeof a === "string" || typeof b === "string") return String(fmt(a)) + String(fmt(b));
+              return toNum(a, n.line) + toNum(b, n.line);
+            case "&": return String(fmt(a)) + String(fmt(b));
+            case "-": return toNum(a, n.line) - toNum(b, n.line);
+            case "*": return toNum(a, n.line) * toNum(b, n.line);
+            case "/":
+              if (toNum(b, n.line) === 0) err("This divides by zero, which a computer cannot do", n.line);
+              return toNum(a, n.line) / toNum(b, n.line);
+            case "^": return Math.pow(toNum(a, n.line), toNum(b, n.line));
+            case "MOD":
+              if (toNum(b, n.line) === 0) err("MOD cannot be used with zero", n.line);
+              return toNum(a, n.line) % toNum(b, n.line);
+            case "DIV":
+              if (toNum(b, n.line) === 0) err("DIV cannot be used with zero", n.line);
+              return Math.trunc(toNum(a, n.line) / toNum(b, n.line));
+            case "=": return eq(a, b);
+            case "<>": return !eq(a, b);
+            case "<": return cmp(a, b, n.line) < 0;
+            case "<=": return cmp(a, b, n.line) <= 0;
+            case ">": return cmp(a, b, n.line) > 0;
+            case ">=": return cmp(a, b, n.line) >= 0;
+          }
+        }
+      }
+      err("Cannot work out that expression", n.line);
+    }
+
+    const eq = (a, b) => (typeof a === "string" || typeof b === "string") ? String(a) === String(b) : a === b;
+    const cmp = (a, b, line) => {
+      if (typeof a === "string" || typeof b === "string") return String(a) < String(b) ? -1 : String(a) > String(b) ? 1 : 0;
+      return toNum(a, line) - toNum(b, line);
+    };
+    function toNum(v, line) {
+      if (typeof v === "number") return v;
+      if (typeof v === "boolean") return v ? 1 : 0;
+      const n = parseFloat(v);
+      if (isNaN(n)) err('"' + v + '" is text, so it cannot be used in a calculation', line);
+      return n;
+    }
+    function truthy(v, line) {
+      if (typeof v === "boolean") return v;
+      err("A condition has to be TRUE or FALSE, but this one gave " + fmt(v), line);
+    }
+
+    function callSub(sub, args, line) {
+      if (args.length !== sub.params.length) {
+        err(sub.name + " expects " + sub.params.length + " value" + (sub.params.length === 1 ? "" : "s") +
+            " but was given " + args.length, line);
+      }
+      const local = new Map();
+      sub.params.forEach((p, i) => local.set(p.toLowerCase(), args[i]));
+      const r = execBlock(sub.body, local);
+      if (r && r.type === RETURN) return r.value;
+      if (sub.isFn) err(sub.name + " is a function, so it must RETURN a value", line);
+      return null;
+    }
+
+    function execBlock(list, scope) {
+      for (const st of list) {
+        const r = exec(st, scope);
+        if (r && r.type === RETURN) return r;
+      }
+      return null;
+    }
+
+    function exec(n, scope) {
+      if (++steps > LIMIT) err("The program ran for too long. Check that every loop can actually finish.", n.line);
+      switch (n.k) {
+        case "subroutine": return null;                        // collected before the run
+
+        case "declare":
+          scope.set(n.name.toLowerCase(), n.type === "STRING" ? "" : n.type === "BOOLEAN" ? false : 0);
+          return null;
+
+        case "declareArray":
+          scope.set(n.name.toLowerCase(), makeArray(n, scope));
+          return null;
+
+        case "constant": {
+          const v = evalExpr(n.value, scope);
+          globals.set(n.name.toLowerCase(), v);
+          consts.add(n.name.toLowerCase());
+          return null;
+        }
+
+        case "assign": {
+          const v = evalExpr(n.value, scope);
+          assignTo(n.target, v, scope);
+          return null;
+        }
+
+        case "input": {
+          if (!inputs.length) {
+            err("The program asked for input but the input box is empty. Add a line for every INPUT the program reaches.", n.line);
+          }
+          const raw = inputs.shift();
+          const asNum = raw.trim() === "" ? NaN : Number(raw);
+          assignTo(n.target, isNaN(asNum) ? raw : asNum, scope);
+          return null;
+        }
+
+        case "output":
+          output.push(n.parts.map(e => fmt(evalExpr(e, scope))).join(""));
+          if (output.length > 5000) err("The program produced far too much output. Check your loops.", n.line);
+          return null;
+
+        case "if":
+          if (truthy(evalExpr(n.cond, scope), n.line)) return execBlock(n.then, scope);
+          if (n.other) return execBlock(n.other, scope);
+          return null;
+
+        case "case": {
+          const v = evalExpr(n.subject, scope);
+          for (const arm of n.arms) {
+            if (eq(v, evalExpr(arm.match, scope))) return execBlock(arm.body, scope);
+          }
+          if (n.otherwise) return execBlock(n.otherwise, scope);
+          return null;
+        }
+
+        case "for": {
+          const from = toNum(evalExpr(n.from, scope), n.line);
+          const to = toNum(evalExpr(n.to, scope), n.line);
+          const step = n.step ? toNum(evalExpr(n.step, scope), n.line) : 1;
+          if (step === 0) err("A FOR loop with a STEP of 0 would never finish", n.line);
+          let spins = 0;
+          for (let i = from; step > 0 ? i <= to : i >= to; i += step) {
+            scopeSet(scope, n.name, i, n.line);
+            const r = execBlock(n.body, scope);
+            if (r && r.type === RETURN) return r;
+            if (++spins > LOOP_LIMIT) err("This FOR loop is running far more times than expected. Check its start and end values.", n.line);
+          }
+          return null;
+        }
+
+        case "while": {
+          let spins = 0;
+          while (truthy(evalExpr(n.cond, scope), n.line)) {
+            const r = execBlock(n.body, scope);
+            if (r && r.type === RETURN) return r;
+            if (++spins > LOOP_LIMIT) err("This WHILE loop never becomes false, so it would run forever. Check that something inside the loop changes the condition.", n.line);
+          }
+          return null;
+        }
+
+        case "repeat": {
+          let spins = 0;
+          for (;;) {
+            const r = execBlock(n.body, scope);
+            if (r && r.type === RETURN) return r;
+            if (truthy(evalExpr(n.cond, scope), n.line)) break;
+            if (++spins > LOOP_LIMIT) err("This REPEAT loop never becomes true, so it would run forever. Check that something inside the loop changes the condition.", n.line);
+          }
+          return null;
+        }
+
+        case "return":
+          return { type: RETURN, value: n.value ? evalExpr(n.value, scope) : null };
+
+        case "call": {
+          const key = n.name.toLowerCase();
+          const args = n.args.map(a => evalExpr(a, scope));
+          if (BUILTINS[key]) { BUILTINS[key](args, n.line); return null; }
+          const sub = subs[key];
+          if (!sub) err('There is no procedure called "' + n.name + '"', n.line);
+          callSub(sub, args, n.line);
+          return null;
+        }
+      }
+      err("Cannot carry out that statement", n.line);
+    }
+
+    function assignTo(target, value, scope) {
+      if (target.k === "var") { scopeSet(scope, target.name, value, target.line); return; }
+      const arr = scopeGet(scope, target.name, target.line);
+      if (!arr || !arr.array) err('"' + target.name + '" is not an array, so it cannot be given an index', target.line);
+      const key = arrayKey(arr, target.idx.map(e => evalExpr(e, scope)), target.line, target.name);
+      arr.data.set(key, value);
+    }
+
+    execBlock(ast.filter(s => s.k !== "subroutine"), globals);
+
+    // final variable values, for the watch panel
+    const vars = [];
+    globals.forEach((v, k) => {
+      if (v && v.array) {
+        const items = [];
+        v.data.forEach((val, key) => items.push("[" + key + "] = " + fmt(val)));
+        vars.push({ name: k, value: items.length ? items.join(", ") : "(empty)", array: true });
+      } else {
+        vars.push({ name: k, value: fmt(v), array: false });
+      }
+    });
+
+    return { output, vars, inputsLeft: inputs.length };
+  }
+
+  return { run, PseudoError };
 })();
 
 </script>
@@ -3800,7 +4764,334 @@ const Tools = (function () {
     }
   };
 
-  return { convert, binlab, filesize, charcodes, fde, logic, sql, trace, drill };
+  /* ================================================================== */
+  /* 10. PSEUDOCODE RUNNER                                               */
+  /* ================================================================== */
+  const SAMPLES = [
+    {
+      name: "Totalling and averaging",
+      note: "The pattern behind most Paper 2 algorithm questions. Enter -1 to stop.",
+      inputs: "12\n18\n30\n-1",
+      code: `// Add up numbers until the rogue value -1 is entered
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+DECLARE Value : INTEGER
+
+Total ← 0
+Count ← 0
+
+REPEAT
+  INPUT Value
+  IF Value <> -1
+    THEN
+      Total ← Total + Value
+      Count ← Count + 1
+  ENDIF
+UNTIL Value = -1
+
+OUTPUT "You entered ", Count, " numbers"
+OUTPUT "Total is ", Total
+IF Count > 0
+  THEN
+    OUTPUT "Average is ", Total / Count
+  ELSE
+    OUTPUT "Nothing to average"
+ENDIF`
+    },
+    {
+      name: "Validation with a range check",
+      note: "Keeps asking until the mark entered is sensible.",
+      inputs: "150\n-4\n72",
+      code: `// Range check: only accept a mark from 0 to 100
+DECLARE Mark : INTEGER
+
+REPEAT
+  INPUT Mark
+  IF Mark < 0 OR Mark > 100
+    THEN
+      OUTPUT "Mark must be between 0 and 100. Try again."
+  ENDIF
+UNTIL Mark >= 0 AND Mark <= 100
+
+OUTPUT "Accepted mark: ", Mark
+
+IF Mark >= 50
+  THEN
+    OUTPUT "Pass"
+  ELSE
+    OUTPUT "Fail"
+ENDIF`
+    },
+    {
+      name: "Arrays: highest, lowest, average",
+      note: "Reads 6 marks into an array, then reports on them.",
+      inputs: "45\n78\n23\n91\n60\n38",
+      code: `DECLARE Marks : ARRAY[1:6] OF INTEGER
+DECLARE Highest : INTEGER
+DECLARE Lowest : INTEGER
+DECLARE Total : INTEGER
+
+Total ← 0
+
+FOR i ← 1 TO 6
+  INPUT Marks[i]
+  Total ← Total + Marks[i]
+NEXT i
+
+Highest ← Marks[1]
+Lowest ← Marks[1]
+
+FOR i ← 2 TO 6
+  IF Marks[i] > Highest
+    THEN
+      Highest ← Marks[i]
+  ENDIF
+  IF Marks[i] < Lowest
+    THEN
+      Lowest ← Marks[i]
+  ENDIF
+NEXT i
+
+OUTPUT "Highest: ", Highest
+OUTPUT "Lowest:  ", Lowest
+OUTPUT "Average: ", Total / 6`
+    },
+    {
+      name: "Linear search",
+      note: "Searches an array and reports whether the item was found.",
+      inputs: "9",
+      code: `DECLARE List : ARRAY[1:8] OF INTEGER
+DECLARE Search : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Position : INTEGER
+
+List[1] ← 4
+List[2] ← 17
+List[3] ← 9
+List[4] ← 22
+List[5] ← 3
+List[6] ← 15
+List[7] ← 8
+List[8] ← 11
+
+OUTPUT "Which number are you looking for?"
+INPUT Search
+
+Found ← FALSE
+Position ← 0
+i ← 1
+
+WHILE i <= 8 AND Found = FALSE DO
+  IF List[i] = Search
+    THEN
+      Found ← TRUE
+      Position ← i
+  ENDIF
+  i ← i + 1
+ENDWHILE
+
+IF Found = TRUE
+  THEN
+    OUTPUT Search, " found at position ", Position
+  ELSE
+    OUTPUT Search, " is not in the list"
+ENDIF`
+    },
+    {
+      name: "Procedures and functions",
+      note: "A function returns a value, a procedure does not.",
+      inputs: "",
+      code: `FUNCTION Area(Width : INTEGER, Height : INTEGER) RETURNS INTEGER
+  RETURN Width * Height
+ENDFUNCTION
+
+PROCEDURE ShowBanner(Title : STRING)
+  OUTPUT "=== ", UCASE(Title), " ==="
+ENDPROCEDURE
+
+CALL ShowBanner("room sizes")
+
+FOR Room ← 1 TO 3
+  OUTPUT "Room ", Room, " area is ", Area(Room * 2, 3)
+NEXT Room`
+    },
+    {
+      name: "2D array with nested loops",
+      note: "Three students, four marks each. The outer loop is rows, the inner is columns.",
+      inputs: "",
+      code: `DECLARE Marks : ARRAY[1:3, 1:4] OF INTEGER
+DECLARE Total : INTEGER
+
+// fill the table
+FOR Student ← 1 TO 3
+  FOR Test ← 1 TO 4
+    Marks[Student, Test] ← Student * Test * 5
+  NEXT Test
+NEXT Student
+
+// total each student's row
+FOR Student ← 1 TO 3
+  Total ← 0
+  FOR Test ← 1 TO 4
+    Total ← Total + Marks[Student, Test]
+  NEXT Test
+  OUTPUT "Student ", Student, " total: ", Total
+NEXT Student`
+    },
+    {
+      name: "String handling",
+      note: "LENGTH, SUBSTRING, UCASE and LCASE, all named in the syllabus.",
+      inputs: "Computer Science",
+      code: `DECLARE Text : STRING
+
+OUTPUT "Type a word or phrase"
+INPUT Text
+
+OUTPUT "Length is ", LENGTH(Text)
+OUTPUT "Upper case: ", UCASE(Text)
+OUTPUT "Lower case: ", LCASE(Text)
+OUTPUT "First three characters: ", SUBSTRING(Text, 1, 3)
+
+// count the spaces
+Spaces ← 0
+FOR i ← 1 TO LENGTH(Text)
+  IF SUBSTRING(Text, i, 1) = " "
+    THEN
+      Spaces ← Spaces + 1
+  ENDIF
+NEXT i
+OUTPUT "Spaces: ", Spaces`
+    }
+  ];
+
+  const runner = {
+    title: "Pseudocode runner", em: "\u{25B6}", topic: "8.1",
+    blurb: "Write Cambridge pseudocode and actually run it. Paper 2 wants pseudocode, so practise in the real thing.",
+    render(el) {
+      let si = 0;
+
+      el.innerHTML = `
+        <div class="callout tip"><div class="ttl">Why this matters</div>
+        <p>On Paper 2, coded answers have to be in pseudocode, and a solution written in a programming language is not awarded marks. This runs the same notation the exam uses, so you can check your logic works before you rely on it.</p></div>
+
+        <div class="field">
+          <label for="psSample">Load an example</label>
+          <select id="psSample">${SAMPLES.map((s, i) => '<option value="' + i + '">' + esc(s.name) + "</option>").join("")}</select>
+        </div>
+        <p id="psNote" style="font-size:13px;margin-top:-6px"></p>
+
+        <div class="runner">
+          <div class="runner-main">
+            <label for="psCode">Your pseudocode</label>
+            <div class="editor-wrap">
+              <div class="gutter" id="psGutter" aria-hidden="true"></div>
+              <textarea class="input code-area" id="psCode" spellcheck="false" rows="20" aria-label="Pseudocode editor"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="psRun">Run</button>
+              <button class="btn sec" id="psArrow">Insert &#8592;</button>
+              <button class="btn sec" id="psClear">Clear</button>
+            </div>
+          </div>
+          <div class="runner-side">
+            <label for="psIn">Input, one value per line</label>
+            <textarea class="input code-area" id="psIn" rows="5" spellcheck="false" placeholder="Each INPUT takes the next line"></textarea>
+            <label style="margin-top:14px">Output</label>
+            <pre id="psOut" class="run-out">Press Run to see what your program does.</pre>
+            <div id="psVars"></div>
+          </div>
+        </div>
+
+        <h3>What this runner understands</h3>
+        <div class="table-wrap"><table>
+          <tr><th>Feature</th><th>How to write it</th></tr>
+          <tr><td>Declare</td><td><code>DECLARE Count : INTEGER</code> &nbsp; <code>CONSTANT VAT = 0.2</code></td></tr>
+          <tr><td>Assign</td><td><code>Total &#8592; 0</code> &nbsp; or type <code>&lt;-</code> if the arrow is awkward</td></tr>
+          <tr><td>Input and output</td><td><code>INPUT Name</code> &nbsp; <code>OUTPUT "Hi ", Name</code></td></tr>
+          <tr><td>Selection</td><td><code>IF ... THEN ... ELSE ... ENDIF</code> &nbsp; <code>CASE OF ... ENDCASE</code></td></tr>
+          <tr><td>Iteration</td><td><code>FOR ... NEXT</code> &nbsp; <code>WHILE ... ENDWHILE</code> &nbsp; <code>REPEAT ... UNTIL</code></td></tr>
+          <tr><td>Arrays</td><td><code>DECLARE A : ARRAY[1:10] OF INTEGER</code> and <code>ARRAY[1:3,1:4]</code></td></tr>
+          <tr><td>Subroutines</td><td><code>PROCEDURE</code> with <code>CALL</code>, and <code>FUNCTION ... RETURNS ... RETURN</code></td></tr>
+          <tr><td>Operators</td><td><code>+ - * / ^</code> &nbsp; <code>MOD</code> <code>DIV</code> &nbsp; <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code> &nbsp; <code>AND OR NOT</code></td></tr>
+          <tr><td>Library routines</td><td><code>LENGTH</code> <code>SUBSTRING</code> <code>UCASE</code> <code>LCASE</code> <code>ROUND</code> <code>RANDOM</code> <code>INT</code></td></tr>
+        </table></div>`;
+
+      const code = q(el, "#psCode"), inputs = q(el, "#psIn"), out = q(el, "#psOut"), gutter = q(el, "#psGutter");
+
+      function paintGutter() {
+        const n = code.value.split("\n").length;
+        let s = "";
+        for (let i = 1; i <= n; i++) s += i + "\n";
+        gutter.textContent = s;
+        gutter.scrollTop = code.scrollTop;
+      }
+      function load(i) {
+        si = i;
+        code.value = SAMPLES[i].code;
+        inputs.value = SAMPLES[i].inputs;
+        q(el, "#psNote").textContent = SAMPLES[i].note;
+        out.textContent = "Press Run to see what your program does.";
+        out.className = "run-out";
+        q(el, "#psVars").innerHTML = "";
+        paintGutter();
+      }
+
+      function run() {
+        const lines = inputs.value.split("\n").filter((l, i, a) => !(l === "" && i === a.length - 1));
+        let res;
+        try {
+          res = Pseudo.run(code.value, lines);
+        } catch (e) {
+          out.className = "run-out bad";
+          out.textContent = (e.line ? "Line " + e.line + ": " : "") + e.message;
+          const ln = e.line;
+          q(el, "#psVars").innerHTML = ln
+            ? '<div class="callout trap" style="margin-top:12px"><div class="ttl">The line it stopped on</div><pre style="margin:0">' +
+              esc((code.value.split("\n")[ln - 1] || "").trim() || "(blank line)") + "</pre></div>"
+            : "";
+          return;
+        }
+        out.className = "run-out";
+        out.textContent = res.output.length ? res.output.join("\n") : "(the program produced no output)";
+        const shown = res.vars.filter(v => v.name !== "i");
+        q(el, "#psVars").innerHTML =
+          (res.inputsLeft
+            ? '<div class="chip warn" style="margin-top:10px">' + res.inputsLeft + " input line" + (res.inputsLeft > 1 ? "s were" : " was") + " not used</div>"
+            : '<div class="chip good" style="margin-top:10px">Ran without errors</div>') +
+          (shown.length
+            ? '<label style="margin-top:14px">Variables at the end</label><div class="table-wrap"><table class="mono">' +
+              shown.map(v => "<tr><td style='text-align:left'>" + esc(v.name) + "</td><td style='text-align:left'>" + esc(v.value) + "</td></tr>").join("") +
+              "</table></div>"
+            : "");
+        Store.addXp(2);
+      }
+
+      q(el, "#psSample").onchange = e => load(+e.target.value);
+      q(el, "#psRun").onclick = run;
+      q(el, "#psClear").onclick = () => { code.value = ""; inputs.value = ""; paintGutter(); out.textContent = ""; q(el, "#psVars").innerHTML = ""; };
+      q(el, "#psArrow").onclick = () => {
+        const s = code.selectionStart;
+        code.value = code.value.slice(0, s) + "←" + code.value.slice(code.selectionEnd);
+        code.focus();
+        code.selectionStart = code.selectionEnd = s + 1;
+      };
+      code.addEventListener("input", paintGutter);
+      code.addEventListener("scroll", () => { gutter.scrollTop = code.scrollTop; });
+      code.addEventListener("keydown", e => {
+        if (e.key === "Tab") {                       // indentation matters for readability here
+          e.preventDefault();
+          const s = code.selectionStart;
+          code.value = code.value.slice(0, s) + "  " + code.value.slice(code.selectionEnd);
+          code.selectionStart = code.selectionEnd = s + 2;
+        }
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+      });
+
+      load(0);
+    }
+  };
+
+  return { convert, binlab, runner, filesize, charcodes, fde, logic, sql, trace, drill };
 })();
 
 </script>
@@ -3829,8 +5120,27 @@ const Quiz = (function () {
     let i = 0, right = 0, marksGot = 0, marksTotal = 0;
     const log = [];
 
-    el.innerHTML = '<div class="q-shell" id="qShell"></div>';
+    el.innerHTML = (opts.minutes ? '<div class="exam-timer" id="qTimer"></div>' : "") +
+                   '<div class="q-shell" id="qShell"></div>';
     const shell = el.querySelector("#qShell");
+
+    /* timed mock: one clock for the whole set, and it does not stop for you */
+    let timer = null, left = (opts.minutes || 0) * 60;
+    if (opts.minutes) {
+      const tick = () => {
+        const t = el.querySelector("#qTimer");
+        if (!t) { clearInterval(timer); return; }
+        const m = Math.floor(left / 60), s = left % 60;
+        t.innerHTML = '<span class="lbl">Time left</span><b>' + m + ":" + String(s).padStart(2, "0") + "</b>";
+        t.classList.toggle("low", left <= 120);
+        if (left <= 0) { clearInterval(timer); finish(true); }
+        left--;
+      };
+      tick();
+      timer = setInterval(tick, 1000);
+      el._cleanup = () => clearInterval(timer);
+    }
+
     draw();
 
     function draw() {
@@ -3915,10 +5225,16 @@ const Quiz = (function () {
       if (i < qs.length) draw(); else finish();
     }
 
-    function finish() {
+    function finish(ranOut) {
+      if (timer) clearInterval(timer);
+      const clock = el.querySelector("#qTimer");
+      if (clock) clock.remove();
       Store.touchStreak();
       Store.addXp(marksGot * 2);
-      const pct = Math.round(marksGot / marksTotal * 100);
+      if (ranOut) {                       // unanswered questions still count against the total
+        for (let k = i; k < qs.length; k++) marksTotal += qs[k].m;
+      }
+      const pct = Math.round(marksGot / Math.max(1, marksTotal) * 100);
       const byTopic = {};
       log.forEach(l => {
         const b = byTopic[l.q.t] || (byTopic[l.q.t] = { got: 0, tot: 0 });
@@ -3930,6 +5246,7 @@ const Quiz = (function () {
         <div class="card" style="text-align:center">
           <div class="score-ring" style="--p:${pct}"><b>${pct}%</b></div>
           <h2 style="margin:0 0 4px">${marksGot} out of ${marksTotal} marks</h2>
+          ${ranOut ? '<p class="chip bad">Time ran out with ' + (qs.length - i) + ' question' + (qs.length - i === 1 ? '' : 's') + ' unanswered, so those marks are lost. That is the exam too.</p>' : ""}
           <p>${pct >= 80 ? "Strong. Move on to the next subtopic." : pct >= 55 ? "Solid start. The notes for the weak areas below are worth another read." : "Worth going back over the notes before you try again."}</p>
         </div>
         <h3>Marks by subtopic</h3>
@@ -4210,7 +5527,7 @@ const App = (function () {
       <section class="hero">
         <span class="eyebrow">Cambridge IGCSE 0478 &middot; 0984 &middot; exams 2026 to 2028</span>
         <h1>The whole syllabus, in a form you will actually use.</h1>
-        <p class="lede">Ten topics, ${ALL_SUBS.length} subtopics, ${Cards.all().length} flashcards, ${QUESTIONS.length} exam-style questions and nine interactive labs. Everything saves in your browser, nothing needs an account.</p>
+        <p class="lede">Ten topics, ${ALL_SUBS.length} subtopics, ${Cards.all().length} flashcards, ${QUESTIONS.length} exam-style questions and ${Object.keys(Tools).length} interactive labs. Everything saves in your browser, nothing needs an account.</p>
         <div class="btn-row">
           <a class="btn" href="${started ? "#/sub/" + weakest[0].id : "#/sub/1.1"}">${started ? "Pick up where you left off" : "Start with topic 1.1"}</a>
           <a class="btn sec" href="#/quiz/mixed">Mixed quiz</a>
@@ -4237,7 +5554,7 @@ const App = (function () {
 
       <h2>Labs worth opening</h2>
       <div class="grid g2">
-        ${["convert", "logic", "trace", "sql"].map(k => {
+        ${["runner", "logic", "trace", "convert"].map(k => {
           const t = Tools[k];
           return `<a class="card tool-card" href="#/tool/${k}"><span class="em">${t.em}</span><div>
             <h3 style="margin:0 0 4px">${esc(t.title)}</h3><p style="margin:0;font-size:13px">${esc(t.blurb)}</p></div></a>`;
@@ -4350,7 +5667,12 @@ const App = (function () {
 
     const panel = $("#subPanel");
     const panels = {
-      notes: () => `<ul class="goals">${s.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul><hr>` + s.notes,
+      notes: () => `<div class="with-toc">
+          <div class="notes-body">
+            <ul class="goals">${s.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul><hr>${s.notes}
+          </div>
+          <nav class="toc" id="toc" aria-label="On this page"></nav>
+        </div>`,
       terms: () => '<div class="terms">' + s.terms.map(([t, d]) =>
         '<dl class="term"><dt>' + esc(t) + "</dt><dd>" + esc(d) + "</dd></dl>").join("") +
         '</div><div class="btn-row"><a class="btn sec" href="#/cards/sub/' + s.id + '">Drill these as flashcards</a></div>',
@@ -4358,7 +5680,13 @@ const App = (function () {
         '<div class="callout"><div class="ttl">Objectives for ' + s.id + '</div><ul>' +
         s.goals.map(g => "<li>" + esc(g) + "</li>").join("") + "</ul></div>"
     };
-    const show = p => { panel.innerHTML = panels[p](); panel.classList.remove("fade-in"); void panel.offsetWidth; panel.classList.add("fade-in"); };
+    const show = p => {
+      panel.innerHTML = panels[p]();
+      panel.classList.remove("fade-in"); void panel.offsetWidth; panel.classList.add("fade-in");
+      enhanceCode(panel);
+      if (p === "notes") buildToc(panel);
+      trackReading();
+    };
     document.querySelectorAll("#subTabs .sub-tab").forEach(b => b.onclick = () => {
       document.querySelectorAll("#subTabs .sub-tab").forEach(x => x.classList.toggle("on", x === b));
       show(b.dataset.p);
@@ -4378,7 +5706,7 @@ const App = (function () {
     main.innerHTML = `
       <div class="page-head">
         <span class="eyebrow">Labs</span>
-        <h1>Nine things you can poke at</h1>
+        <h1>${Object.keys(Tools).length} things you can poke at</h1>
         <p class="lede">Reading about a logical shift is not the same as watching the bits fall off the end. These are the parts of the syllabus that make more sense when you can break them.</p>
       </div>
       <div class="grid g2">
@@ -4490,13 +5818,19 @@ const App = (function () {
           <h3 style="margin-top:0">Paper 1 &middot; Computer systems</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
           <p>Short answer and structured questions covering topics 1 to 6. Expect conversions, calculations where the working carries the marks, and several longer describe and explain questions.</p>
-          <a class="btn sec sm" href="#/quiz/paper/1">Paper 1 mixed quiz</a>
+          <div class="btn-row" style="margin-bottom:0">
+            <a class="btn sec sm" href="#/quiz/paper/1">Paper 1 mixed quiz</a>
+            <a class="btn sec sm" href="#/quiz/mock/1">30 minute timed mock</a>
+          </div>
         </div>
         <div class="card">
           <h3 style="margin-top:0">Paper 2 &middot; Algorithms, programming and logic</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
           <p>Topics 7 to 10. Expect a trace table, SQL, a logic circuit or truth table, and a 15 mark scenario question at the end.</p>
-          <a class="btn sec sm" href="#/quiz/paper/2">Paper 2 mixed quiz</a>
+          <div class="btn-row" style="margin-bottom:0">
+            <a class="btn sec sm" href="#/quiz/paper/2">Paper 2 mixed quiz</a>
+            <a class="btn sec sm" href="#/quiz/mock/2">30 minute timed mock</a>
+          </div>
         </div>
       </div>
 
@@ -4554,6 +5888,83 @@ const App = (function () {
           <dt>${esc(t.term)} <a class="chip" href="#/sub/${t.sub}" style="float:right">${t.sub}</a></dt>
           <dd>${esc(t.def)}</dd></dl>`).join("")}
       </div>`;
+  }
+
+  /* ================================================================== */
+  /* note page enhancements                                              */
+  /* ================================================================== */
+
+  /* Give every code block a copy button. Students retype pseudocode into the
+     runner constantly, and retyping is where transcription errors come from. */
+  function enhanceCode(root) {
+    root.querySelectorAll("pre").forEach(pre => {
+      if (pre.parentElement.classList.contains("pre-wrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "pre-wrap";
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      const btn = document.createElement("button");
+      btn.className = "copy";
+      btn.type = "button";
+      btn.textContent = "Copy";
+      btn.onclick = () => {
+        const text = pre.innerText;
+        const done = () => { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1400); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else fallback();
+        function fallback() {                       // file:// and older browsers
+          const ta = document.createElement("textarea");
+          ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Select it"; }
+          ta.remove();
+        }
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* A contents rail for the long note pages, built from the h3 headings. */
+  let tocSpy = null;
+  function buildToc(root) {
+    const toc = root.querySelector("#toc");
+    const body = root.querySelector(".notes-body");
+    if (!toc || !body) return;
+    const heads = Array.from(body.querySelectorAll("h3"));
+    if (heads.length < 3) { toc.remove(); return; }
+
+    heads.forEach((h, i) => { h.id = "h" + i + "-" + h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30); });
+    toc.innerHTML = '<div class="toc-head">On this page</div>' +
+      heads.map(h => '<a href="#' + h.id + '" data-id="' + h.id + '">' + esc(h.textContent) + "</a>").join("");
+
+    toc.querySelectorAll("a").forEach(a => a.onclick = e => {
+      e.preventDefault();                            // keep the hash route intact
+      const target = document.getElementById(a.dataset.id);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    if (tocSpy) tocSpy.disconnect();
+    tocSpy = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        toc.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.dataset.id === en.target.id));
+      });
+    }, { rootMargin: "-70px 0px -70% 0px" });
+    heads.forEach(h => tocSpy.observe(h));
+  }
+
+  /* Reading progress across the top, so a long subtopic shows how much is left. */
+  let readHandler = null;
+  function trackReading() {
+    const bar = $("#readBar");
+    if (readHandler) removeEventListener("scroll", readHandler);
+    readHandler = () => {
+      const h = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = (h > 120 ? Math.min(100, Math.max(0, scrollY / h * 100)) : 0) + "%";
+    };
+    addEventListener("scroll", readHandler, { passive: true });
+    readHandler();
   }
 
   /* ================================================================== */
@@ -4636,6 +6047,63 @@ const App = (function () {
   /* ================================================================== */
   /* extras                                                              */
   /* ================================================================== */
+  const SHORTCUTS = [
+    ["/ &nbsp;or&nbsp; Ctrl K", "Search the syllabus"],
+    ["?", "Show this list"],
+    ["g then h", "Go home"],
+    ["g then c", "Flashcards"],
+    ["g then q", "Mixed quiz"],
+    ["g then l", "Labs"],
+    ["g then p", "My progress"],
+    ["g then e", "Exam guide"],
+    ["j &nbsp;/&nbsp; k", "Next or previous subtopic"],
+    ["t", "Switch theme"],
+    ["space", "Flip a flashcard"],
+    ["1 &nbsp;/&nbsp; 2", "Grade a flashcard"],
+    ["Esc", "Close anything open"]
+  ];
+
+  function toggleSheet(force) {
+    let sheet = $("#sheet");
+    const open = force !== undefined ? force : !sheet;
+    if (!open) { if (sheet) sheet.remove(); return; }
+    if (sheet) return;
+    sheet = document.createElement("div");
+    sheet.className = "sheet";
+    sheet.id = "sheet";
+    sheet.innerHTML = `<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+        <h3>Keyboard shortcuts</h3>
+        <div class="keys">${SHORTCUTS.map(([k, d]) => "<div><span>" + d + "</span><kbd>" + k + "</kbd></div>").join("")}</div>
+        <div class="btn-row" style="margin-bottom:0"><button class="btn sec sm" id="sheetClose">Close</button></div>
+      </div>`;
+    document.body.appendChild(sheet);
+    sheet.onclick = e => { if (e.target === sheet || e.target.id === "sheetClose") toggleSheet(false); };
+  }
+
+  function buildTabbar() {
+    const bar = document.createElement("nav");
+    bar.className = "tabbar";
+    bar.id = "tabbar";
+    bar.setAttribute("aria-label", "Main sections");
+    bar.innerHTML = [
+      ["#/home", "\u{1F3E0}", "Home"],
+      ["#/cards/due", "\u{1F5C2}", "Cards"],
+      ["#/quiz/mixed", "\u{1F3AF}", "Quiz"],
+      ["#/tools", "\u{1F9EA}", "Labs"],
+      ["#/progress", "\u{1F4C8}", "Progress"]
+    ].map(([href, em, label]) =>
+      '<a href="' + href + '" data-tab="' + href + '"><span class="em">' + em + "</span>" + label + "</a>").join("");
+    document.body.appendChild(bar);
+  }
+
+  function highlightTabs() {
+    const h = location.hash || "#/home";
+    document.querySelectorAll("#tabbar a").forEach(a => {
+      const root = a.dataset.tab.split("/")[1];
+      a.classList.toggle("on", h.split("/")[1] === root);
+    });
+  }
+
   function toast(msg) {
     const d = document.createElement("div");
     d.className = "toast"; d.textContent = msg;
@@ -4702,6 +6170,10 @@ const App = (function () {
       case "quiz": {
         let opts;
         if (p[1] === "mixed") opts = { filter: () => true, limit: 15, back: "#/home" };
+        else if (p[1] === "mock") {
+          const ids = SYLLABUS.filter(t => t.paper === +p[2]).flatMap(t => t.subs.map(s => s.id));
+          opts = { filter: q => ids.includes(q.t), limit: 20, minutes: 30, back: "#/exam" };
+        }
         else if (p[1] === "paper") {
           const ids = SYLLABUS.filter(t => t.paper === +p[2]).flatMap(t => t.subs.map(s => s.id));
           opts = { filter: q => ids.includes(q.t), limit: 15, back: "#/exam" };
@@ -4715,10 +6187,13 @@ const App = (function () {
           if (s) setHue(s.topic.hue);
           opts = { filter: q => q.t === p[1], back: "#/sub/" + p[1] };
         }
-        const heading = p[1] === "mixed" ? "Mixed quiz" : p[1] === "paper" ? "Paper " + p[2] + " quiz" :
+        const heading = p[1] === "mixed" ? "Mixed quiz" : p[1] === "mock" ? "Paper " + p[2] + " timed mock" :
+          p[1] === "paper" ? "Paper " + p[2] + " quiz" :
           p[1] === "topic" ? "Topic " + p[2] + " quiz" : (findSub(p[1]) ? p[1] + " " + findSub(p[1]).title : "Quiz");
         main.innerHTML = `<div class="page-head"><span class="eyebrow">Quiz</span><h1>${esc(heading)}</h1></div><div id="quizMount"></div>`;
-        Quiz.start($("#quizMount"), opts);
+        const qm = $("#quizMount");
+        Quiz.start(qm, opts);
+        main._cleanup = qm._cleanup;      // stop the mock clock when navigating away
         break;
       }
 
@@ -4744,9 +6219,16 @@ const App = (function () {
 
     function pageCardsHub() { setHue(168); Cards.hub(main); }
 
+    enhanceCode(main);
     window.scrollTo(0, 0);
     main.classList.remove("fade-in"); void main.offsetWidth; main.classList.add("fade-in");
     refreshChrome();
+    highlightTabs();
+    toggleSheet(false);
+    if (!/^#\/sub\//.test(location.hash)) {
+      const bar = $("#readBar");
+      if (bar) bar.style.width = "0";
+    }
     document.getElementById("sidebar").classList.remove("open");
     $("#scrim").hidden = true;
   }
@@ -4757,6 +6239,10 @@ const App = (function () {
   function init() {
     applyTheme();
     buildSidebar();
+    buildTabbar();
+    const rb = document.createElement("div");
+    rb.className = "read-bar"; rb.id = "readBar";
+    document.body.appendChild(rb);
     Store.touchStreak();
 
     addEventListener("hashchange", route);
@@ -4794,11 +6280,38 @@ const App = (function () {
       }
     });
 
+    let goPending = false, goTimer = null;
     document.addEventListener("keydown", e => {
-      if (e.key === "Escape") closeSearch();
-      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-      if (!typing && (e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey)))) {
-        e.preventDefault(); openSearch();
+      if (e.key === "Escape") { closeSearch(); toggleSheet(false); }
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) {
+        if (!typing && e.key === "k" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch(); }
+        return;
+      }
+
+      if (goPending) {                                  // second key of a "g then x" pair
+        const dest = { h: "#/home", c: "#/cards", q: "#/quiz/mixed", l: "#/tools", p: "#/progress", e: "#/exam" }[e.key];
+        goPending = false; clearTimeout(goTimer);
+        if (dest) { e.preventDefault(); location.hash = dest; return; }
+      }
+
+      switch (e.key) {
+        case "/": e.preventDefault(); openSearch(); break;
+        case "?": e.preventDefault(); toggleSheet(); break;
+        case "t": $("#themeToggle").click(); break;
+        case "g":
+          goPending = true;
+          clearTimeout(goTimer);
+          goTimer = setTimeout(() => { goPending = false; }, 900);
+          break;
+        case "j": case "k": {                           // step through subtopics in order
+          const m = /^#\/sub\/([\d.]+)/.exec(location.hash);
+          if (!m) break;
+          const i = ALL_SUBS.findIndex(s => s.id === m[1]);
+          const to = ALL_SUBS[e.key === "j" ? i + 1 : i - 1];
+          if (to) location.hash = "#/sub/" + to.id;
+          break;
+        }
       }
     });
 

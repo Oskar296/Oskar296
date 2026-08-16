@@ -925,5 +925,332 @@ const Tools = (function () {
     }
   };
 
-  return { convert, binlab, filesize, charcodes, fde, logic, sql, trace, drill };
+  /* ================================================================== */
+  /* 10. PSEUDOCODE RUNNER                                               */
+  /* ================================================================== */
+  const SAMPLES = [
+    {
+      name: "Totalling and averaging",
+      note: "The pattern behind most Paper 2 algorithm questions. Enter -1 to stop.",
+      inputs: "12\n18\n30\n-1",
+      code: `// Add up numbers until the rogue value -1 is entered
+DECLARE Total : INTEGER
+DECLARE Count : INTEGER
+DECLARE Value : INTEGER
+
+Total ← 0
+Count ← 0
+
+REPEAT
+  INPUT Value
+  IF Value <> -1
+    THEN
+      Total ← Total + Value
+      Count ← Count + 1
+  ENDIF
+UNTIL Value = -1
+
+OUTPUT "You entered ", Count, " numbers"
+OUTPUT "Total is ", Total
+IF Count > 0
+  THEN
+    OUTPUT "Average is ", Total / Count
+  ELSE
+    OUTPUT "Nothing to average"
+ENDIF`
+    },
+    {
+      name: "Validation with a range check",
+      note: "Keeps asking until the mark entered is sensible.",
+      inputs: "150\n-4\n72",
+      code: `// Range check: only accept a mark from 0 to 100
+DECLARE Mark : INTEGER
+
+REPEAT
+  INPUT Mark
+  IF Mark < 0 OR Mark > 100
+    THEN
+      OUTPUT "Mark must be between 0 and 100. Try again."
+  ENDIF
+UNTIL Mark >= 0 AND Mark <= 100
+
+OUTPUT "Accepted mark: ", Mark
+
+IF Mark >= 50
+  THEN
+    OUTPUT "Pass"
+  ELSE
+    OUTPUT "Fail"
+ENDIF`
+    },
+    {
+      name: "Arrays: highest, lowest, average",
+      note: "Reads 6 marks into an array, then reports on them.",
+      inputs: "45\n78\n23\n91\n60\n38",
+      code: `DECLARE Marks : ARRAY[1:6] OF INTEGER
+DECLARE Highest : INTEGER
+DECLARE Lowest : INTEGER
+DECLARE Total : INTEGER
+
+Total ← 0
+
+FOR i ← 1 TO 6
+  INPUT Marks[i]
+  Total ← Total + Marks[i]
+NEXT i
+
+Highest ← Marks[1]
+Lowest ← Marks[1]
+
+FOR i ← 2 TO 6
+  IF Marks[i] > Highest
+    THEN
+      Highest ← Marks[i]
+  ENDIF
+  IF Marks[i] < Lowest
+    THEN
+      Lowest ← Marks[i]
+  ENDIF
+NEXT i
+
+OUTPUT "Highest: ", Highest
+OUTPUT "Lowest:  ", Lowest
+OUTPUT "Average: ", Total / 6`
+    },
+    {
+      name: "Linear search",
+      note: "Searches an array and reports whether the item was found.",
+      inputs: "9",
+      code: `DECLARE List : ARRAY[1:8] OF INTEGER
+DECLARE Search : INTEGER
+DECLARE Found : BOOLEAN
+DECLARE Position : INTEGER
+
+List[1] ← 4
+List[2] ← 17
+List[3] ← 9
+List[4] ← 22
+List[5] ← 3
+List[6] ← 15
+List[7] ← 8
+List[8] ← 11
+
+OUTPUT "Which number are you looking for?"
+INPUT Search
+
+Found ← FALSE
+Position ← 0
+i ← 1
+
+WHILE i <= 8 AND Found = FALSE DO
+  IF List[i] = Search
+    THEN
+      Found ← TRUE
+      Position ← i
+  ENDIF
+  i ← i + 1
+ENDWHILE
+
+IF Found = TRUE
+  THEN
+    OUTPUT Search, " found at position ", Position
+  ELSE
+    OUTPUT Search, " is not in the list"
+ENDIF`
+    },
+    {
+      name: "Procedures and functions",
+      note: "A function returns a value, a procedure does not.",
+      inputs: "",
+      code: `FUNCTION Area(Width : INTEGER, Height : INTEGER) RETURNS INTEGER
+  RETURN Width * Height
+ENDFUNCTION
+
+PROCEDURE ShowBanner(Title : STRING)
+  OUTPUT "=== ", UCASE(Title), " ==="
+ENDPROCEDURE
+
+CALL ShowBanner("room sizes")
+
+FOR Room ← 1 TO 3
+  OUTPUT "Room ", Room, " area is ", Area(Room * 2, 3)
+NEXT Room`
+    },
+    {
+      name: "2D array with nested loops",
+      note: "Three students, four marks each. The outer loop is rows, the inner is columns.",
+      inputs: "",
+      code: `DECLARE Marks : ARRAY[1:3, 1:4] OF INTEGER
+DECLARE Total : INTEGER
+
+// fill the table
+FOR Student ← 1 TO 3
+  FOR Test ← 1 TO 4
+    Marks[Student, Test] ← Student * Test * 5
+  NEXT Test
+NEXT Student
+
+// total each student's row
+FOR Student ← 1 TO 3
+  Total ← 0
+  FOR Test ← 1 TO 4
+    Total ← Total + Marks[Student, Test]
+  NEXT Test
+  OUTPUT "Student ", Student, " total: ", Total
+NEXT Student`
+    },
+    {
+      name: "String handling",
+      note: "LENGTH, SUBSTRING, UCASE and LCASE, all named in the syllabus.",
+      inputs: "Computer Science",
+      code: `DECLARE Text : STRING
+
+OUTPUT "Type a word or phrase"
+INPUT Text
+
+OUTPUT "Length is ", LENGTH(Text)
+OUTPUT "Upper case: ", UCASE(Text)
+OUTPUT "Lower case: ", LCASE(Text)
+OUTPUT "First three characters: ", SUBSTRING(Text, 1, 3)
+
+// count the spaces
+Spaces ← 0
+FOR i ← 1 TO LENGTH(Text)
+  IF SUBSTRING(Text, i, 1) = " "
+    THEN
+      Spaces ← Spaces + 1
+  ENDIF
+NEXT i
+OUTPUT "Spaces: ", Spaces`
+    }
+  ];
+
+  const runner = {
+    title: "Pseudocode runner", em: "\u{25B6}", topic: "8.1",
+    blurb: "Write Cambridge pseudocode and actually run it. Paper 2 wants pseudocode, so practise in the real thing.",
+    render(el) {
+      let si = 0;
+
+      el.innerHTML = `
+        <div class="callout tip"><div class="ttl">Why this matters</div>
+        <p>On Paper 2, coded answers have to be in pseudocode, and a solution written in a programming language is not awarded marks. This runs the same notation the exam uses, so you can check your logic works before you rely on it.</p></div>
+
+        <div class="field">
+          <label for="psSample">Load an example</label>
+          <select id="psSample">${SAMPLES.map((s, i) => '<option value="' + i + '">' + esc(s.name) + "</option>").join("")}</select>
+        </div>
+        <p id="psNote" style="font-size:13px;margin-top:-6px"></p>
+
+        <div class="runner">
+          <div class="runner-main">
+            <label for="psCode">Your pseudocode</label>
+            <div class="editor-wrap">
+              <div class="gutter" id="psGutter" aria-hidden="true"></div>
+              <textarea class="input code-area" id="psCode" spellcheck="false" rows="20" aria-label="Pseudocode editor"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="psRun">Run</button>
+              <button class="btn sec" id="psArrow">Insert &#8592;</button>
+              <button class="btn sec" id="psClear">Clear</button>
+            </div>
+          </div>
+          <div class="runner-side">
+            <label for="psIn">Input, one value per line</label>
+            <textarea class="input code-area" id="psIn" rows="5" spellcheck="false" placeholder="Each INPUT takes the next line"></textarea>
+            <label style="margin-top:14px">Output</label>
+            <pre id="psOut" class="run-out">Press Run to see what your program does.</pre>
+            <div id="psVars"></div>
+          </div>
+        </div>
+
+        <h3>What this runner understands</h3>
+        <div class="table-wrap"><table>
+          <tr><th>Feature</th><th>How to write it</th></tr>
+          <tr><td>Declare</td><td><code>DECLARE Count : INTEGER</code> &nbsp; <code>CONSTANT VAT = 0.2</code></td></tr>
+          <tr><td>Assign</td><td><code>Total &#8592; 0</code> &nbsp; or type <code>&lt;-</code> if the arrow is awkward</td></tr>
+          <tr><td>Input and output</td><td><code>INPUT Name</code> &nbsp; <code>OUTPUT "Hi ", Name</code></td></tr>
+          <tr><td>Selection</td><td><code>IF ... THEN ... ELSE ... ENDIF</code> &nbsp; <code>CASE OF ... ENDCASE</code></td></tr>
+          <tr><td>Iteration</td><td><code>FOR ... NEXT</code> &nbsp; <code>WHILE ... ENDWHILE</code> &nbsp; <code>REPEAT ... UNTIL</code></td></tr>
+          <tr><td>Arrays</td><td><code>DECLARE A : ARRAY[1:10] OF INTEGER</code> and <code>ARRAY[1:3,1:4]</code></td></tr>
+          <tr><td>Subroutines</td><td><code>PROCEDURE</code> with <code>CALL</code>, and <code>FUNCTION ... RETURNS ... RETURN</code></td></tr>
+          <tr><td>Operators</td><td><code>+ - * / ^</code> &nbsp; <code>MOD</code> <code>DIV</code> &nbsp; <code>= &lt;&gt; &lt; &lt;= &gt; &gt;=</code> &nbsp; <code>AND OR NOT</code></td></tr>
+          <tr><td>Library routines</td><td><code>LENGTH</code> <code>SUBSTRING</code> <code>UCASE</code> <code>LCASE</code> <code>ROUND</code> <code>RANDOM</code> <code>INT</code></td></tr>
+        </table></div>`;
+
+      const code = q(el, "#psCode"), inputs = q(el, "#psIn"), out = q(el, "#psOut"), gutter = q(el, "#psGutter");
+
+      function paintGutter() {
+        const n = code.value.split("\n").length;
+        let s = "";
+        for (let i = 1; i <= n; i++) s += i + "\n";
+        gutter.textContent = s;
+        gutter.scrollTop = code.scrollTop;
+      }
+      function load(i) {
+        si = i;
+        code.value = SAMPLES[i].code;
+        inputs.value = SAMPLES[i].inputs;
+        q(el, "#psNote").textContent = SAMPLES[i].note;
+        out.textContent = "Press Run to see what your program does.";
+        out.className = "run-out";
+        q(el, "#psVars").innerHTML = "";
+        paintGutter();
+      }
+
+      function run() {
+        const lines = inputs.value.split("\n").filter((l, i, a) => !(l === "" && i === a.length - 1));
+        let res;
+        try {
+          res = Pseudo.run(code.value, lines);
+        } catch (e) {
+          out.className = "run-out bad";
+          out.textContent = (e.line ? "Line " + e.line + ": " : "") + e.message;
+          const ln = e.line;
+          q(el, "#psVars").innerHTML = ln
+            ? '<div class="callout trap" style="margin-top:12px"><div class="ttl">The line it stopped on</div><pre style="margin:0">' +
+              esc((code.value.split("\n")[ln - 1] || "").trim() || "(blank line)") + "</pre></div>"
+            : "";
+          return;
+        }
+        out.className = "run-out";
+        out.textContent = res.output.length ? res.output.join("\n") : "(the program produced no output)";
+        const shown = res.vars.filter(v => v.name !== "i");
+        q(el, "#psVars").innerHTML =
+          (res.inputsLeft
+            ? '<div class="chip warn" style="margin-top:10px">' + res.inputsLeft + " input line" + (res.inputsLeft > 1 ? "s were" : " was") + " not used</div>"
+            : '<div class="chip good" style="margin-top:10px">Ran without errors</div>') +
+          (shown.length
+            ? '<label style="margin-top:14px">Variables at the end</label><div class="table-wrap"><table class="mono">' +
+              shown.map(v => "<tr><td style='text-align:left'>" + esc(v.name) + "</td><td style='text-align:left'>" + esc(v.value) + "</td></tr>").join("") +
+              "</table></div>"
+            : "");
+        Store.addXp(2);
+      }
+
+      q(el, "#psSample").onchange = e => load(+e.target.value);
+      q(el, "#psRun").onclick = run;
+      q(el, "#psClear").onclick = () => { code.value = ""; inputs.value = ""; paintGutter(); out.textContent = ""; q(el, "#psVars").innerHTML = ""; };
+      q(el, "#psArrow").onclick = () => {
+        const s = code.selectionStart;
+        code.value = code.value.slice(0, s) + "←" + code.value.slice(code.selectionEnd);
+        code.focus();
+        code.selectionStart = code.selectionEnd = s + 1;
+      };
+      code.addEventListener("input", paintGutter);
+      code.addEventListener("scroll", () => { gutter.scrollTop = code.scrollTop; });
+      code.addEventListener("keydown", e => {
+        if (e.key === "Tab") {                       // indentation matters for readability here
+          e.preventDefault();
+          const s = code.selectionStart;
+          code.value = code.value.slice(0, s) + "  " + code.value.slice(code.selectionEnd);
+          code.selectionStart = code.selectionEnd = s + 2;
+        }
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); }
+      });
+
+      load(0);
+    }
+  };
+
+  return { convert, binlab, runner, filesize, charcodes, fde, logic, sql, trace, drill };
 })();

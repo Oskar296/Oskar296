@@ -21,8 +21,27 @@ const Quiz = (function () {
     let i = 0, right = 0, marksGot = 0, marksTotal = 0;
     const log = [];
 
-    el.innerHTML = '<div class="q-shell" id="qShell"></div>';
+    el.innerHTML = (opts.minutes ? '<div class="exam-timer" id="qTimer"></div>' : "") +
+                   '<div class="q-shell" id="qShell"></div>';
     const shell = el.querySelector("#qShell");
+
+    /* timed mock: one clock for the whole set, and it does not stop for you */
+    let timer = null, left = (opts.minutes || 0) * 60;
+    if (opts.minutes) {
+      const tick = () => {
+        const t = el.querySelector("#qTimer");
+        if (!t) { clearInterval(timer); return; }
+        const m = Math.floor(left / 60), s = left % 60;
+        t.innerHTML = '<span class="lbl">Time left</span><b>' + m + ":" + String(s).padStart(2, "0") + "</b>";
+        t.classList.toggle("low", left <= 120);
+        if (left <= 0) { clearInterval(timer); finish(true); }
+        left--;
+      };
+      tick();
+      timer = setInterval(tick, 1000);
+      el._cleanup = () => clearInterval(timer);
+    }
+
     draw();
 
     function draw() {
@@ -107,10 +126,16 @@ const Quiz = (function () {
       if (i < qs.length) draw(); else finish();
     }
 
-    function finish() {
+    function finish(ranOut) {
+      if (timer) clearInterval(timer);
+      const clock = el.querySelector("#qTimer");
+      if (clock) clock.remove();
       Store.touchStreak();
       Store.addXp(marksGot * 2);
-      const pct = Math.round(marksGot / marksTotal * 100);
+      if (ranOut) {                       // unanswered questions still count against the total
+        for (let k = i; k < qs.length; k++) marksTotal += qs[k].m;
+      }
+      const pct = Math.round(marksGot / Math.max(1, marksTotal) * 100);
       const byTopic = {};
       log.forEach(l => {
         const b = byTopic[l.q.t] || (byTopic[l.q.t] = { got: 0, tot: 0 });
@@ -122,6 +147,7 @@ const Quiz = (function () {
         <div class="card" style="text-align:center">
           <div class="score-ring" style="--p:${pct}"><b>${pct}%</b></div>
           <h2 style="margin:0 0 4px">${marksGot} out of ${marksTotal} marks</h2>
+          ${ranOut ? '<p class="chip bad">Time ran out with ' + (qs.length - i) + ' question' + (qs.length - i === 1 ? '' : 's') + ' unanswered, so those marks are lost. That is the exam too.</p>' : ""}
           <p>${pct >= 80 ? "Strong. Move on to the next subtopic." : pct >= 55 ? "Solid start. The notes for the weak areas below are worth another read." : "Worth going back over the notes before you try again."}</p>
         </div>
         <h3>Marks by subtopic</h3>

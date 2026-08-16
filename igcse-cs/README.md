@@ -5,7 +5,7 @@ plain HTML, CSS and JavaScript. No build step, no dependencies, no accounts, no 
 Open `index.html` and it works.
 
 There is also a single-file build. `python3 build-single.py` inlines the CSS and all the JavaScript
-into `bitwise-single.html`, one 314 KB file with no external references at all, so it runs from a
+into `bitwise-single.html`, one self-contained file with no external references at all, so it runs from a
 USB stick, an email attachment or `file://` with no server and no internet connection.
 
 ## What is in it
@@ -14,12 +14,14 @@ USB stick, an email attachment or `file://` with no server and no internet conne
   scheme wordings that actually score, plus the traps that lose marks.
 - **210 flashcards.** Every key term in the syllabus, scheduled with Leitner boxes so cards you
   know come back later and cards you miss come straight back.
-- **128 exam-style questions.** Multiple choice is marked automatically; written questions show a
-  full mark scheme and model answer for you to mark yourself against.
-- **Nine interactive labs**, for the parts of the syllabus that only click when you can poke them:
+- **212 exam-style questions**, at least five per subtopic. Multiple choice is marked automatically;
+  written questions show a full mark scheme and model answer for you to mark yourself against.
+  There are also 30 minute timed mocks for each paper.
+- **Ten interactive labs**, for the parts of the syllabus that only click when you can poke them:
 
   | Lab | Covers |
   |---|---|
+  | **Pseudocode runner** | 8.1 write Cambridge pseudocode and run it, with line-numbered errors |
   | Number converter | 1.1 denary, binary and hex with live place value working |
   | Binary maths lab | 1.1 addition with carries and overflow, logical shifts, two's complement |
   | File size calculator | 1.2 image and sound sizes, every division shown |
@@ -35,6 +37,9 @@ USB stick, an email attachment or `file://` with no server and no internet conne
   which is the point.
 - **Search** over notes, terms and labs (press `/`), a full A to Z glossary, an exam guide with
   command words, light and dark themes, and a study streak.
+- **Built for keyboard use**: `/` to search, `?` for the shortcut list, `g` then a letter to jump
+  between sections, `j` and `k` to step through subtopics, `t` to switch theme. Long note pages get
+  a contents rail, a reading progress bar and a copy button on every code block.
 
 ## Layout
 
@@ -47,6 +52,7 @@ igcse-cs/
     data/syllabus-p2.js   topics 7 to 10 (Paper 2)
     data/questions.js     the question bank
     store.js          progress, streak and card scheduling in localStorage
+    pseudocode.js     tokeniser, parser and interpreter for Cambridge pseudocode
     tools.js          the nine labs
     quiz.js           quiz engine
     cards.js          flashcards

@@ -79,7 +79,7 @@ const App = (function () {
       <section class="hero">
         <span class="eyebrow">Cambridge IGCSE 0478 &middot; 0984 &middot; exams 2026 to 2028</span>
         <h1>The whole syllabus, in a form you will actually use.</h1>
-        <p class="lede">Ten topics, ${ALL_SUBS.length} subtopics, ${Cards.all().length} flashcards, ${QUESTIONS.length} exam-style questions and nine interactive labs. Everything saves in your browser, nothing needs an account.</p>
+        <p class="lede">Ten topics, ${ALL_SUBS.length} subtopics, ${Cards.all().length} flashcards, ${QUESTIONS.length} exam-style questions and ${Object.keys(Tools).length} interactive labs. Everything saves in your browser, nothing needs an account.</p>
         <div class="btn-row">
           <a class="btn" href="${started ? "#/sub/" + weakest[0].id : "#/sub/1.1"}">${started ? "Pick up where you left off" : "Start with topic 1.1"}</a>
           <a class="btn sec" href="#/quiz/mixed">Mixed quiz</a>
@@ -106,7 +106,7 @@ const App = (function () {
 
       <h2>Labs worth opening</h2>
       <div class="grid g2">
-        ${["convert", "logic", "trace", "sql"].map(k => {
+        ${["runner", "logic", "trace", "convert"].map(k => {
           const t = Tools[k];
           return `<a class="card tool-card" href="#/tool/${k}"><span class="em">${t.em}</span><div>
             <h3 style="margin:0 0 4px">${esc(t.title)}</h3><p style="margin:0;font-size:13px">${esc(t.blurb)}</p></div></a>`;
@@ -219,7 +219,12 @@ const App = (function () {
 
     const panel = $("#subPanel");
     const panels = {
-      notes: () => `<ul class="goals">${s.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul><hr>` + s.notes,
+      notes: () => `<div class="with-toc">
+          <div class="notes-body">
+            <ul class="goals">${s.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul><hr>${s.notes}
+          </div>
+          <nav class="toc" id="toc" aria-label="On this page"></nav>
+        </div>`,
       terms: () => '<div class="terms">' + s.terms.map(([t, d]) =>
         '<dl class="term"><dt>' + esc(t) + "</dt><dd>" + esc(d) + "</dd></dl>").join("") +
         '</div><div class="btn-row"><a class="btn sec" href="#/cards/sub/' + s.id + '">Drill these as flashcards</a></div>',
@@ -227,7 +232,13 @@ const App = (function () {
         '<div class="callout"><div class="ttl">Objectives for ' + s.id + '</div><ul>' +
         s.goals.map(g => "<li>" + esc(g) + "</li>").join("") + "</ul></div>"
     };
-    const show = p => { panel.innerHTML = panels[p](); panel.classList.remove("fade-in"); void panel.offsetWidth; panel.classList.add("fade-in"); };
+    const show = p => {
+      panel.innerHTML = panels[p]();
+      panel.classList.remove("fade-in"); void panel.offsetWidth; panel.classList.add("fade-in");
+      enhanceCode(panel);
+      if (p === "notes") buildToc(panel);
+      trackReading();
+    };
     document.querySelectorAll("#subTabs .sub-tab").forEach(b => b.onclick = () => {
       document.querySelectorAll("#subTabs .sub-tab").forEach(x => x.classList.toggle("on", x === b));
       show(b.dataset.p);
@@ -247,7 +258,7 @@ const App = (function () {
     main.innerHTML = `
       <div class="page-head">
         <span class="eyebrow">Labs</span>
-        <h1>Nine things you can poke at</h1>
+        <h1>${Object.keys(Tools).length} things you can poke at</h1>
         <p class="lede">Reading about a logical shift is not the same as watching the bits fall off the end. These are the parts of the syllabus that make more sense when you can break them.</p>
       </div>
       <div class="grid g2">
@@ -359,13 +370,19 @@ const App = (function () {
           <h3 style="margin-top:0">Paper 1 &middot; Computer systems</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
           <p>Short answer and structured questions covering topics 1 to 6. Expect conversions, calculations where the working carries the marks, and several longer describe and explain questions.</p>
-          <a class="btn sec sm" href="#/quiz/paper/1">Paper 1 mixed quiz</a>
+          <div class="btn-row" style="margin-bottom:0">
+            <a class="btn sec sm" href="#/quiz/paper/1">Paper 1 mixed quiz</a>
+            <a class="btn sec sm" href="#/quiz/mock/1">30 minute timed mock</a>
+          </div>
         </div>
         <div class="card">
           <h3 style="margin-top:0">Paper 2 &middot; Algorithms, programming and logic</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
           <p>Topics 7 to 10. Expect a trace table, SQL, a logic circuit or truth table, and a 15 mark scenario question at the end.</p>
-          <a class="btn sec sm" href="#/quiz/paper/2">Paper 2 mixed quiz</a>
+          <div class="btn-row" style="margin-bottom:0">
+            <a class="btn sec sm" href="#/quiz/paper/2">Paper 2 mixed quiz</a>
+            <a class="btn sec sm" href="#/quiz/mock/2">30 minute timed mock</a>
+          </div>
         </div>
       </div>
 
@@ -423,6 +440,83 @@ const App = (function () {
           <dt>${esc(t.term)} <a class="chip" href="#/sub/${t.sub}" style="float:right">${t.sub}</a></dt>
           <dd>${esc(t.def)}</dd></dl>`).join("")}
       </div>`;
+  }
+
+  /* ================================================================== */
+  /* note page enhancements                                              */
+  /* ================================================================== */
+
+  /* Give every code block a copy button. Students retype pseudocode into the
+     runner constantly, and retyping is where transcription errors come from. */
+  function enhanceCode(root) {
+    root.querySelectorAll("pre").forEach(pre => {
+      if (pre.parentElement.classList.contains("pre-wrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "pre-wrap";
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      const btn = document.createElement("button");
+      btn.className = "copy";
+      btn.type = "button";
+      btn.textContent = "Copy";
+      btn.onclick = () => {
+        const text = pre.innerText;
+        const done = () => { btn.textContent = "Copied"; setTimeout(() => { btn.textContent = "Copy"; }, 1400); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else fallback();
+        function fallback() {                       // file:// and older browsers
+          const ta = document.createElement("textarea");
+          ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Select it"; }
+          ta.remove();
+        }
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* A contents rail for the long note pages, built from the h3 headings. */
+  let tocSpy = null;
+  function buildToc(root) {
+    const toc = root.querySelector("#toc");
+    const body = root.querySelector(".notes-body");
+    if (!toc || !body) return;
+    const heads = Array.from(body.querySelectorAll("h3"));
+    if (heads.length < 3) { toc.remove(); return; }
+
+    heads.forEach((h, i) => { h.id = "h" + i + "-" + h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 30); });
+    toc.innerHTML = '<div class="toc-head">On this page</div>' +
+      heads.map(h => '<a href="#' + h.id + '" data-id="' + h.id + '">' + esc(h.textContent) + "</a>").join("");
+
+    toc.querySelectorAll("a").forEach(a => a.onclick = e => {
+      e.preventDefault();                            // keep the hash route intact
+      const target = document.getElementById(a.dataset.id);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    if (tocSpy) tocSpy.disconnect();
+    tocSpy = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        toc.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.dataset.id === en.target.id));
+      });
+    }, { rootMargin: "-70px 0px -70% 0px" });
+    heads.forEach(h => tocSpy.observe(h));
+  }
+
+  /* Reading progress across the top, so a long subtopic shows how much is left. */
+  let readHandler = null;
+  function trackReading() {
+    const bar = $("#readBar");
+    if (readHandler) removeEventListener("scroll", readHandler);
+    readHandler = () => {
+      const h = document.documentElement.scrollHeight - innerHeight;
+      bar.style.width = (h > 120 ? Math.min(100, Math.max(0, scrollY / h * 100)) : 0) + "%";
+    };
+    addEventListener("scroll", readHandler, { passive: true });
+    readHandler();
   }
 
   /* ================================================================== */
@@ -505,6 +599,63 @@ const App = (function () {
   /* ================================================================== */
   /* extras                                                              */
   /* ================================================================== */
+  const SHORTCUTS = [
+    ["/ &nbsp;or&nbsp; Ctrl K", "Search the syllabus"],
+    ["?", "Show this list"],
+    ["g then h", "Go home"],
+    ["g then c", "Flashcards"],
+    ["g then q", "Mixed quiz"],
+    ["g then l", "Labs"],
+    ["g then p", "My progress"],
+    ["g then e", "Exam guide"],
+    ["j &nbsp;/&nbsp; k", "Next or previous subtopic"],
+    ["t", "Switch theme"],
+    ["space", "Flip a flashcard"],
+    ["1 &nbsp;/&nbsp; 2", "Grade a flashcard"],
+    ["Esc", "Close anything open"]
+  ];
+
+  function toggleSheet(force) {
+    let sheet = $("#sheet");
+    const open = force !== undefined ? force : !sheet;
+    if (!open) { if (sheet) sheet.remove(); return; }
+    if (sheet) return;
+    sheet = document.createElement("div");
+    sheet.className = "sheet";
+    sheet.id = "sheet";
+    sheet.innerHTML = `<div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+        <h3>Keyboard shortcuts</h3>
+        <div class="keys">${SHORTCUTS.map(([k, d]) => "<div><span>" + d + "</span><kbd>" + k + "</kbd></div>").join("")}</div>
+        <div class="btn-row" style="margin-bottom:0"><button class="btn sec sm" id="sheetClose">Close</button></div>
+      </div>`;
+    document.body.appendChild(sheet);
+    sheet.onclick = e => { if (e.target === sheet || e.target.id === "sheetClose") toggleSheet(false); };
+  }
+
+  function buildTabbar() {
+    const bar = document.createElement("nav");
+    bar.className = "tabbar";
+    bar.id = "tabbar";
+    bar.setAttribute("aria-label", "Main sections");
+    bar.innerHTML = [
+      ["#/home", "\u{1F3E0}", "Home"],
+      ["#/cards/due", "\u{1F5C2}", "Cards"],
+      ["#/quiz/mixed", "\u{1F3AF}", "Quiz"],
+      ["#/tools", "\u{1F9EA}", "Labs"],
+      ["#/progress", "\u{1F4C8}", "Progress"]
+    ].map(([href, em, label]) =>
+      '<a href="' + href + '" data-tab="' + href + '"><span class="em">' + em + "</span>" + label + "</a>").join("");
+    document.body.appendChild(bar);
+  }
+
+  function highlightTabs() {
+    const h = location.hash || "#/home";
+    document.querySelectorAll("#tabbar a").forEach(a => {
+      const root = a.dataset.tab.split("/")[1];
+      a.classList.toggle("on", h.split("/")[1] === root);
+    });
+  }
+
   function toast(msg) {
     const d = document.createElement("div");
     d.className = "toast"; d.textContent = msg;
@@ -571,6 +722,10 @@ const App = (function () {
       case "quiz": {
         let opts;
         if (p[1] === "mixed") opts = { filter: () => true, limit: 15, back: "#/home" };
+        else if (p[1] === "mock") {
+          const ids = SYLLABUS.filter(t => t.paper === +p[2]).flatMap(t => t.subs.map(s => s.id));
+          opts = { filter: q => ids.includes(q.t), limit: 20, minutes: 30, back: "#/exam" };
+        }
         else if (p[1] === "paper") {
           const ids = SYLLABUS.filter(t => t.paper === +p[2]).flatMap(t => t.subs.map(s => s.id));
           opts = { filter: q => ids.includes(q.t), limit: 15, back: "#/exam" };
@@ -584,10 +739,13 @@ const App = (function () {
           if (s) setHue(s.topic.hue);
           opts = { filter: q => q.t === p[1], back: "#/sub/" + p[1] };
         }
-        const heading = p[1] === "mixed" ? "Mixed quiz" : p[1] === "paper" ? "Paper " + p[2] + " quiz" :
+        const heading = p[1] === "mixed" ? "Mixed quiz" : p[1] === "mock" ? "Paper " + p[2] + " timed mock" :
+          p[1] === "paper" ? "Paper " + p[2] + " quiz" :
           p[1] === "topic" ? "Topic " + p[2] + " quiz" : (findSub(p[1]) ? p[1] + " " + findSub(p[1]).title : "Quiz");
         main.innerHTML = `<div class="page-head"><span class="eyebrow">Quiz</span><h1>${esc(heading)}</h1></div><div id="quizMount"></div>`;
-        Quiz.start($("#quizMount"), opts);
+        const qm = $("#quizMount");
+        Quiz.start(qm, opts);
+        main._cleanup = qm._cleanup;      // stop the mock clock when navigating away
         break;
       }
 
@@ -613,9 +771,16 @@ const App = (function () {
 
     function pageCardsHub() { setHue(168); Cards.hub(main); }
 
+    enhanceCode(main);
     window.scrollTo(0, 0);
     main.classList.remove("fade-in"); void main.offsetWidth; main.classList.add("fade-in");
     refreshChrome();
+    highlightTabs();
+    toggleSheet(false);
+    if (!/^#\/sub\//.test(location.hash)) {
+      const bar = $("#readBar");
+      if (bar) bar.style.width = "0";
+    }
     document.getElementById("sidebar").classList.remove("open");
     $("#scrim").hidden = true;
   }
@@ -626,6 +791,10 @@ const App = (function () {
   function init() {
     applyTheme();
     buildSidebar();
+    buildTabbar();
+    const rb = document.createElement("div");
+    rb.className = "read-bar"; rb.id = "readBar";
+    document.body.appendChild(rb);
     Store.touchStreak();
 
     addEventListener("hashchange", route);
@@ -663,11 +832,38 @@ const App = (function () {
       }
     });
 
+    let goPending = false, goTimer = null;
     document.addEventListener("keydown", e => {
-      if (e.key === "Escape") closeSearch();
-      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
-      if (!typing && (e.key === "/" || (e.key === "k" && (e.metaKey || e.ctrlKey)))) {
-        e.preventDefault(); openSearch();
+      if (e.key === "Escape") { closeSearch(); toggleSheet(false); }
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) {
+        if (!typing && e.key === "k" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch(); }
+        return;
+      }
+
+      if (goPending) {                                  // second key of a "g then x" pair
+        const dest = { h: "#/home", c: "#/cards", q: "#/quiz/mixed", l: "#/tools", p: "#/progress", e: "#/exam" }[e.key];
+        goPending = false; clearTimeout(goTimer);
+        if (dest) { e.preventDefault(); location.hash = dest; return; }
+      }
+
+      switch (e.key) {
+        case "/": e.preventDefault(); openSearch(); break;
+        case "?": e.preventDefault(); toggleSheet(); break;
+        case "t": $("#themeToggle").click(); break;
+        case "g":
+          goPending = true;
+          clearTimeout(goTimer);
+          goTimer = setTimeout(() => { goPending = false; }, 900);
+          break;
+        case "j": case "k": {                           // step through subtopics in order
+          const m = /^#\/sub\/([\d.]+)/.exec(location.hash);
+          if (!m) break;
+          const i = ALL_SUBS.findIndex(s => s.id === m[1]);
+          const to = ALL_SUBS[e.key === "j" ? i + 1 : i - 1];
+          if (to) location.hash = "#/sub/" + to.id;
+          break;
+        }
       }
     });
 
