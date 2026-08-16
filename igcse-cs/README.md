@@ -4,6 +4,10 @@ A study site covering the whole Cambridge IGCSE Computer Science syllabus (0478 
 plain HTML, CSS and JavaScript. No build step, no dependencies, no accounts, no network calls.
 Open `index.html` and it works.
 
+There is also a single-file build. `python3 build-single.py` inlines the CSS and all the JavaScript
+into `bitwise-single.html`, one 314 KB file with no external references at all, so it runs from a
+USB stick, an email attachment or `file://` with no server and no internet connection.
+
 ## What is in it
 
 - **All 10 topics, 27 subtopics.** Exam-focused notes with the tables, worked examples and mark

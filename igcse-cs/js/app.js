@@ -541,7 +541,11 @@ const App = (function () {
   }
 
   function applyTheme() {
-    const t = Store.state.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    /* the reader's own choice wins; otherwise take a theme already stamped on the
+       document by the host page, and fall back to the system preference */
+    const stamped = document.documentElement.dataset.theme;
+    const t = Store.state.theme || stamped ||
+      (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     document.documentElement.dataset.theme = t;
   }
 
