@@ -77,7 +77,7 @@ const App = (function () {
 
     main.innerHTML = `
       <section class="hero">
-        <span class="eyebrow">Cambridge IGCSE 0478 &middot; 0984</span>
+        <span class="eyebrow">Cambridge IGCSE 0478 &middot; 0984 &middot; exams 2026 to 2028</span>
         <h1>The whole syllabus, in a form you will actually use.</h1>
         <p class="lede">Ten topics, ${ALL_SUBS.length} subtopics, ${Cards.all().length} flashcards, ${QUESTIONS.length} exam-style questions and nine interactive labs. Everything saves in your browser, nothing needs an account.</p>
         <div class="btn-row">
@@ -351,22 +351,39 @@ const App = (function () {
       <div class="page-head">
         <span class="eyebrow">Exam guide</span>
         <h1>What the papers ask, and how to answer them</h1>
-        <p class="lede">Two papers, 75 marks each, 1 hour 45 minutes each, worth 50% apiece. There is no coursework and no pre-release material.</p>
+        <p class="lede">Syllabus 0478 / 0984 for examination in <b>2026, 2027 and 2028</b>. Two papers, 75 marks each, 1 hour 45 minutes each, worth 50% apiece. There is no coursework, so your grade comes entirely from the two written papers.</p>
       </div>
 
       <div class="grid g2">
         <div class="card">
           <h3 style="margin-top:0">Paper 1 &middot; Computer systems</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
-          <p>Short answer and structured questions covering topics 1 to 6. Expect conversions, calculations with working, and several longer describe and explain questions.</p>
+          <p>Short answer and structured questions covering topics 1 to 6. Expect conversions, calculations where the working carries the marks, and several longer describe and explain questions.</p>
           <a class="btn sec sm" href="#/quiz/paper/1">Paper 1 mixed quiz</a>
         </div>
         <div class="card">
           <h3 style="margin-top:0">Paper 2 &middot; Algorithms, programming and logic</h3>
           <p>1 hour 45 minutes &middot; 75 marks &middot; 50%</p>
-          <p>Topics 7 to 10. Expect a trace table, a written algorithm in pseudocode or a chosen language, SQL, and a logic circuit or truth table.</p>
+          <p>Topics 7 to 10. Expect a trace table, SQL, a logic circuit or truth table, and a 15 mark scenario question at the end.</p>
           <a class="btn sec sm" href="#/quiz/paper/2">Paper 2 mixed quiz</a>
         </div>
+      </div>
+
+      <div class="callout trap">
+        <div class="ttl">The rule that costs whole answers</div>
+        <p>On Paper 2, wherever a solution involves code you must write it in <b>pseudocode</b>. Answers written in a programming language <b>are not awarded marks</b>. The single exception is the 15 mark scenario question, where you may use pseudocode <b>or</b> Python, Visual Basic or Java.</p>
+        <p style="margin-bottom:0">So unless you are on that last question, write pseudocode, even if you find Python easier.</p>
+      </div>
+
+      <h2>The 15 mark scenario question</h2>
+      <p class="lede">The last question on Paper 2 gives you an unseen real world scenario and asks for a whole program. It is worth a fifth of the paper, so it is worth a checklist.</p>
+      <div class="grid g2">
+        <div class="card tight"><h4 style="margin-top:0">Declare everything</h4><p style="margin:0">Every variable and constant used must be declared, with a sensible data type. Free marks, routinely dropped.</p></div>
+        <div class="card tight"><h4 style="margin-top:0">Message every input and output</h4><p style="margin:0">Prompts and results need suitable text, not a bare INPUT X. The mark scheme asks for it explicitly.</p></div>
+        <div class="card tight"><h4 style="margin-top:0">Comment your code</h4><p style="margin:0">Add comments explaining how the solution works. This is part of the requirement, not decoration.</p></div>
+        <div class="card tight"><h4 style="margin-top:0">Show a range of techniques</h4><p style="margin:0">Selection, iteration, totalling and counting, arrays and a subroutine where one fits. Breadth is rewarded.</p></div>
+        <div class="card tight"><h4 style="margin-top:0">Logic beats syntax</h4><p style="margin:0">A small syntax slip is not what loses the marks. A solution that does not address the scenario is.</p></div>
+        <div class="card tight"><h4 style="margin-top:0">Re-read the scenario</h4><p style="margin:0">Tick off each stated requirement against your code before you move on. Each one carries marks.</p></div>
       </div>
 
       <h2>Command words, and what they actually want</h2>

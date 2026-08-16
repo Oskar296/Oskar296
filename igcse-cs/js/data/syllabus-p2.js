@@ -89,6 +89,9 @@ window.SYLLABUS_P2 = [
 <p>Every decision diamond must have <b>both branches labelled</b> Yes and No (or True and False). Unlabelled branches lose the mark even if the logic is right.</p></div>
 
 <h3>The pseudocode you are expected to use</h3>
+<div class="callout trap"><div class="ttl">Write pseudocode, not Python</div>
+<p>On Paper 2, any answer involving code must be written in <b>pseudocode</b>. A solution written in a programming language <b>scores no marks</b>. The only exception is the 15 mark scenario question at the end of the paper, where you may use pseudocode or Python, Visual Basic or Java. Learn this notation properly, because for most of the paper it is the only notation that counts.</p></div>
+
 <pre><span class="cm">// declaration and assignment</span>
 <span class="kw">DECLARE</span> Count : INTEGER
 <span class="kw">CONSTANT</span> VAT = 0.2
@@ -134,6 +137,7 @@ Count &#8592; 0
       ["Structure diagram", "A hierarchical diagram showing a system broken down into its sub-systems."]
     ],
     tips: [
+      "Answers involving code must be in pseudocode. The only place a programming language is accepted is the 15 mark scenario question.",
       "In a FOR loop, the counter is set automatically. Do not add your own 'Count = Count + 1' inside it.",
       "WHILE tests the condition BEFORE the loop body, so it may run zero times. REPEAT tests AFTER, so it always runs at least once.",
       "Match every IF with an ENDIF and every WHILE with an ENDWHILE. Examiners look for the closing keyword."

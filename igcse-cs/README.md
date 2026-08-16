@@ -76,6 +76,11 @@ without migrating anything.
 
 ## Notes on accuracy
 
-Content follows the 2023 onwards syllabus: binary prefixes (KiB, MiB), two's complement rather than
-sign and magnitude, and no pre-release material for Paper 2. Always check the current syllabus for
-your exam series before relying on any revision resource, including this one.
+Content follows the **0478 / 0984 syllabus for examination in 2026, 2027 and 2028** (the current
+version at the time of writing). That means binary prefixes (KiB, MiB), two's complement rather
+than sign and magnitude, and the Paper 2 rule that coded answers must be written in pseudocode
+except in the 15 mark scenario question, where Python, Visual Basic or Java are also accepted.
+
+The topic structure is unchanged from the 2023-2025 version, so notes remain usable either way.
+Always check the current syllabus for your own exam series before relying on any revision
+resource, including this one.
