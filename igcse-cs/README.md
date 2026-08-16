@@ -22,31 +22,31 @@ USB stick, an email attachment or `file://` with no server and no internet conne
   | Lab | Covers |
   |---|---|
   | **Pseudocode runner** | 8.1 write Cambridge pseudocode and run it, with line-numbered errors |
-  | **Scenario workshop** | 7.4 practice for the 15 mark question, marked against what your code does |
+  | **Scenario workshop** | 7.4 six scenarios for the 15 mark question, marked against what your code does |
   | **Parity block check** | 2.2 find the corrupted bit from the row and column parity |
   | **Journey of a web page** | 5.1 step through DNS lookup to rendered page |
   | **Threat and defence drill** | 5.3 name the threat, then match the defence |
-  | **Flowchart tracer** | 7.2 step through a real flowchart, watching the variables change |
+  | **Flowchart tracer** | 7.2 six flowcharts to step through, watching the variables change |
   | Number converter | 1.1 denary, binary and hex with live place value working |
   | Binary maths lab | 1.1 addition with carries and overflow, logical shifts, two's complement |
   | File size calculator | 1.2 image and sound sizes, every division shown |
   | Character codes | 1.2 text to ASCII, binary and hex |
   | Fetch decode execute | 3.1 step through the cycle, register by register |
   | Logic lab | 10.1 **draws the circuit diagram** and the truth table from any expression |
-  | SQL lab | 9.1 real queries against two sample tables, with tasks |
-  | Trace table trainer | 7.3 fill in a trace table and get it checked cell by cell |
+  | SQL lab | 9.1 eleven tasks against two sample tables, with real query execution |
+  | Trace table trainer | 7.3 eight programs to trace, checked cell by cell |
   | Speed drill | 1.1 sixty seconds of timed conversions |
 
 - **Progress tracking.** Each subtopic scores out of 100: reading the notes is worth 20, your own
   confidence rating up to 30, and quiz accuracy up to 50. Reading alone never gets you past a fifth,
   which is the point.
-- **Search** over notes, terms and labs (press `/`), a full A to Z glossary, an exam guide with
+- **Search** over notes, key terms, practice questions, revision sheets and labs (press `/`), a full A to Z glossary, an exam guide with
   command words, light and dark themes, and a study streak.
 - **Built for keyboard use**: `/` to search, `?` for the shortcut list, `g` then a letter to jump
   between sections, `j` and `k` to step through subtopics, `t` to switch theme. Long note pages get
   a contents rail, a reading progress bar and a copy button on every code block.
-- **Printable notes.** Any subtopic prints as clean revision notes, with the navigation, buttons
-  and tabs stripped out.
+- **Printable notes and revision sheets.** Any subtopic prints as clean revision notes, and every
+  topic has a condensed one-page revision sheet with its objectives, key terms and exam tips.
 - **Progress backup.** Progress lives in one browser, so the progress page gives you a backup code
   to copy and paste onto another device. It is copy and paste rather than a file download because
   some embedded viewers block a page from starting a download.

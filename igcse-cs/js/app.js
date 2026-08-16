@@ -157,6 +157,7 @@ const App = (function () {
       <div class="btn-row">
         <a class="btn" href="#/quiz/topic/${t.n}">Quiz this topic (${nq} questions)</a>
         <a class="btn sec" href="#/cards/topic/${t.n}">Flashcards (${nc})</a>
+        <a class="btn sec" href="#/sheet/${t.n}">Revision sheet</a>
       </div>
       <div class="grid g2">${t.subs.map(s => {
         const m = Store.mastery(s.id);
@@ -479,8 +480,57 @@ const App = (function () {
         <div class="card tight"><h4 style="margin-top:0">Do not contradict yourself</h4><p style="margin:0">A correct point followed by a wrong one can cancel out. Write the answer, then stop.</p></div>
       </div>
 
+      <h2>Revision sheets</h2>
+      <p class="lede">One printable page per topic, with every objective, key term and exam tip on it.</p>
+      <div class="grid g3">
+        ${SYLLABUS.map(t => '<a class="chip" href="#/sheet/' + t.n + '" style="--hue:' + t.hue +
+          '">' + t.em + " &nbsp;" + t.n + " " + esc(t.title) + "</a>").join("")}
+      </div>
+
       <h2>Glossary</h2>
       <p class="lede">Every key term in the syllabus, in one list. <a href="#/glossary">Open the full glossary</a>.</p>`;
+  }
+
+  /* A condensed one-topic revision sheet, built for printing. Everything
+     already lives in the syllabus data, so this is a different view of it
+     rather than a second copy to keep in step. */
+  function pageSheet(n) {
+    const t = findTopic(n);
+    if (!t) return pageHome();
+    setHue(t.hue);
+
+    main.innerHTML = `
+      <div class="crumbs no-print"><a href="#/home">Home</a> / <a href="#/topic/${t.n}">${esc(t.title)}</a> / Revision sheet</div>
+      <div class="page-head">
+        <span class="eyebrow">${t.em} Revision sheet</span>
+        <h1>Topic ${t.n}: ${esc(t.title)}</h1>
+        <p class="lede">Every objective, key term and exam tip for this topic on one page. Built to be printed and kept beside you.</p>
+      </div>
+      <div class="btn-row no-print">
+        <button class="btn" onclick="window.print()">Print this sheet</button>
+        <a class="btn sec" href="#/topic/${t.n}">Back to the topic</a>
+        <a class="btn sec" href="#/quiz/topic/${t.n}">Quiz this topic</a>
+      </div>
+
+      ${t.subs.map(sub => `
+        <section class="sheet-block">
+          <h2>${sub.id} ${esc(sub.title)}</h2>
+          <div class="sheet-cols">
+            <div>
+              <h4>You need to be able to</h4>
+              <ul class="goals">${sub.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul>
+              ${(sub.tips || []).length ? "<h4>Exam tips</h4><ul>" +
+                sub.tips.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : ""}
+            </div>
+            <div>
+              <h4>Key terms</h4>
+              <dl class="sheet-terms">
+                ${sub.terms.map(([term, def]) =>
+                  "<dt>" + esc(term) + "</dt><dd>" + esc(def) + "</dd>").join("")}
+              </dl>
+            </div>
+          </div>
+        </section>`).join("")}`;
   }
 
   function pageGlossary() {
@@ -598,6 +648,17 @@ const App = (function () {
         }));
       });
     });
+    QUESTIONS.forEach(q => {
+      const sub = findSub(q.t);
+      ix.push({
+        kind: "question", title: q.q, sub: (sub ? q.t + " " + sub.title : q.t) + " \u00b7 " + q.m + " mark" + (q.m > 1 ? "s" : ""),
+        href: "#/quiz/" + q.t, hay: (q.q + " " + (q.e || "") + " " + (q.pts || []).join(" ")).toLowerCase()
+      });
+    });
+    SYLLABUS.forEach(t => ix.push({
+      kind: "sheet", title: "Topic " + t.n + " revision sheet", sub: t.title,
+      href: "#/sheet/" + t.n, hay: ("revision sheet print " + t.title).toLowerCase()
+    }));
     Object.keys(Tools).forEach(k => ix.push({
       kind: "lab", title: Tools[k].title, sub: Tools[k].blurb, href: "#/tool/" + k,
       hay: (Tools[k].title + " " + Tools[k].blurb).toLowerCase()
@@ -778,6 +839,7 @@ const App = (function () {
       case "progress": pageProgress(); wireBackup(); break;
       case "exam": pageExam(); break;
       case "glossary": pageGlossary(); break;
+      case "sheet": pageSheet(p[1]); break;
 
       case "quiz": {
         let opts;

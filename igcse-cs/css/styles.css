@@ -742,3 +742,21 @@ textarea.code-area:focus{ box-shadow:none; border-color:transparent; }
   .crumbs{ color:#555 !important; }
   .pre-wrap .copy{ display:none !important; }
 }
+
+/* ================= topic revision sheet ================= */
+.sheet-block{ border-top:1px solid var(--line); padding-top:6px; margin-top:22px; break-inside:auto; }
+.sheet-block h2{ margin:10px 0 10px; font-size:17px; color:var(--accent); }
+.sheet-block h4{ margin:12px 0 5px; }
+.sheet-cols{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:26px; align-items:start; }
+.sheet-cols ul{ margin:0; font-size:13.2px; }
+.sheet-terms{ margin:0; font-size:13px; }
+.sheet-terms dt{ font-weight:650; color:var(--ink); margin-top:7px; }
+.sheet-terms dt:first-child{ margin-top:0; }
+.sheet-terms dd{ margin:0 0 0 0; color:var(--ink-2); }
+@media (max-width: 780px){ .sheet-cols{ grid-template-columns:1fr; gap:10px; } }
+@media print{
+  .sheet-block{ break-inside:avoid; page-break-inside:avoid; border-top:1px solid #999; }
+  .sheet-block h2{ color:#000 !important; }
+  .sheet-cols{ grid-template-columns:1fr 1.15fr; gap:16px; }
+  .sheet-terms dd, .sheet-cols li{ font-size:9pt; }
+}

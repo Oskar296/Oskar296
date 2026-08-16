@@ -761,6 +761,24 @@ textarea.code-area:focus{ box-shadow:none; border-color:transparent; }
   .pre-wrap .copy{ display:none !important; }
 }
 
+/* ================= topic revision sheet ================= */
+.sheet-block{ border-top:1px solid var(--line); padding-top:6px; margin-top:22px; break-inside:auto; }
+.sheet-block h2{ margin:10px 0 10px; font-size:17px; color:var(--accent); }
+.sheet-block h4{ margin:12px 0 5px; }
+.sheet-cols{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:26px; align-items:start; }
+.sheet-cols ul{ margin:0; font-size:13.2px; }
+.sheet-terms{ margin:0; font-size:13px; }
+.sheet-terms dt{ font-weight:650; color:var(--ink); margin-top:7px; }
+.sheet-terms dt:first-child{ margin-top:0; }
+.sheet-terms dd{ margin:0 0 0 0; color:var(--ink-2); }
+@media (max-width: 780px){ .sheet-cols{ grid-template-columns:1fr; gap:10px; } }
+@media print{
+  .sheet-block{ break-inside:avoid; page-break-inside:avoid; border-top:1px solid #999; }
+  .sheet-block h2{ color:#000 !important; }
+  .sheet-cols{ grid-template-columns:1fr 1.15fr; gap:16px; }
+  .sheet-terms dd, .sheet-cols li{ font-size:9pt; }
+}
+
 </style>
 </head>
 <body>
@@ -4797,15 +4815,9 @@ const Tools = (function () {
     let rows = table.rows.slice();
 
     if (whereRaw) {
-      const parts = whereRaw.split(/\s+(AND|OR)\s+/i);
-      rows = rows.filter(r => {
-        let acc = test(parts[0], r);
-        for (let i = 1; i < parts.length; i += 2) {
-          const op = parts[i].toUpperCase(), next = test(parts[i + 1], r);
-          acc = op === "AND" ? (acc && next) : (acc || next);
-        }
-        return acc;
-      });
+      // AND binds tighter than OR, so split on OR first and AND within each part
+      const groups = whereRaw.split(/\s+OR\s+/i).map(g => g.split(/\s+AND\s+/i));
+      rows = rows.filter(r => groups.some(g => g.every(cond => test(cond, r))));
     }
     function test(cond, row) {
       const c = /^\s*([A-Za-z_]+)\s*(>=|<=|<>|!=|=|>|<|LIKE)\s*(.+?)\s*$/i.exec(cond);
@@ -4867,7 +4879,12 @@ const Tools = (function () {
         { t: "Show the Title of items in the Peripherals category, sorted by Price with the cheapest first.", check: r => r.rows.length === 3 && r.rows[0][0] === "Wireless mouse" },
         { t: "Count how many items are out of stock (InStock = FALSE).", check: r => r.rows[0] && r.rows[0][0] === 2 },
         { t: "Find the total Quantity of all items in the Cables category.", check: r => r.rows[0] && r.rows[0][0] === 150 },
-        { t: "In the Students table, show the Name and Mark of Year 11 students who scored more than 60, highest mark first.", check: r => r.rows.length === 3 && r.rows[0][1] === 91 }
+        { t: "In the Students table, show the Name and Mark of Year 11 students who scored more than 60, highest mark first.", check: r => r.rows.length === 3 && r.rows[0][1] === 91 },
+        { t: "Show the Title of every item whose Title begins with the letter W. There are two.", check: r => r.rows.length === 2 && r.rows.every(x => /^W/i.test(x[0])) },
+        { t: "Find the highest Price in the Stock table.", check: r => r.rows[0] && r.rows[0][0] === 189.99 },
+        { t: "Show the Name of every student taking Computer Science, in alphabetical order.", check: r => r.rows.length === 4 && r.rows[0][0] === "Amira" && r.rows[3][0] === "Farah" },
+        { t: "Find the average Mark of all Year 10 students.", check: r => r.rows[0] && Math.abs(r.rows[0][0] - 64) < 0.01 },
+        { t: "Show all details of Accessories costing more than 100, or any item with a Quantity above 100.", check: r => r.rows.length === 2 }
       ];
       let ti = 0;
 
@@ -4946,6 +4963,35 @@ const Tools = (function () {
       cols: ["i", "Num", "Highest", "OUTPUT"],
       rows: [["", "", "0", ""], ["1", "12", "12", ""], ["2", "45", "45", ""], ["3", "30", "", ""], ["4", "45", "", "45"]],
       why: "On pass 3, 30 is not greater than 45, so Highest does not change and the cell stays blank. On pass 4, 45 is not greater than 45 either, because the test uses > and not >=."
+    },
+    {
+      name: "REPEAT with a rogue value",
+      code: ["Total &#8592; 0", "REPEAT", "  INPUT Num", "  IF Num &lt;&gt; -1", "    THEN Total &#8592; Total + Num", "  ENDIF", "UNTIL Num = -1", "OUTPUT Total"],
+      note: "Input values, in order: 8, 12, 5, -1",
+      cols: ["Num", "Total", "OUTPUT"],
+      rows: [["", "0", ""], ["8", "8", ""], ["12", "20", ""], ["5", "25", ""], ["-1", "", "25"]],
+      why: "On the last pass Num is -1, so the IF is false and Total does not change, which is why that cell is blank. The loop then ends because the UNTIL condition is true."
+    },
+    {
+      name: "Nested loops",
+      code: ["FOR i &#8592; 1 TO 3", "  FOR j &#8592; 1 TO 2", "    OUTPUT i * j", "  NEXT j", "NEXT i"],
+      cols: ["i", "j", "OUTPUT"],
+      rows: [["1", "1", "1"], ["", "2", "2"], ["2", "1", "2"], ["", "2", "4"], ["3", "1", "3"], ["", "2", "6"]],
+      why: "The inner loop runs fully for each pass of the outer loop. i only changes on the rows where the outer loop moves on, so the other i cells stay blank."
+    },
+    {
+      name: "String handling",
+      code: ["Word &#8592; \"BINARY\"", "New &#8592; \"\"", "FOR i &#8592; LENGTH(Word) TO 1 STEP -1", "  New &#8592; New &amp; SUBSTRING(Word, i, 1)", "NEXT i", "OUTPUT New"],
+      cols: ["i", "New", "OUTPUT"],
+      rows: [["", "", ""], ["6", "Y", ""], ["5", "YR", ""], ["4", "YRA", ""], ["3", "YRAN", ""], ["2", "YRANI", ""], ["1", "YRANIB", "YRANIB"]],
+      why: "The loop counts down from 6 to 1, taking one character at a time from the end of the word, so the string is built up backwards."
+    },
+    {
+      name: "MOD and DIV",
+      code: ["Num &#8592; 47", "WHILE Num &gt; 0 DO", "  OUTPUT Num MOD 10", "  Num &#8592; Num DIV 10", "ENDWHILE"],
+      cols: ["Num", "OUTPUT"],
+      rows: [["47", ""], ["4", "7"], ["0", "4"]],
+      why: "MOD 10 takes the last digit and DIV 10 removes it. The loop ends when Num reaches 0, and the digits come out in reverse order."
     }
   ];
 
@@ -5554,6 +5600,53 @@ ENDFUNCTION
     }
   ];
 
+  SCENARIOS.push(
+    {
+      name: "Cinema ticket sales",
+      brief: "A cinema sells tickets for one screening. The program must take bookings until the screen is full or the box office closes.",
+      needs: [
+        "The screen holds 60 seats, stored as a constant",
+        "Repeatedly input the number of seats wanted, until 0 is entered or the screen is full",
+        "Reject a request for fewer than 1 or more than 8 seats",
+        "Reject a request for more seats than are still free",
+        "Output the number of seats sold, the number left, and the takings at 9.50 a seat"
+      ],
+      scheme: [
+        { t: "Variables declared, and the seat total and price stored as constants", need: "constant" },
+        { t: "A condition-controlled loop, because the number of bookings is not known", need: "condLoop" },
+        { t: "Validation rejects requests outside 1 to 8", need: "validation" },
+        { t: "A check that enough seats remain before accepting the booking", need: "selection" },
+        { t: "A running total of seats sold", need: "totalling" },
+        { t: "The loop ends on 0 or when the screen is full", need: null },
+        { t: "Seats sold, seats left and takings are all output with messages", need: "outputMessage" },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: "// Cinema ticket sales\nCONSTANT Seats = 60\nCONSTANT Price = 9.50\n\n// your solution here\n"
+    },
+    {
+      name: "Weather station readings",
+      brief: "A weather station records the temperature every hour for a week. The program must summarise the readings.",
+      needs: [
+        "Store 7 days of 24 hourly readings",
+        "Reject any reading outside -50 to 60 degrees",
+        "Output the average temperature for each day",
+        "Output the highest temperature recorded in the week and which day it was on",
+        "Use a subroutine to calculate the average of one day"
+      ],
+      scheme: [
+        { t: "A 2D array is declared for the readings", need: "array2d" },
+        { t: "Nested loops fill the array, days outside and hours inside", need: "nested" },
+        { t: "Validation rejects readings outside -50 to 60", need: "validation" },
+        { t: "A FUNCTION that returns the average for one day", need: "functionReturns" },
+        { t: "The function is called once per day", need: "subroutine" },
+        { t: "Selection tracks the highest temperature and the day it fell on", need: "selection" },
+        { t: "All results output with messages", need: "outputMessage" },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: "// Weather station readings\nDECLARE Temps : ARRAY[1:7, 1:24] OF REAL\n\nFUNCTION DayAverage(Day : INTEGER) RETURNS REAL\n  // your code here\nENDFUNCTION\n\n// your solution here\n"
+    }
+  );
+
   const scenario = {
     title: "Scenario workshop", em: "\u{1F4DD}", topic: "7.4",
     blurb: "Practice for the 15 mark question at the end of Paper 2, with a mark scheme that checks what your code actually does.",
@@ -6007,6 +6100,67 @@ ENDFUNCTION
       edges: [["s", "in"], ["in", "set"], ["set", "d1"], ["d1", "sb", "Yes", "side"], ["d1", "d2", "No"],
               ["sb", "d2", "", "rejoin"], ["d2", "sc", "Yes", "side"], ["d2", "out", "No"], ["sc", "out", "", "rejoin"]],
       cond: { d1: st => st.B > st.Big, d2: st => st.C > st.Big }
+    },
+    {
+      name: "Validate with a rogue value",
+      about: "A loop that stops on a rogue value, and rejects anything out of range on the way. Enter -1 to finish.",
+      vars: ["Num", "Count"],
+      inputs: [15, 250, 40, -1],
+      nodes: [
+        { id: "s", type: "term", x: 210, y: 26, t: "BEGIN", next: "init" },
+        { id: "init", type: "proc", x: 210, y: 96, t: "Count = 0", next: "in", act: st => { st.Count = 0; } },
+        { id: "in", type: "io", x: 210, y: 170, t: "INPUT Num", next: "d1", act: (st, io) => { st.Num = io.next(); } },
+        { id: "d1", type: "dec", x: 210, y: 256, t: "Num = -1?", yes: "out", no: "d2" },
+        { id: "d2", type: "dec", x: 210, y: 366, t: "Num > 100?", yes: "err", no: "inc" },
+        { id: "err", type: "io", x: 60, y: 366, t: 'OUTPUT "Too big"', next: "in", act: (st, io) => io.out("Too big") },
+        { id: "inc", type: "proc", x: 210, y: 462, t: "Count = Count + 1", next: "in", act: st => { st.Count += 1; } },
+        { id: "out", type: "io", x: 210, y: 546, t: "OUTPUT Count", next: "e", act: (st, io) => io.out(st.Count) },
+        { id: "e", type: "term", x: 210, y: 620, t: "END" }
+      ],
+      edges: [["s", "init"], ["init", "in"], ["in", "d1"], ["d1", "d2", "No"], ["d1", "out", "Yes", "far"],
+              ["d2", "err", "Yes", "side"], ["d2", "inc", "No"], ["err", "in", "", "up"], ["inc", "in", "", "back"]],
+      cond: { d1: st => st.Num === -1, d2: st => st.Num > 100 }
+    },
+    {
+      name: "Odd or even counter",
+      about: "Uses MOD inside a count-controlled loop. Watch how the two counters only change on alternate passes.",
+      vars: ["i", "Num", "Odd", "Even"],
+      inputs: [4, 7, 10, 3],
+      nodes: [
+        { id: "s", type: "term", x: 210, y: 26, t: "BEGIN", next: "init" },
+        { id: "init", type: "proc", x: 210, y: 96, t: "Odd = 0, Even = 0, i = 0", next: "in", act: st => { st.Odd = 0; st.Even = 0; st.i = 0; } },
+        { id: "in", type: "io", x: 210, y: 170, t: "INPUT Num", next: "d1", act: (st, io) => { st.Num = io.next(); } },
+        { id: "d1", type: "dec", x: 210, y: 256, t: "Num MOD 2 = 0?", yes: "ev", no: "od" },
+        { id: "ev", type: "proc", x: 60, y: 340, t: "Even = Even + 1", next: "inc", act: st => { st.Even += 1; } },
+        { id: "od", type: "proc", x: 350, y: 340, t: "Odd = Odd + 1", next: "inc", act: st => { st.Odd += 1; } },
+        { id: "inc", type: "proc", x: 210, y: 416, t: "i = i + 1", next: "d2", act: st => { st.i += 1; } },
+        { id: "d2", type: "dec", x: 210, y: 500, t: "i = 4?", yes: "out", no: "in" },
+        { id: "out", type: "io", x: 210, y: 590, t: "OUTPUT Odd, Even", next: "e", act: (st, io) => io.out(st.Odd + " odd, " + st.Even + " even") },
+        { id: "e", type: "term", x: 210, y: 664, t: "END" }
+      ],
+      edges: [["s", "init"], ["init", "in"], ["in", "d1"], ["d1", "ev", "Yes", "left"], ["d1", "od", "No", "right"],
+              ["ev", "inc", "", "join"], ["od", "inc", "", "join"], ["inc", "d2"], ["d2", "out", "Yes"], ["d2", "in", "No", "back"]],
+      cond: { d1: st => st.Num % 2 === 0, d2: st => st.i === 4 }
+    },
+    {
+      name: "Password attempts",
+      about: "A loop that gives up after three tries. Enter 0 for a wrong password and 1 for the right one.",
+      vars: ["Tries", "Ok"],
+      inputs: [0, 0, 1],
+      nodes: [
+        { id: "s", type: "term", x: 210, y: 26, t: "BEGIN", next: "init" },
+        { id: "init", type: "proc", x: 210, y: 96, t: "Tries = 0", next: "in", act: st => { st.Tries = 0; } },
+        { id: "in", type: "io", x: 210, y: 170, t: "INPUT Ok", next: "inc", act: (st, io) => { st.Ok = io.next(); } },
+        { id: "inc", type: "proc", x: 210, y: 244, t: "Tries = Tries + 1", next: "d1", act: st => { st.Tries += 1; } },
+        { id: "d1", type: "dec", x: 210, y: 330, t: "Ok = 1?", yes: "yes", no: "d2" },
+        { id: "yes", type: "io", x: 60, y: 330, t: 'OUTPUT "Welcome"', next: "e", act: (st, io) => io.out("Welcome") },
+        { id: "d2", type: "dec", x: 210, y: 440, t: "Tries = 3?", yes: "lock", no: "in" },
+        { id: "lock", type: "io", x: 210, y: 530, t: 'OUTPUT "Locked out"', next: "e", act: (st, io) => io.out("Locked out") },
+        { id: "e", type: "term", x: 210, y: 604, t: "END" }
+      ],
+      edges: [["s", "init"], ["init", "in"], ["in", "inc"], ["inc", "d1"], ["d1", "yes", "Yes", "side"],
+              ["d1", "d2", "No"], ["d2", "lock", "Yes"], ["d2", "in", "No", "back"], ["yes", "e", "", "rejoin"]],
+      cond: { d1: st => st.Ok === 1, d2: st => st.Tries === 3 }
     }
   ];
 
@@ -6036,6 +6190,11 @@ ENDFUNCTION
         pts = [[a.x + 84, a.y], [x, a.y], [x, b.y], [b.x + 80, b.y]];
       } else if (kind === "left" || kind === "right") {
         pts = [[a.x + (kind === "left" ? -84 : 84), a.y], [b.x, a.y], [b.x, b.y - half(b)]];
+      } else if (kind === "far") {
+        const x = a.x - 138;
+        pts = [[a.x - 84, a.y], [x, a.y], [x, b.y], [b.x - 80, b.y]];
+      } else if (kind === "up") {
+        pts = [[a.x, a.y - half(a)], [a.x, b.y - 34], [b.x - 80, b.y - 34], [b.x - 80, b.y]];
       } else if (kind === "side") {
         pts = [[a.x - 84, a.y], [b.x + 78, b.y]];
       } else if (kind === "rejoin") {
@@ -6680,6 +6839,7 @@ const App = (function () {
       <div class="btn-row">
         <a class="btn" href="#/quiz/topic/${t.n}">Quiz this topic (${nq} questions)</a>
         <a class="btn sec" href="#/cards/topic/${t.n}">Flashcards (${nc})</a>
+        <a class="btn sec" href="#/sheet/${t.n}">Revision sheet</a>
       </div>
       <div class="grid g2">${t.subs.map(s => {
         const m = Store.mastery(s.id);
@@ -7002,8 +7162,57 @@ const App = (function () {
         <div class="card tight"><h4 style="margin-top:0">Do not contradict yourself</h4><p style="margin:0">A correct point followed by a wrong one can cancel out. Write the answer, then stop.</p></div>
       </div>
 
+      <h2>Revision sheets</h2>
+      <p class="lede">One printable page per topic, with every objective, key term and exam tip on it.</p>
+      <div class="grid g3">
+        ${SYLLABUS.map(t => '<a class="chip" href="#/sheet/' + t.n + '" style="--hue:' + t.hue +
+          '">' + t.em + " &nbsp;" + t.n + " " + esc(t.title) + "</a>").join("")}
+      </div>
+
       <h2>Glossary</h2>
       <p class="lede">Every key term in the syllabus, in one list. <a href="#/glossary">Open the full glossary</a>.</p>`;
+  }
+
+  /* A condensed one-topic revision sheet, built for printing. Everything
+     already lives in the syllabus data, so this is a different view of it
+     rather than a second copy to keep in step. */
+  function pageSheet(n) {
+    const t = findTopic(n);
+    if (!t) return pageHome();
+    setHue(t.hue);
+
+    main.innerHTML = `
+      <div class="crumbs no-print"><a href="#/home">Home</a> / <a href="#/topic/${t.n}">${esc(t.title)}</a> / Revision sheet</div>
+      <div class="page-head">
+        <span class="eyebrow">${t.em} Revision sheet</span>
+        <h1>Topic ${t.n}: ${esc(t.title)}</h1>
+        <p class="lede">Every objective, key term and exam tip for this topic on one page. Built to be printed and kept beside you.</p>
+      </div>
+      <div class="btn-row no-print">
+        <button class="btn" onclick="window.print()">Print this sheet</button>
+        <a class="btn sec" href="#/topic/${t.n}">Back to the topic</a>
+        <a class="btn sec" href="#/quiz/topic/${t.n}">Quiz this topic</a>
+      </div>
+
+      ${t.subs.map(sub => `
+        <section class="sheet-block">
+          <h2>${sub.id} ${esc(sub.title)}</h2>
+          <div class="sheet-cols">
+            <div>
+              <h4>You need to be able to</h4>
+              <ul class="goals">${sub.goals.map(g => "<li>" + esc(g) + "</li>").join("")}</ul>
+              ${(sub.tips || []).length ? "<h4>Exam tips</h4><ul>" +
+                sub.tips.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : ""}
+            </div>
+            <div>
+              <h4>Key terms</h4>
+              <dl class="sheet-terms">
+                ${sub.terms.map(([term, def]) =>
+                  "<dt>" + esc(term) + "</dt><dd>" + esc(def) + "</dd>").join("")}
+              </dl>
+            </div>
+          </div>
+        </section>`).join("")}`;
   }
 
   function pageGlossary() {
@@ -7121,6 +7330,17 @@ const App = (function () {
         }));
       });
     });
+    QUESTIONS.forEach(q => {
+      const sub = findSub(q.t);
+      ix.push({
+        kind: "question", title: q.q, sub: (sub ? q.t + " " + sub.title : q.t) + " \u00b7 " + q.m + " mark" + (q.m > 1 ? "s" : ""),
+        href: "#/quiz/" + q.t, hay: (q.q + " " + (q.e || "") + " " + (q.pts || []).join(" ")).toLowerCase()
+      });
+    });
+    SYLLABUS.forEach(t => ix.push({
+      kind: "sheet", title: "Topic " + t.n + " revision sheet", sub: t.title,
+      href: "#/sheet/" + t.n, hay: ("revision sheet print " + t.title).toLowerCase()
+    }));
     Object.keys(Tools).forEach(k => ix.push({
       kind: "lab", title: Tools[k].title, sub: Tools[k].blurb, href: "#/tool/" + k,
       hay: (Tools[k].title + " " + Tools[k].blurb).toLowerCase()
@@ -7301,6 +7521,7 @@ const App = (function () {
       case "progress": pageProgress(); wireBackup(); break;
       case "exam": pageExam(); break;
       case "glossary": pageGlossary(); break;
+      case "sheet": pageSheet(p[1]); break;
 
       case "quiz": {
         let opts;
