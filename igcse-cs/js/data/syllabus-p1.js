@@ -969,6 +969,22 @@ protocol   domain name     path / file name</pre>
 <li>The block is added to the end of the chain and the updated ledger is copied to every computer on the network.</li>
 </ol>
 
+<h3>Where digital currency is used</h3>
+<ul>
+<li><b>Online payments</b> without a bank acting as the middle man, and without card fees</li>
+<li><b>Sending money abroad</b>, which is faster and cheaper than a bank transfer</li>
+<li>Places where people have a phone but <b>no access to a bank account</b></li>
+</ul>
+
+<h3>Advantages and drawbacks</h3>
+<div class="table-wrap"><table>
+<tr><th>Advantages</th><th>Drawbacks</th></tr>
+<tr><td>Transfers are fast and work across borders</td><td>The value can change very quickly, so what you hold may suddenly be worth much less</td></tr>
+<tr><td>Lower transaction fees, with no bank in the middle</td><td>It only works with a device and an internet connection</td></tr>
+<tr><td>Every transaction is recorded permanently and can be traced</td><td>If you lose the key to your wallet, the currency is gone for good</td></tr>
+<tr><td>Not controlled by any single government or bank</td><td>No central authority to appeal to if something goes wrong</td></tr>
+</table></div>
+
 <div class="callout"><div class="ttl">Why this makes tampering obvious</div>
 <p>Because each block contains the previous block's hash, changing any block changes its hash, which breaks the link to every block after it. An attacker would have to alter every following block on <b>the majority of copies across the whole network</b> at the same time, which is not realistic.</p></div>
 `,
@@ -1152,6 +1168,9 @@ The cycle repeats continuously.</pre>
 <li><b>Domestic:</b> robot vacuum cleaners, lawn mowers</li>
 <li><b>Exploration and hazardous work:</b> deep sea, space, bomb disposal, nuclear sites</li>
 </ul>
+
+<h3>How a robot senses and acts</h3>
+<p>A robot runs the same loop as any automated system. Its <b>sensors</b> measure the surroundings, the <b>microprocessor</b> compares those readings with stored values and decides what to do, and its <b>actuators</b> carry out the movement. A warehouse robot, for example, uses proximity sensors to detect a shelf, a microprocessor to work out that it has arrived, and motors to lower its lifting platform.</p>
 
 <h3>Advantages</h3>
 <ul>

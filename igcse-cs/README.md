@@ -17,11 +17,15 @@ USB stick, an email attachment or `file://` with no server and no internet conne
 - **212 exam-style questions**, at least five per subtopic. Multiple choice is marked automatically;
   written questions show a full mark scheme and model answer for you to mark yourself against.
   There are also 30 minute timed mocks for each paper.
-- **Ten interactive labs**, for the parts of the syllabus that only click when you can poke them:
+- **Fourteen interactive labs**, for the parts of the syllabus that only click when you can poke them:
 
   | Lab | Covers |
   |---|---|
   | **Pseudocode runner** | 8.1 write Cambridge pseudocode and run it, with line-numbered errors |
+  | **Scenario workshop** | 7.4 practice for the 15 mark question, marked against what your code does |
+  | **Parity block check** | 2.2 find the corrupted bit from the row and column parity |
+  | **Journey of a web page** | 5.1 step through DNS lookup to rendered page |
+  | **Threat and defence drill** | 5.3 name the threat, then match the defence |
   | Number converter | 1.1 denary, binary and hex with live place value working |
   | Binary maths lab | 1.1 addition with carries and overflow, logical shifts, two's complement |
   | File size calculator | 1.2 image and sound sizes, every division shown |
@@ -52,8 +56,8 @@ igcse-cs/
     data/syllabus-p2.js   topics 7 to 10 (Paper 2)
     data/questions.js     the question bank
     store.js          progress, streak and card scheduling in localStorage
-    pseudocode.js     tokeniser, parser and interpreter for Cambridge pseudocode
-    tools.js          the nine labs
+    pseudocode.js     tokeniser, parser, interpreter and static analysis for pseudocode
+    tools.js          the fourteen labs
     quiz.js           quiz engine
     cards.js          flashcards
     app.js            router, chrome and pages

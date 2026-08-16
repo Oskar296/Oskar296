@@ -721,5 +721,79 @@ const Pseudo = (function () {
     return { output, vars, inputsLeft: inputs.length };
   }
 
-  return { run, PseudoError };
+  /* ---------------------------------------------------------------- */
+  /* static analysis, for checking a solution against a mark scheme     */
+  /* ---------------------------------------------------------------- */
+  function walk(nodes, visit) {
+    (nodes || []).forEach(n => {
+      if (!n || typeof n !== "object") return;
+      visit(n);
+      ["then", "other", "body"].forEach(k => { if (Array.isArray(n[k])) walk(n[k], visit); });
+      if (Array.isArray(n.arms)) n.arms.forEach(a => walk(a.body, visit));
+      if (Array.isArray(n.otherwise)) walk(n.otherwise, visit);
+    });
+  }
+
+  /* Reports which techniques a solution actually uses. The 15 mark scenario
+     question rewards breadth, and students consistently forget the same
+     things: declarations, comments, and messages on inputs and outputs. */
+  function analyse(src) {
+    let ast, parseError = null;
+    try { ast = parse(tokenize(src)); }
+    catch (e) { parseError = e; ast = []; }
+
+    const seen = {
+      declare: false, constant: false, input: false, output: false,
+      outputMessage: false, selection: false, caseOf: false, loop: false,
+      countLoop: false, condLoop: false, array: false, array2d: false,
+      subroutine: false, functionReturns: false, totalling: false,
+      comment: /\/\//.test(src), validation: false, nested: false
+    };
+
+    walk(ast, n => {
+      if (n.k === "declare" || n.k === "declareArray") seen.declare = true;
+      if (n.k === "declareArray") {
+        seen.array = true;
+        if (n.bounds.length > 1) seen.array2d = true;
+      }
+      if (n.k === "constant") seen.constant = true;
+      if (n.k === "input") seen.input = true;
+      if (n.k === "output") {
+        seen.output = true;
+        if (n.parts.some(p => p.k === "str" && p.v.trim().length > 1)) seen.outputMessage = true;
+      }
+      if (n.k === "if") seen.selection = true;
+      if (n.k === "case") { seen.caseOf = true; seen.selection = true; }
+      if (n.k === "for") { seen.loop = true; seen.countLoop = true; }
+      if (n.k === "while" || n.k === "repeat") { seen.loop = true; seen.condLoop = true; }
+      if (n.k === "subroutine") {
+        seen.subroutine = true;
+        if (n.isFn) seen.functionReturns = true;
+      }
+      // Total ← Total + something, or Count ← Count + 1
+      if (n.k === "assign" && n.target.k === "var" && n.value.k === "bin" && n.value.op === "+" &&
+          n.value.l.k === "var" && n.value.l.name.toLowerCase() === n.target.name.toLowerCase()) {
+        seen.totalling = true;
+      }
+    });
+
+    // a loop or IF whose condition bounds an input is doing validation
+    walk(ast, n => {
+      if (n.k !== "if" && n.k !== "while" && n.k !== "repeat") return;
+      const c = n.cond;
+      if (c && c.k === "bin" && ["<", "<=", ">", ">=", "<>", "AND", "OR"].includes(c.op)) seen.validation = true;
+    });
+
+    // nested loops: a loop appearing inside another loop's body
+    walk(ast, n => {
+      if (n.k !== "for" && n.k !== "while" && n.k !== "repeat") return;
+      walk(n.body, inner => {
+        if (inner.k === "for" || inner.k === "while" || inner.k === "repeat") seen.nested = true;
+      });
+    });
+
+    return { parseError, seen, lines: src.split("\n").filter(l => l.trim()).length };
+  }
+
+  return { run, analyse, PseudoError };
 })();

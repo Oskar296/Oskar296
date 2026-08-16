@@ -449,6 +449,27 @@ Names[2] &#8592; <span class="st">"Alan"</span>
 <span class="kw">NEXT</span> Col
 <span class="kw">OUTPUT</span> <span class="st">"Student 2 total: "</span>, Total</pre>
 
+<h4>Searching an array</h4>
+<pre>Found &#8592; FALSE
+Position &#8592; 0
+<span class="kw">FOR</span> i &#8592; 1 <span class="kw">TO</span> 5
+  <span class="kw">IF</span> Names[i] = SearchName
+    <span class="kw">THEN</span>
+      Found &#8592; TRUE
+      Position &#8592; i
+  <span class="kw">ENDIF</span>
+<span class="kw">NEXT</span> i</pre>
+
+<h4>Finding the largest value in an array</h4>
+<pre>Highest &#8592; Marks[1]
+<span class="kw">FOR</span> i &#8592; 2 <span class="kw">TO</span> 10
+  <span class="kw">IF</span> Marks[i] &gt; Highest
+    <span class="kw">THEN</span>
+      Highest &#8592; Marks[i]
+  <span class="kw">ENDIF</span>
+<span class="kw">NEXT</span> i</pre>
+<p>Starting <code>Highest</code> at the <b>first element</b> rather than at 0 is safer, because it still works when every value in the array is negative.</p>
+
 <div class="callout trap"><div class="ttl">Index traps</div>
 <p>Cambridge pseudocode arrays usually start at <b>1</b>, but Python lists start at <b>0</b>. Read the declaration in the question and match it. Going past the last index causes a run-time error.</p></div>
 `,
@@ -490,6 +511,27 @@ Names[2] &#8592; <span class="st">"Alan"</span>
 <span class="kw">ENDWHILE</span>
 <span class="kw">CLOSEFILE</span> <span class="st">"Scores.txt"</span></pre>
 <p><code>EOF</code> means end of file. Looping until EOF is how you read a file of unknown length.</p>
+
+<h3>Writing several records</h3>
+<pre><span class="kw">OPENFILE</span> <span class="st">"Scores.txt"</span> <span class="kw">FOR APPEND</span>
+<span class="kw">FOR</span> i &#8592; 1 <span class="kw">TO</span> 5
+  <span class="kw">INPUT</span> PlayerName
+  <span class="kw">WRITEFILE</span> <span class="st">"Scores.txt"</span>, PlayerName
+<span class="kw">NEXT</span> i
+<span class="kw">CLOSEFILE</span> <span class="st">"Scores.txt"</span></pre>
+<p>Open the file <b>once before the loop</b> and close it <b>once after</b>. Opening and closing inside the loop is slow, and with FOR WRITE it would leave only the last record in the file.</p>
+
+<h3>Searching a file</h3>
+<pre><span class="kw">OPENFILE</span> <span class="st">"Scores.txt"</span> <span class="kw">FOR READ</span>
+Found &#8592; FALSE
+<span class="kw">WHILE NOT</span> EOF(<span class="st">"Scores.txt"</span>) <span class="kw">AND</span> Found = FALSE <span class="kw">DO</span>
+  <span class="kw">READFILE</span> <span class="st">"Scores.txt"</span>, Line
+  <span class="kw">IF</span> Line = SearchName
+    <span class="kw">THEN</span>
+      Found &#8592; TRUE
+  <span class="kw">ENDIF</span>
+<span class="kw">ENDWHILE</span>
+<span class="kw">CLOSEFILE</span> <span class="st">"Scores.txt"</span></pre>
 
 <div class="callout trap"><div class="ttl">Always close the file</div>
 <p>Forgetting <code>CLOSEFILE</code> is a standard dropped mark. It also risks data not being written properly and the file being locked.</p></div>

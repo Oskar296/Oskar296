@@ -634,3 +634,51 @@ textarea.code-area:focus{ box-shadow:none; border-color:transparent; }
 .exam-timer b{ font-family:var(--mono); font-size:20px; font-variant-numeric:tabular-nums; }
 .exam-timer.low{ border-color:var(--bad); }
 .exam-timer.low b{ color:var(--bad); }
+
+/* ================= scenario workshop mark scheme ================= */
+.marks{ display:grid; gap:6px; margin-top:6px; }
+/* these rows are <label>s inside .runner, so they must out-specify ".runner label",
+   which is uppercase for the panel captions */
+.runner .mark-row, .mark-row{
+  display:flex; align-items:flex-start; gap:9px; padding:8px 10px; margin-bottom:0;
+  border:1px solid var(--line); border-radius:10px; background:var(--panel);
+  font-size:13px; line-height:1.45; color:var(--ink-2); cursor:pointer;
+  text-transform:none; letter-spacing:normal; font-weight:400;
+}
+.mark-row:hover{ border-color:var(--line-2); }
+.mark-row.hit{ border-color:color-mix(in srgb,var(--good) 45%,transparent);
+  background:color-mix(in srgb,var(--good) 10%,transparent); color:var(--ink); }
+.mark-row input{ margin:2px 0 0; accent-color:var(--good); flex-shrink:0; }
+.mark-row span:first-of-type{ flex:1; }
+.mark-row .chip{ font-size:9.5px; padding:2px 7px; flex-shrink:0; }
+.score-line{ margin-top:14px; font-size:13px; color:var(--ink-2); }
+.score-line b{ font-size:16px; }
+
+/* ================= parity block ================= */
+.parity-grid th{ font-size:10px; color:var(--ink-3); }
+.parity-grid td{ padding:3px; }
+.pbit{
+  width:32px; height:32px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--panel);
+  font-family:var(--mono); font-size:14px; color:var(--ink); transition:.12s;
+}
+.pbit:hover{ border-color:var(--accent); background:var(--panel-2); }
+.pbit.culprit{ background:var(--bad); border-color:var(--bad); color:#fff; font-weight:700; }
+.parity-grid .chip{ font-size:9.5px; padding:2px 6px; }
+
+/* ================= page journey ================= */
+.journey{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.jbox{
+  border:1px solid var(--line); border-radius:14px; padding:16px 14px; text-align:center;
+  background:var(--panel); transition:.25s;
+}
+.jbox.lit{ border-color:var(--accent); background:hsl(var(--hue) 70% 55% / .13); box-shadow:0 0 0 3px var(--glow); transform:translateY(-2px); }
+.jbox .jem{ font-size:26px; line-height:1.2; }
+.jbox b{ display:block; font-size:14px; margin-top:4px; }
+.jbox small{ color:var(--ink-3); font-size:11.5px; }
+.jlist{ margin-top:18px; padding-left:20px; }
+.jlist li{ color:var(--ink-3); cursor:pointer; padding:3px 0; font-size:13.5px; }
+.jlist li:hover{ color:var(--ink); }
+.jlist li.on{ color:var(--ink); }
+.jlist li.on::marker{ color:var(--accent); font-weight:700; }
+@media (max-width: 620px){ .journey{ grid-template-columns:1fr; } }

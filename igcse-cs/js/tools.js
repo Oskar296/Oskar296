@@ -1252,5 +1252,520 @@ OUTPUT "Spaces: ", Spaces`
     }
   };
 
-  return { convert, binlab, runner, filesize, charcodes, fde, logic, sql, trace, drill };
+  /* ================================================================== */
+  /* 11. SCENARIO WORKSHOP (the 15 mark question)                        */
+  /* ================================================================== */
+  const SCENARIOS = [
+    {
+      name: "Sports club lap times",
+      brief: "A running club records the lap times of its members. The program must let the coach enter the times for 10 laps, then report on them.",
+      needs: [
+        "Input 10 lap times, in seconds",
+        "Reject any time that is not between 30 and 600 seconds, and ask again",
+        "Output the fastest lap, the slowest lap and the average lap time",
+        "Output how many laps were under 60 seconds"
+      ],
+      scheme: [
+        { t: "All variables and constants are declared with sensible data types", need: "declare" },
+        { t: "A count-controlled loop repeating 10 times", need: "countLoop" },
+        { t: "Each lap time is input inside the loop", need: "input" },
+        { t: "Validation rejects times outside 30 to 600 and asks again", need: "validation" },
+        { t: "A running total is kept for the average", need: "totalling" },
+        { t: "Selection is used to find the fastest and slowest", need: "selection" },
+        { t: "A counter for laps under 60 seconds", need: null },
+        { t: "The average is calculated after the loop, not inside it", need: null },
+        { t: "Every output has a suitable message, not just a bare number", need: "outputMessage" },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: `// Sports club lap times
+DECLARE Time : REAL
+DECLARE Total : REAL
+
+Total ← 0
+
+// your solution here
+`
+    },
+    {
+      name: "Car park charges",
+      brief: "A car park charges by the hour. The program must work out what each of 20 drivers owes, and report the day's takings.",
+      needs: [
+        "For each of 20 drivers, input the number of hours parked",
+        "Only accept a whole number of hours from 1 to 24",
+        "Charge 2.50 for the first hour and 1.50 for every hour after that",
+        "Output each driver's charge, then the total taken and the average charge"
+      ],
+      scheme: [
+        { t: "Variables declared, and the rates stored as constants", need: "declare" },
+        { t: "Constants used for the two hourly rates rather than bare numbers", need: "constant" },
+        { t: "A count-controlled loop repeating 20 times", need: "countLoop" },
+        { t: "Validation rejects hours outside 1 to 24", need: "validation" },
+        { t: "The charge is calculated correctly for one hour and for more than one hour", need: "selection" },
+        { t: "A running total of the takings", need: "totalling" },
+        { t: "Each driver's charge is output with a message", need: "outputMessage" },
+        { t: "The total and the average are output after the loop", need: null },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: `// Car park charges
+CONSTANT FirstHour = 2.50
+CONSTANT ExtraHour = 1.50
+
+// your solution here
+`
+    },
+    {
+      name: "Quiz score tracker",
+      brief: "A teacher records quiz scores for a class of 8 students across 3 quizzes, then reports on the results.",
+      needs: [
+        "Store the scores in a suitable data structure",
+        "Input a name and 3 scores for each of the 8 students",
+        "Reject any score that is not between 0 and 20",
+        "Output each student's total and average",
+        "Output the name of the student with the highest total"
+      ],
+      scheme: [
+        { t: "A 2D array (or two arrays) is declared to hold the scores", need: "array" },
+        { t: "An array is used for the names as well", need: null },
+        { t: "Nested loops are used to fill the scores", need: "nested" },
+        { t: "Validation rejects scores outside 0 to 20", need: "validation" },
+        { t: "A running total per student", need: "totalling" },
+        { t: "Selection finds the highest total, storing the name too", need: "selection" },
+        { t: "Totals and averages are output with messages", need: "outputMessage" },
+        { t: "The winning student's name is output", need: null },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: `// Quiz score tracker
+DECLARE Scores : ARRAY[1:8, 1:3] OF INTEGER
+DECLARE Names : ARRAY[1:8] OF STRING
+
+// your solution here
+`
+    },
+    {
+      name: "Library book loans",
+      brief: "A library tracks up to 15 books on loan. The program must record loans and report on overdue books.",
+      needs: [
+        "Input a title and the number of days on loan for each of 15 books",
+        "Only accept a number of days from 0 to 60",
+        "A book is overdue if it has been out for more than 14 days",
+        "Output the title of every overdue book, and how many are overdue",
+        "Use a subroutine to work out whether a book is overdue"
+      ],
+      scheme: [
+        { t: "Arrays declared for the titles and the days", need: "array" },
+        { t: "A count-controlled loop repeating 15 times", need: "countLoop" },
+        { t: "Validation rejects days outside 0 to 60", need: "validation" },
+        { t: "A FUNCTION that returns whether a book is overdue", need: "functionReturns" },
+        { t: "The function is called from the main program", need: "subroutine" },
+        { t: "A counter for the number of overdue books", need: null },
+        { t: "Overdue titles are output with a message", need: "outputMessage" },
+        { t: "The count of overdue books is output at the end", need: null },
+        { t: "The code is commented", need: "comment" }
+      ],
+      stub: `// Library book loans
+DECLARE Titles : ARRAY[1:15] OF STRING
+DECLARE Days : ARRAY[1:15] OF INTEGER
+
+FUNCTION IsOverdue(d : INTEGER) RETURNS BOOLEAN
+  // your code here
+ENDFUNCTION
+
+// your solution here
+`
+    }
+  ];
+
+  const scenario = {
+    title: "Scenario workshop", em: "\u{1F4DD}", topic: "7.4",
+    blurb: "Practice for the 15 mark question at the end of Paper 2, with a mark scheme that checks what your code actually does.",
+    render(el) {
+      let si = 0;
+
+      el.innerHTML = `
+        <div class="callout"><div class="ttl">Worth a fifth of Paper 2</div>
+        <p>The last question gives you an unseen scenario and asks for a whole program. Write it here, run it, then check it against the mark scheme. The checks marked <b>auto</b> are worked out from your code, the rest are for you to judge honestly.</p></div>
+
+        <div class="field"><label for="scPick">Scenario</label>
+          <select id="scPick">${SCENARIOS.map((s, i) => '<option value="' + i + '">' + esc(s.name) + "</option>").join("")}</select>
+        </div>
+
+        <div class="card" id="scBrief"></div>
+
+        <div class="runner">
+          <div class="runner-main">
+            <label for="scCode">Your solution</label>
+            <div class="editor-wrap">
+              <div class="gutter" id="scGutter" aria-hidden="true"></div>
+              <textarea class="input code-area" id="scCode" spellcheck="false" rows="22" aria-label="Solution editor"></textarea>
+            </div>
+            <div class="btn-row">
+              <button class="btn" id="scRun">Run</button>
+              <button class="btn sec" id="scCheck">Check against the mark scheme</button>
+              <button class="btn sec" id="scReset">Start again</button>
+            </div>
+            <pre id="scOut" class="run-out">Run your solution to see what it does.</pre>
+          </div>
+          <div class="runner-side">
+            <label>Input, one value per line</label>
+            <textarea class="input code-area" id="scIn" rows="6" spellcheck="false" placeholder="Values for each INPUT"></textarea>
+            <div id="scMarks"></div>
+          </div>
+        </div>`;
+
+      const code = q(el, "#scCode"), gutter = q(el, "#scGutter"), out = q(el, "#scOut");
+
+      function paintGutter() {
+        gutter.textContent = code.value.split("\n").map((_, i) => i + 1).join("\n") + "\n";
+        gutter.scrollTop = code.scrollTop;
+      }
+
+      function load(i) {
+        si = i;
+        const s = SCENARIOS[i];
+        q(el, "#scBrief").innerHTML =
+          "<h3 style='margin-top:0'>" + esc(s.name) + "</h3><p>" + esc(s.brief) + "</p>" +
+          "<h4>The program must</h4><ol>" + s.needs.map(n => "<li>" + esc(n) + "</li>").join("") + "</ol>";
+        code.value = s.stub;
+        q(el, "#scIn").value = "";
+        out.textContent = "Run your solution to see what it does.";
+        out.className = "run-out";
+        q(el, "#scMarks").innerHTML = "";
+        paintGutter();
+      }
+
+      q(el, "#scRun").onclick = () => {
+        const lines = q(el, "#scIn").value.split("\n").filter((l, i, a) => !(l === "" && i === a.length - 1));
+        try {
+          const r = Pseudo.run(code.value, lines);
+          out.className = "run-out";
+          out.textContent = r.output.length ? r.output.join("\n") : "(no output yet)";
+        } catch (e) {
+          out.className = "run-out bad";
+          out.textContent = (e.line ? "Line " + e.line + ": " : "") + e.message;
+        }
+      };
+
+      q(el, "#scCheck").onclick = () => {
+        const s = SCENARIOS[si];
+        const a = Pseudo.analyse(code.value);
+        const box = q(el, "#scMarks");
+
+        const rows = s.scheme.map((item, i) => {
+          const auto = item.need !== null;
+          const hit = auto && a.seen[item.need];
+          return '<label class="mark-row' + (hit ? " hit" : "") + '">' +
+            '<input type="checkbox" data-i="' + i + '"' + (hit ? " checked" : "") + '>' +
+            "<span>" + esc(item.t) + "</span>" +
+            (auto ? '<span class="chip ' + (hit ? "good" : "") + '">auto</span>' : "") +
+            "</label>";
+        }).join("");
+
+        box.innerHTML =
+          (a.parseError
+            ? '<div class="callout trap"><div class="ttl">The code does not parse yet</div><p>Line ' +
+              a.parseError.line + ": " + esc(a.parseError.message) +
+              ". The automatic checks below cannot see past this.</p></div>"
+            : "") +
+          '<label style="margin-top:14px">Mark scheme</label><div class="marks">' + rows + "</div>" +
+          '<div class="score-line" id="scScore"></div>';
+
+        const tally = () => {
+          const boxes = qa(el, ".marks input");
+          const got = boxes.filter(b => b.checked).length;
+          const pct = Math.round(got / boxes.length * 100);
+          q(el, "#scScore").innerHTML =
+            "<b>" + got + " of " + boxes.length + "</b> points covered" +
+            '<div class="bar" style="margin-top:6px"><i style="width:' + pct + '%"></i></div>' +
+            (pct === 100 ? '<div class="chip good" style="margin-top:8px">Every point covered</div>' : "");
+          boxes.forEach(b => b.closest(".mark-row").classList.toggle("hit", b.checked));
+        };
+        qa(el, ".marks input").forEach(b => b.onchange = tally);
+        tally();
+        Store.addXp(3);
+      };
+
+      q(el, "#scReset").onclick = () => load(si);
+      q(el, "#scPick").onchange = e => load(+e.target.value);
+      code.addEventListener("input", paintGutter);
+      code.addEventListener("scroll", () => { gutter.scrollTop = code.scrollTop; });
+      code.addEventListener("keydown", e => {
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const p = code.selectionStart;
+          code.value = code.value.slice(0, p) + "  " + code.value.slice(code.selectionEnd);
+          code.selectionStart = code.selectionEnd = p + 2;
+        }
+      });
+
+      load(0);
+    }
+  };
+
+  /* ================================================================== */
+  /* 12. PARITY BLOCK CHECK                                              */
+  /* ================================================================== */
+  const parity = {
+    title: "Parity block check", em: "\u{1F9EE}", topic: "2.2",
+    blurb: "One bit has been corrupted in transmission. Use the row and column parity to find exactly which one.",
+    render(el) {
+      const N = 7;                       // 7 data bytes, plus a parity byte
+      let grid = [], badR = 0, badC = 0, found = false, mode = "even";
+
+      el.innerHTML = `
+        <div class="seg" id="paMode" style="margin-bottom:14px">
+          <button class="on" data-m="even">Even parity</button><button data-m="odd">Odd parity</button>
+        </div>
+        <p>Each of the first ${N} rows is a byte of data, with its <b>last bit</b> as the row's parity bit. The <b>bottom row</b> is the parity byte, which makes each column's parity correct. One bit has been flipped in transmission. Click the bit you think is wrong.</p>
+        <div id="paGrid"></div>
+        <div id="paMsg"></div>
+        <div class="btn-row">
+          <button class="btn" id="paNew">New corrupted block</button>
+          <button class="btn sec" id="paShow">Show me the answer</button>
+        </div>
+        <div class="callout tip"><div class="ttl">The method</div>
+        <p>Check the parity of every <b>row</b>, then of every <b>column</b>. Exactly one row and one column will be wrong. The corrupted bit sits where that row crosses that column, which is why a parity block check can locate the error while a single parity bit cannot.</p></div>`;
+
+      const parityOf = bits => bits.reduce((a, b) => a + b, 0) % 2;
+
+      function build() {
+        found = false;
+        grid = [];
+        for (let r = 0; r < N; r++) {
+          const row = [];
+          for (let c = 0; c < N; c++) row.push(Math.random() < 0.5 ? 0 : 1);
+          // row parity bit
+          row.push(mode === "even" ? parityOf(row) : 1 - parityOf(row));
+          grid.push(row);
+        }
+        // parity byte along the bottom
+        const last = [];
+        for (let c = 0; c <= N; c++) {
+          const col = grid.map(r => r[c]);
+          last.push(mode === "even" ? parityOf(col) : 1 - parityOf(col));
+        }
+        grid.push(last);
+
+        badR = Math.floor(Math.random() * (N + 1));
+        badC = Math.floor(Math.random() * (N + 1));
+        grid[badR][badC] = 1 - grid[badR][badC];
+        paint();
+        q(el, "#paMsg").innerHTML = "";
+      }
+
+      function paint() {
+        const want = mode === "even" ? 0 : 1;
+        let html = '<div class="table-wrap"><table class="mono parity-grid"><tr><th></th>' +
+          Array.from({ length: N + 1 }, (_, c) => "<th>" + (c === N ? "P" : "c" + (c + 1)) + "</th>").join("") +
+          "<th>row</th></tr>";
+
+        grid.forEach((row, r) => {
+          const rp = parityOf(row) === want;
+          html += "<tr><th>" + (r === N ? "P" : "b" + (r + 1)) + "</th>" +
+            row.map((b, c) =>
+              '<td><button class="pbit' + (found && r === badR && c === badC ? " culprit" : "") +
+              '" data-r="' + r + '" data-c="' + c + '">' + b + "</button></td>").join("") +
+            '<td><span class="chip ' + (rp ? "good" : "bad") + '">' + (rp ? "ok" : "wrong") + "</span></td></tr>";
+        });
+
+        html += "<tr><th>col</th>";
+        for (let c = 0; c <= N; c++) {
+          const cp = parityOf(grid.map(r => r[c])) === want;
+          html += '<td><span class="chip ' + (cp ? "good" : "bad") + '">' + (cp ? "ok" : "wrong") + "</span></td>";
+        }
+        html += "<td></td></tr></table></div>";
+        q(el, "#paGrid").innerHTML = html;
+
+        qa(el, ".pbit").forEach(b => b.onclick = () => {
+          const r = +b.dataset.r, c = +b.dataset.c;
+          if (r === badR && c === badC) {
+            found = true;
+            paint();
+            q(el, "#paMsg").innerHTML = '<div class="callout tip"><div class="ttl">Correct</div><p>Row ' +
+              (badR === N ? "P (the parity byte)" : "b" + (badR + 1)) + " and column " +
+              (badC === N ? "P (the parity bits)" : "c" + (badC + 1)) +
+              " both failed their parity check, so the bit where they cross is the corrupted one.</p></div>";
+            Store.addXp(4);
+            App.confetti();
+          } else {
+            q(el, "#paMsg").innerHTML = '<div class="callout trap"><div class="ttl">Not that one</div><p>Find the row marked wrong and the column marked wrong. The corrupted bit is where those two meet.</p></div>';
+          }
+        });
+      }
+
+      q(el, "#paNew").onclick = build;
+      q(el, "#paShow").onclick = () => { found = true; paint(); };
+      qa(el, "#paMode button").forEach(b => b.onclick = () => {
+        qa(el, "#paMode button").forEach(x => x.classList.toggle("on", x === b));
+        mode = b.dataset.m;
+        build();
+      });
+      build();
+    }
+  };
+
+  /* ================================================================== */
+  /* 13. WHAT HAPPENS WHEN YOU TYPE A URL                                */
+  /* ================================================================== */
+  const journey = {
+    title: "The journey of a web page", em: "\u{1F310}", topic: "5.1",
+    blurb: "Step through what actually happens between typing a URL and seeing the page. This is a six mark question.",
+    render(el) {
+      const STEPS = [
+        { at: "browser", t: "You type the URL", d: "You type https://www.example.com into the address bar. The browser separates out the protocol (https), the domain name (www.example.com) and the path." },
+        { at: "browser", t: "The browser needs an IP address", d: "The browser cannot send anything to a name. It needs the IP address of the web server, so it asks a DNS server to translate the domain name." },
+        { at: "dns", t: "The DNS server is asked", d: "The request goes to the nearest DNS server. If it holds the matching IP address in its records, it sends it straight back." },
+        { at: "dns", t: "Or it asks further up", d: "If that DNS server does not know the domain, it passes the request on to another DNS server higher up, and so on until the address is found. If no server can find it, an error is returned to the browser." },
+        { at: "browser", t: "The IP address comes back", d: "The DNS server returns the IP address of the web server to the browser." },
+        { at: "server", t: "The browser requests the page", d: "The browser sends an HTTP request straight to the web server at that IP address, asking for the page at the path in the URL." },
+        { at: "server", t: "The server responds", d: "The web server sends the page back as HTML, along with the CSS and any images, split into packets." },
+        { at: "browser", t: "The browser renders the page", d: "The packets are reassembled in order using their packet numbers, and the browser renders the HTML so you see the page. Because this is https, the data was encrypted using SSL/TLS the whole way." }
+      ];
+
+      let i = -1, timer = null;
+
+      el.innerHTML = `
+        <div class="journey">
+          <div class="jbox" id="jbrowser"><div class="jem">\u{1F5A5}</div><b>Your browser</b><small>renders the page</small></div>
+          <div class="jbox" id="jdns"><div class="jem">\u{1F4C7}</div><b>DNS server</b><small>name to IP address</small></div>
+          <div class="jbox" id="jserver"><div class="jem">\u{1F5C4}</div><b>Web server</b><small>holds the website</small></div>
+        </div>
+        <div class="callout" id="jMsg" style="min-height:96px">
+          <div class="ttl" id="jTtl">Ready</div><p id="jD">Press step to follow a page request from start to finish.</p>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="jStep">Step</button>
+          <button class="btn sec" id="jAuto">Play</button>
+          <button class="btn sec" id="jReset">Reset</button>
+          <span class="chip" id="jCount">step 0 of ${STEPS.length}</span>
+        </div>
+        <ol class="jlist" id="jList">${STEPS.map((s, n) => '<li data-n="' + n + '">' + esc(s.t) + "</li>").join("")}</ol>`;
+
+      function paint() {
+        const s = STEPS[i];
+        ["browser", "dns", "server"].forEach(k =>
+          q(el, "#j" + k).classList.toggle("lit", !!s && s.at === k));
+        q(el, "#jTtl").textContent = s ? "Step " + (i + 1) : "Ready";
+        q(el, "#jD").textContent = s ? s.d : "Press step to follow a page request from start to finish.";
+        q(el, "#jCount").textContent = "step " + (i + 1) + " of " + STEPS.length;
+        qa(el, "#jList li").forEach(li => li.classList.toggle("on", +li.dataset.n <= i));
+      }
+      function step() { if (i >= STEPS.length - 1) return false; i++; paint(); return true; }
+
+      q(el, "#jStep").onclick = () => { clearInterval(timer); step(); };
+      q(el, "#jAuto").onclick = () => {
+        clearInterval(timer);
+        timer = setInterval(() => { if (!step()) clearInterval(timer); }, 2600);
+      };
+      q(el, "#jReset").onclick = () => { clearInterval(timer); i = -1; paint(); };
+      qa(el, "#jList li").forEach(li => li.onclick = () => { clearInterval(timer); i = +li.dataset.n; paint(); });
+      paint();
+      el._cleanup = () => clearInterval(timer);
+    }
+  };
+
+  /* ================================================================== */
+  /* 14. THREAT AND DEFENCE DRILL                                        */
+  /* ================================================================== */
+  const THREATS = [
+    { s: "An employee receives an email that looks like it is from the company bank, with a link to a site asking them to confirm their password.", threat: "Phishing", fix: "Do not click links in unexpected messages, and check the spelling and tone of the message" },
+    { s: "Malicious code on a user's computer changes their DNS settings, so typing the correct bank address takes them to a fake copy of the site.", threat: "Pharming", fix: "Anti-malware software, and checking the URL and its https certificate" },
+    { s: "Software repeatedly tries every possible combination of characters until it works out the password.", threat: "Brute force attack", fix: "Long complex passwords and a limit on log-in attempts" },
+    { s: "A server is flooded with so many requests from thousands of machines that genuine users cannot reach the website.", threat: "DDoS attack", fix: "A firewall and a proxy server to filter and absorb the traffic" },
+    { s: "Someone uses a packet sniffer to examine the packets travelling across a wireless network and reads the data inside them.", threat: "Data interception", fix: "Encryption, so intercepted data is meaningless" },
+    { s: "A program that looked like a free photo editor installs other malware as soon as it is run.", threat: "Trojan horse", fix: "Anti-malware software, and only installing software from trusted sources" },
+    { s: "Malware spreads by itself across the whole school network without anyone opening a file, using up bandwidth.", threat: "Worm", fix: "Anti-malware software and automatic security updates" },
+    { s: "All the files on a computer are encrypted, and a message demands payment for the key to unlock them.", threat: "Ransomware", fix: "Regular backups kept on separate storage" },
+    { s: "Software secretly records every key a user presses and sends it to an attacker.", threat: "Spyware", fix: "Anti-malware software and two-step verification" },
+    { s: "Someone phones the help desk pretending to be a senior manager, saying it is urgent that their password is reset immediately.", threat: "Social engineering", fix: "Staff training and a verification procedure before acting on requests" },
+    { s: "Someone gains unauthorised access to the school system and changes the stored grades.", threat: "Hacking", fix: "Access levels so users only reach the data they need, plus strong authentication" },
+    { s: "A file attaches itself to a program, and each time that program is opened it copies itself and corrupts more data.", threat: "Virus", fix: "Anti-malware software kept up to date" }
+  ];
+
+  const threats = {
+    title: "Threat and defence drill", em: "\u{1F6E1}", topic: "5.3",
+    blurb: "Topic 5.3 has the longest list in the syllabus. Name the threat from the scenario, then pick the defence that matches it.",
+    render(el) {
+      let order = [], k = 0, score = 0, phase = 0, current = null;
+
+      el.innerHTML = `
+        <div class="q-progress">
+          <span id="thN"></span><div class="bar"><i id="thBar" style="width:0%"></i></div>
+          <span class="chip" id="thScore">0 correct</span>
+        </div>
+        <div class="card"><p class="q-stem" id="thStem"></p><div id="thOpts"></div></div>
+        <div id="thAfter"></div>`;
+
+      const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+      function begin() { order = shuffle(THREATS).slice(0, 8); k = 0; score = 0; ask(); }
+
+      function ask() {
+        current = order[k];
+        phase = 0;
+        q(el, "#thN").textContent = (k + 1) + " / " + order.length;
+        q(el, "#thBar").style.width = Math.round(k / order.length * 100) + "%";
+        q(el, "#thScore").textContent = score + " correct";
+        q(el, "#thStem").textContent = current.s;
+        q(el, "#thAfter").innerHTML = "";
+        options("Which threat is this?", "threat");
+      }
+
+      function options(prompt, key) {
+        const right = current[key];
+        const pool = shuffle(THREATS.filter(t => t[key] !== right).map(t => t[key])).slice(0, 3);
+        const opts = shuffle(pool.concat([right]));
+        q(el, "#thOpts").innerHTML =
+          '<h4 style="margin-top:0">' + prompt + "</h4>" +
+          opts.map((o, n) => '<button class="opt" data-v="' + esc(o) + '"><span class="key">' + "ABCD"[n] +
+            "</span><span>" + esc(o) + "</span></button>").join("");
+
+        qa(el, "#thOpts .opt").forEach(btn => btn.onclick = () => {
+          const ok = btn.dataset.v === right;
+          qa(el, "#thOpts .opt").forEach(b => {
+            b.disabled = true;
+            if (b.dataset.v === right) b.classList.add("right");
+            else if (b === btn) b.classList.add("wrong");
+          });
+          if (ok) score++;
+          q(el, "#thScore").textContent = score + " correct";
+
+          if (phase === 0) {
+            phase = 1;
+            q(el, "#thAfter").innerHTML = '<div class="btn-row"><button class="btn" id="thNext">Now pick the defence</button></div>';
+            q(el, "#thNext").onclick = () => { q(el, "#thAfter").innerHTML = ""; options("Which measure best protects against it?", "fix"); };
+          } else {
+            q(el, "#thAfter").innerHTML =
+              '<div class="verdict ' + (ok ? "ok" : "no") + '"><h4>' + esc(current.threat) + "</h4><p>" +
+              esc(current.fix) + ".</p></div><div class=\"btn-row\"><button class=\"btn\" id=\"thNext\">" +
+              (k === order.length - 1 ? "See results" : "Next scenario") + "</button></div>";
+            q(el, "#thNext").onclick = () => {
+              if (k === order.length - 1) done(); else { k++; ask(); }
+            };
+          }
+        });
+      }
+
+      function done() {
+        const total = order.length * 2;
+        const pct = Math.round(score / total * 100);
+        Store.recordQuiz("5.3", pct >= 60);
+        Store.addXp(score * 2);
+        Store.touchStreak();
+        el.innerHTML = `<div class="card" style="text-align:center">
+            <div class="score-ring" style="--p:${pct}"><b>${pct}%</b></div>
+            <h2 style="margin:0 0 4px">${score} of ${total}</h2>
+            <p>Each scenario was worth two: naming the threat and matching the defence.</p>
+            <div class="btn-row" style="justify-content:center">
+              <button class="btn" id="thAgain">Go again</button>
+              <a class="btn sec" href="#/sub/5.3">Back to the notes</a>
+            </div></div>`;
+        q(el, "#thAgain").onclick = () => { threats.render(el); };
+        if (pct >= 85) App.confetti();
+      }
+
+      begin();
+    }
+  };
+
+  return { convert, binlab, runner, scenario, filesize, charcodes, parity, fde, journey, logic, sql, trace, threats, drill };
 })();

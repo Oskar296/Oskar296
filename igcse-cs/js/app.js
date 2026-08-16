@@ -106,7 +106,7 @@ const App = (function () {
 
       <h2>Labs worth opening</h2>
       <div class="grid g2">
-        ${["runner", "logic", "trace", "convert"].map(k => {
+        ${["runner", "scenario", "parity", "threats"].map(k => {
           const t = Tools[k];
           return `<a class="card tool-card" href="#/tool/${k}"><span class="em">${t.em}</span><div>
             <h3 style="margin:0 0 4px">${esc(t.title)}</h3><p style="margin:0;font-size:13px">${esc(t.blurb)}</p></div></a>`;
