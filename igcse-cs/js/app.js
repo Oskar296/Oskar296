@@ -106,7 +106,7 @@ const App = (function () {
 
       <h2>Labs worth opening</h2>
       <div class="grid g2">
-        ${["runner", "scenario", "parity", "threats"].map(k => {
+        ${["runner", "scenario", "flowchart", "logic"].map(k => {
           const t = Tools[k];
           return `<a class="card tool-card" href="#/tool/${k}"><span class="em">${t.em}</span><div>
             <h3 style="margin:0 0 4px">${esc(t.title)}</h3><p style="margin:0;font-size:13px">${esc(t.blurb)}</p></div></a>`;
@@ -210,6 +210,7 @@ const App = (function () {
         ${nq ? `<a class="btn" href="#/quiz/${s.id}">Test yourself (${nq} questions)</a>` : ""}
         <a class="btn sec" href="#/cards/sub/${s.id}">Flashcards</a>
         ${(s.tools || []).map(([label, href]) => `<a class="btn sec" href="${href}">${esc(label)}</a>`).join("")}
+        <button class="btn sec no-print" onclick="window.print()">Print these notes</button>
       </div>
 
       <div class="pager">
@@ -338,7 +339,66 @@ const App = (function () {
       <h2>What to do next</h2>
       <div class="grid g3">
         ${rows.slice().sort((a, b) => a.m - b.m).slice(0, 3).map(r => topicCardSub(r.s)).join("")}
+      </div>
+
+      <h2>Move your progress to another device</h2>
+      <p class="lede">Progress is stored in this browser only, so it does not follow you to a
+        different device, and clearing site data wipes it. Copy the backup code somewhere safe,
+        then paste it in on the other machine.</p>
+      <div class="card">
+        <div class="btn-row" style="margin-top:0">
+          <button class="btn" id="bkMake">Show my backup code</button>
+          <button class="btn sec" id="bkRestore">Restore from a code</button>
+        </div>
+        <div id="bkArea"></div>
       </div>`;
+  }
+
+  /* Backups are copy and paste rather than a file download: the artifact
+     viewer's sandbox makes any page-initiated download inert. */
+  function wireBackup() {
+    const area = $("#bkArea");
+    if (!area) return;
+    $("#bkMake").onclick = () => {
+      const code = btoa(unescape(encodeURIComponent(JSON.stringify(Store.state))));
+      area.innerHTML = '<label style="display:block;font-size:11.5px;text-transform:uppercase;' +
+        'letter-spacing:.09em;color:var(--ink-3);margin:14px 0 5px;font-weight:700">Your backup code</label>' +
+        '<textarea class="input code-area" id="bkText" rows="4" readonly></textarea>' +
+        '<div class="btn-row"><button class="btn sec sm" id="bkCopy">Copy to clipboard</button></div>';
+      $("#bkText").value = code;
+      $("#bkCopy").onclick = () => {
+        const ta = $("#bkText");
+        ta.select();
+        const done = () => { $("#bkCopy").textContent = "Copied"; setTimeout(() => { $("#bkCopy").textContent = "Copy to clipboard"; }, 1500); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, done);
+        else { try { document.execCommand("copy"); done(); } catch (e) {} }
+      };
+    };
+    $("#bkRestore").onclick = () => {
+      area.innerHTML = '<label style="display:block;font-size:11.5px;text-transform:uppercase;' +
+        'letter-spacing:.09em;color:var(--ink-3);margin:14px 0 5px;font-weight:700">Paste a backup code</label>' +
+        '<textarea class="input code-area" id="bkIn" rows="4" placeholder="Paste here"></textarea>' +
+        '<div class="btn-row"><button class="btn sm" id="bkGo">Restore it</button></div><div id="bkMsg"></div>';
+      $("#bkGo").onclick = () => {
+        let data = null;
+        try { data = JSON.parse(decodeURIComponent(escape(atob($("#bkIn").value.trim())))); }
+        catch (e) { data = null; }          // never surface a raw decoding error
+        try {
+          if (!data || typeof data !== "object" || !("conf" in data) || !("cards" in data)) {
+            throw new Error("that does not look like a BITWISE backup code");
+          }
+          Object.assign(Store.state, data);
+          Store.save();
+          toast("Progress restored");
+          buildSidebar();
+          route();
+        } catch (e) {
+          $("#bkMsg").innerHTML = '<div class="callout trap"><div class="ttl">Could not restore</div><p>' +
+            esc(e.message || "that does not look like a BITWISE backup code") +
+            ". Check you copied the whole code, with nothing missing from either end.</p></div>";
+        }
+      };
+    };
   }
 
   const COMMAND_WORDS = [
@@ -715,7 +775,7 @@ const App = (function () {
       case "sub": pageSub(p[1]); break;
       case "tools": pageTools(); break;
       case "tool": pageTool(p[1]); break;
-      case "progress": pageProgress(); break;
+      case "progress": pageProgress(); wireBackup(); break;
       case "exam": pageExam(); break;
       case "glossary": pageGlossary(); break;
 

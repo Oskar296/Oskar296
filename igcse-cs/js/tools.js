@@ -499,6 +499,100 @@ const Tools = (function () {
     return out;
   }
 
+  /* ---------------------------------------------------------------- */
+  /* draw a logic circuit from a parsed expression                     */
+  /* Paper 2 asks you to draw the circuit, so the lab should show one. */
+  /* ---------------------------------------------------------------- */
+  function gateShape(x, y, kind) {
+    const w = 42, h = 30, cy = y, bub = 4;
+    const body = {
+      AND: '<path d="M' + x + ' ' + (cy - h / 2) + 'h' + (w * .45) + 'a' + (h / 2) + ' ' + (h / 2) + ' 0 0 1 0 ' + h + 'h-' + (w * .45) + 'z"/>',
+      OR: '<path d="M' + x + ' ' + (cy - h / 2) + 'q' + (w * .55) + ' ' + (h * .12) + ' ' + w + ' ' + (h / 2) +
+          'q-' + (w * .45) + ' ' + (h * .38) + ' -' + w + ' ' + (h / 2) + 'q' + (w * .3) + ' -' + (h / 2) + ' 0 -' + h + 'z"/>',
+      NOT: '<path d="M' + x + ' ' + (cy - h / 2) + 'l' + w + ' ' + (h / 2) + 'l-' + w + ' ' + (h / 2) + 'z"/>'
+    };
+    const base = kind === "NAND" ? "AND" : kind === "NOR" ? "OR" : kind === "XOR" ? "OR" : kind;
+    let svg = body[base] || body.AND;
+    if (kind === "XOR") {
+      svg = '<path d="M' + (x - 6) + ' ' + (cy - h / 2) + 'q' + (w * .3) + ' ' + (h / 2) + ' 0 ' + h + '"/>' + svg;
+    }
+    if (kind === "NAND" || kind === "NOR" || kind === "NOT") {
+      svg += '<circle cx="' + (x + w + bub) + '" cy="' + cy + '" r="' + bub + '"/>';
+    }
+    return svg;
+  }
+
+  function drawCircuit(ast, vars) {
+    const gates = [];
+    (function collect(n) {
+      if (!n || n.op === "VAR") return;
+      if (n.l) collect(n.l);
+      if (n.r) collect(n.r);
+      gates.push(n);
+    })(ast);
+    if (gates.length > 7) return '<p style="font-size:13px;color:var(--ink-3)">That expression needs more than seven gates, which is more than the exam will ask you to draw.</p>';
+
+    const ROW = 46, COL = 108, PADL = 62, PADT = 34, GW = 42;
+    const depth = n => n.op === "VAR" ? 0 : 1 + Math.max(depth(n.l), n.r ? depth(n.r) : 0);
+    const maxD = depth(ast);
+
+    const varY = {};
+    vars.forEach((v, i) => { varY[v] = PADT + i * ROW; });
+
+    const pos = new Map();
+    (function place(n) {
+      if (n.op === "VAR") return { x: PADL - 14, y: varY[n.name] };
+      const l = place(n.l), r = n.r ? place(n.r) : null;
+      const x = PADL + (depth(n) - 1) * COL;
+      const y = r ? (l.y + r.y) / 2 : l.y;
+      const p = { x, y, l, r };
+      pos.set(n, p);
+      return { x: x + GW + 9, y };
+    })(ast);
+
+    const height = Math.max(PADT + vars.length * ROW, PADT + 2 * ROW) + 24;
+    const width = PADL + maxD * COL + 58;
+
+    let svg = "";
+    // input rails and labels
+    vars.forEach(v => {
+      svg += '<text x="14" y="' + (varY[v] + 4) + '" class="cl-lbl">' + v + "</text>" +
+             '<circle cx="' + (PADL - 30) + '" cy="' + varY[v] + '" r="2.6" class="cl-dot"/>';
+    });
+
+    const wire = (x1, y1, x2, y2) => {
+      const mid = x1 + Math.max(12, (x2 - x1) / 2);
+      return '<polyline class="cl-wire" points="' + x1 + "," + y1 + " " + mid + "," + y1 + " " + mid + "," + y2 + " " + x2 + "," + y2 + '"/>';
+    };
+
+    pos.forEach((p, n) => {
+      const inTop = p.y - 8, inBot = p.y + 8;
+      const src = c => c.op === "VAR"
+        ? { x: PADL - 30, y: varY[c.name] }
+        : { x: pos.get(c).x + GW + (["NAND", "NOR", "NOT"].includes(c.op) ? 8 : 0) + 2, y: pos.get(c).y };
+
+      if (n.r) {
+        const a = src(n.l), b = src(n.r);
+        svg += wire(a.x, a.y, p.x, inTop) + wire(b.x, b.y, p.x, inBot);
+      } else {
+        const a = src(n.l);
+        svg += wire(a.x, a.y, p.x, p.y);
+      }
+      svg += '<g class="cl-gate">' + gateShape(p.x, p.y, n.op) + "</g>";
+      svg += '<text x="' + (p.x + GW / 2) + '" y="' + (p.y + 26) + '" class="cl-name">' + n.op + "</text>";
+    });
+
+    const root = pos.get(ast);
+    if (root) {
+      const outX = root.x + GW + (["NAND", "NOR", "NOT"].includes(ast.op) ? 8 : 0) + 2;
+      svg += '<polyline class="cl-wire" points="' + outX + "," + root.y + " " + (width - 30) + "," + root.y + '"/>' +
+             '<text x="' + (width - 22) + '" y="' + (root.y + 4) + '" class="cl-lbl">X</text>';
+    }
+
+    return '<div class="table-wrap"><svg class="circuit" viewBox="0 0 ' + width + " " + height +
+           '" width="' + width + '" height="' + height + '" role="img" aria-label="Logic circuit diagram">' + svg + "</svg></div>";
+  }
+
   const GATE_SVG = {
     AND: '<path d="M12 8h18a16 16 0 010 32H12z"/><path d="M2 16h10M2 32h10M40 24h10"/>',
     OR: '<path d="M10 8c12 4 12 28 0 32 18 0 26-6 34-16-8-10-16-16-34-16z"/><path d="M2 16h9M2 32h9M44 24h8"/>',
@@ -559,7 +653,10 @@ const Tools = (function () {
             inner.map(s => "<td>" + logicEval(s.node, env) + "</td>").join("") +
             "<td><b>" + logicEval(ast, env) + "</b></td></tr>";
         }
-        out.innerHTML = '<div class="table-wrap"><table class="mono">' + html + "</table></div>" +
+        out.innerHTML =
+          "<h3>Circuit diagram</h3>" + drawCircuit(ast, vars) +
+          "<h3>Truth table</h3>" +
+          '<div class="table-wrap"><table class="mono">' + html + "</table></div>" +
           '<div class="callout"><div class="ttl">Read as</div><p>X = ' + esc(logicText(ast).replace(/^\(|\)$/g, "")) +
           "</p><p style='margin:0'>" + vars.length + " inputs means 2^" + vars.length + " = " + rows +
           " rows. The middle columns are the output of each gate along the way, which is exactly how you should lay it out on paper.</p></div>";
@@ -1767,5 +1864,225 @@ ENDFUNCTION
     }
   };
 
-  return { convert, binlab, runner, scenario, filesize, charcodes, parity, fde, journey, logic, sql, trace, threats, drill };
+  /* ================================================================== */
+  /* 15. FLOWCHART TRACER                                                */
+  /* Paper 2 shows flowcharts and asks what they output. The site had    */
+  /* a table of symbols but no actual flowchart, so here is one you can  */
+  /* walk through a step at a time.                                      */
+  /* ================================================================== */
+  const FLOWCHARTS = [
+    {
+      name: "Pass or fail",
+      about: "A single decision. Notice both branches are labelled, which the mark scheme insists on.",
+      vars: ["Mark"],
+      inputs: [72, 41, 50],
+      nodes: [
+        { id: "s", type: "term", x: 190, y: 26, t: "BEGIN", next: "in" },
+        { id: "in", type: "io", x: 190, y: 100, t: "INPUT Mark", next: "d", act: (st, io) => { st.Mark = io.next(); } },
+        { id: "d", type: "dec", x: 190, y: 186, t: "Mark >= 50?", yes: "p", no: "f" },
+        { id: "p", type: "io", x: 90, y: 286, t: 'OUTPUT "Pass"', next: "e", act: (st, io) => io.out("Pass") },
+        { id: "f", type: "io", x: 300, y: 286, t: 'OUTPUT "Fail"', next: "e", act: (st, io) => io.out("Fail") },
+        { id: "e", type: "term", x: 190, y: 366, t: "END" }
+      ],
+      edges: [["s", "in"], ["in", "d"], ["d", "p", "Yes", "left"], ["d", "f", "No", "right"], ["p", "e", "", "join"], ["f", "e", "", "join"]],
+      cond: { d: st => st.Mark >= 50 }
+    },
+    {
+      name: "Total five numbers",
+      about: "A count-controlled loop drawn as a decision with a back edge. Follow the arrow that goes back up.",
+      vars: ["Count", "Total", "Num"],
+      inputs: [4, 8, 15, 16, 23],
+      nodes: [
+        { id: "s", type: "term", x: 210, y: 26, t: "BEGIN", next: "init" },
+        { id: "init", type: "proc", x: 210, y: 96, t: "Total = 0, Count = 0", next: "in", act: st => { st.Total = 0; st.Count = 0; } },
+        { id: "in", type: "io", x: 210, y: 170, t: "INPUT Num", next: "add", act: (st, io) => { st.Num = io.next(); } },
+        { id: "add", type: "proc", x: 210, y: 244, t: "Total = Total + Num", next: "inc", act: st => { st.Total += st.Num; } },
+        { id: "inc", type: "proc", x: 210, y: 318, t: "Count = Count + 1", next: "d", act: st => { st.Count += 1; } },
+        { id: "d", type: "dec", x: 210, y: 404, t: "Count = 5?", yes: "out", no: "in" },
+        { id: "out", type: "io", x: 210, y: 500, t: "OUTPUT Total", next: "e", act: (st, io) => io.out(st.Total) },
+        { id: "e", type: "term", x: 210, y: 574, t: "END" }
+      ],
+      edges: [["s", "init"], ["init", "in"], ["in", "add"], ["add", "inc"], ["inc", "d"],
+              ["d", "out", "Yes"], ["d", "in", "No", "back"]],
+      cond: { d: st => st.Count === 5 }
+    },
+    {
+      name: "Largest of three",
+      about: "Two decisions in sequence. Trace it carefully when two of the numbers are equal.",
+      vars: ["A", "B", "C", "Big"],
+      inputs: [12, 40, 7],
+      nodes: [
+        { id: "s", type: "term", x: 210, y: 26, t: "BEGIN", next: "in" },
+        { id: "in", type: "io", x: 210, y: 96, t: "INPUT A, B, C", next: "set", act: (st, io) => { st.A = io.next(); st.B = io.next(); st.C = io.next(); } },
+        { id: "set", type: "proc", x: 210, y: 170, t: "Big = A", next: "d1", act: st => { st.Big = st.A; } },
+        { id: "d1", type: "dec", x: 210, y: 256, t: "B > Big?", yes: "sb", no: "d2" },
+        { id: "sb", type: "proc", x: 60, y: 256, t: "Big = B", next: "d2", act: st => { st.Big = st.B; } },
+        { id: "d2", type: "dec", x: 210, y: 360, t: "C > Big?", yes: "sc", no: "out" },
+        { id: "sc", type: "proc", x: 60, y: 360, t: "Big = C", next: "out", act: st => { st.Big = st.C; } },
+        { id: "out", type: "io", x: 210, y: 456, t: "OUTPUT Big", next: "e", act: (st, io) => io.out(st.Big) },
+        { id: "e", type: "term", x: 210, y: 530, t: "END" }
+      ],
+      edges: [["s", "in"], ["in", "set"], ["set", "d1"], ["d1", "sb", "Yes", "side"], ["d1", "d2", "No"],
+              ["sb", "d2", "", "rejoin"], ["d2", "sc", "Yes", "side"], ["d2", "out", "No"], ["sc", "out", "", "rejoin"]],
+      cond: { d1: st => st.B > st.Big, d2: st => st.C > st.Big }
+    }
+  ];
+
+  function flowSvg(fc, activeId, visited) {
+    const W = 440, H = Math.max.apply(null, fc.nodes.map(n => n.y)) + 80;
+    const shape = n => {
+      const w = n.type === "dec" ? 168 : 156, h = n.type === "dec" ? 66 : 42;
+      const x = n.x - w / 2, y = n.y - h / 2;
+      if (n.type === "term") return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + (h / 2) + '"/>';
+      if (n.type === "proc") return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="3"/>';
+      if (n.type === "io") return '<path d="M' + (x + 16) + ' ' + y + 'h' + w + 'l-16 ' + h + 'h-' + w + 'z"/>';
+      return '<path d="M' + n.x + ' ' + y + 'l' + (w / 2) + ' ' + (h / 2) + 'l-' + (w / 2) + ' ' + (h / 2) + 'l-' + (w / 2) + ' -' + (h / 2) + 'z"/>';
+    };
+    const byId = id => fc.nodes.find(n => n.id === id);
+    const half = n => (n.type === "dec" ? 33 : 21);
+
+    let svg = '<defs><marker id="fcArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
+              '<path d="M0 0 L10 5 L0 10 z" class="fc-head"/></marker></defs>';
+
+    fc.edges.forEach(([from, to, label, kind]) => {
+      const a = byId(from), b = byId(to);
+      let pts;
+      if (kind === "back") {
+        // return along the right, entering the target from its side so the
+        // arrow does not sit on top of the forward edge coming down into it
+        const x = a.x + 138;
+        pts = [[a.x + 84, a.y], [x, a.y], [x, b.y], [b.x + 80, b.y]];
+      } else if (kind === "left" || kind === "right") {
+        pts = [[a.x + (kind === "left" ? -84 : 84), a.y], [b.x, a.y], [b.x, b.y - half(b)]];
+      } else if (kind === "side") {
+        pts = [[a.x - 84, a.y], [b.x + 78, b.y]];
+      } else if (kind === "rejoin") {
+        pts = [[a.x, a.y + half(a)], [a.x, b.y], [b.x - 84, b.y]];
+      } else if (kind === "join") {
+        pts = [[a.x, a.y + half(a)], [a.x, b.y - 30], [b.x, b.y - 30], [b.x, b.y - half(b)]];
+      } else {
+        pts = [[a.x, a.y + half(a)], [b.x, b.y - half(b)]];
+      }
+      svg += '<polyline class="fc-wire" marker-end="url(#fcArrow)" points="' +
+             pts.map(p => p[0] + "," + p[1]).join(" ") + '"/>';
+      if (label) {
+        // a vertical first segment needs the label beside the line, not on it
+        const [x1, y1] = pts[0], [x2, y2] = pts[1];
+        const vertical = Math.abs(x2 - x1) < 4;
+        const lx = vertical ? x1 + 15 : x1 + (x2 - x1) / 2;
+        const ly = vertical ? y1 + (y2 - y1) / 2 + 4 : y1 - 7;
+        svg += '<text class="fc-yn" x="' + lx + '" y="' + ly + '">' + label + "</text>";
+      }
+    });
+
+    fc.nodes.forEach(n => {
+      const cls = "fc-node fc-" + n.type + (n.id === activeId ? " on" : "") + (visited.includes(n.id) ? " seen" : "");
+      svg += '<g class="' + cls + '">' + shape(n) +
+             '<text x="' + n.x + '" y="' + (n.y + 4) + '">' + esc(n.t) + "</text></g>";
+    });
+
+    return '<svg class="flowchart" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H +
+           '" role="img" aria-label="Flowchart for ' + esc(fc.name) + '">' + svg + "</svg>";
+  }
+
+  const flowchart = {
+    title: "Flowchart tracer", em: "\u{1F500}", topic: "7.2",
+    blurb: "Walk through a real flowchart one box at a time, watching the variables change. Predict the output before you start.",
+    render(el) {
+      let fi = 0, cur = null, state = {}, visited = [], out = [], queue = [], done = false, steps = 0;
+
+      el.innerHTML = `
+        <div class="field"><label for="fcPick">Flowchart</label><select id="fcPick">
+          ${FLOWCHARTS.map((f, i) => '<option value="' + i + '">' + esc(f.name) + "</option>").join("")}
+        </select></div>
+        <p id="fcAbout" style="font-size:13.5px;margin-top:-4px"></p>
+        <div class="flow-wrap">
+          <div class="flow-canvas" id="fcCanvas"></div>
+          <div class="flow-side">
+            <label>Input values</label>
+            <input class="input" id="fcIn" spellcheck="false">
+            <div class="btn-row">
+              <button class="btn" id="fcStep">Step</button>
+              <button class="btn sec" id="fcRun">Run to end</button>
+              <button class="btn sec" id="fcReset">Reset</button>
+            </div>
+            <label style="margin-top:10px">Variables</label>
+            <div class="table-wrap"><table class="mono" id="fcVars"></table></div>
+            <label style="margin-top:14px">Output</label>
+            <pre class="run-out" id="fcOut" style="min-height:70px"></pre>
+            <div id="fcNote"></div>
+          </div>
+        </div>`;
+
+      const byId = id => FLOWCHARTS[fi].nodes.find(n => n.id === id);
+
+      function reset() {
+        const fc = FLOWCHARTS[fi];
+        queue = q(el, "#fcIn").value.split(",").map(v => v.trim()).filter(Boolean).map(Number);
+        state = {}; fc.vars.forEach(v => { state[v] = "-"; });
+        visited = []; out = []; done = false; steps = 0;
+        cur = fc.nodes[0].id;
+        paint();
+        q(el, "#fcNote").innerHTML = "";
+      }
+
+      function paint() {
+        const fc = FLOWCHARTS[fi];
+        q(el, "#fcCanvas").innerHTML = flowSvg(fc, cur, visited);
+        q(el, "#fcVars").innerHTML = fc.vars.map(v =>
+          "<tr><td style='text-align:left'>" + v + "</td><td style='text-align:left'>" + esc(state[v]) + "</td></tr>").join("");
+        q(el, "#fcOut").textContent = out.length ? out.join("\n") : "(nothing output yet)";
+      }
+
+      function step() {
+        if (done) return false;
+        const fc = FLOWCHARTS[fi];
+        const n = byId(cur);
+        if (!n) { done = true; return false; }
+        visited.push(n.id);
+
+        const io = {
+          next: () => (queue.length ? queue.shift() : 0),
+          out: v => out.push(String(v))
+        };
+        if (n.act) n.act(state, io);
+
+        if (n.type === "dec") {
+          const yes = fc.cond[n.id](state);
+          cur = yes ? n.yes : n.no;
+          q(el, "#fcNote").innerHTML = '<div class="callout" style="margin-top:12px"><div class="ttl">Decision</div><p>' +
+            esc(n.t) + " is <b>" + (yes ? "true" : "false") + "</b>, so follow the <b>" + (yes ? "Yes" : "No") + "</b> branch.</p></div>";
+        } else if (n.type === "term" && !n.next) {
+          done = true;
+          cur = null;
+          q(el, "#fcNote").innerHTML = '<div class="callout tip" style="margin-top:12px"><div class="ttl">Finished</div><p>The flowchart reached END after ' +
+            steps + " steps. Output: " + (out.length ? esc(out.join(", ")) : "nothing") + "</p></div>";
+          Store.addXp(3);
+        } else {
+          cur = n.next;
+          q(el, "#fcNote").innerHTML = "";
+        }
+        steps++;
+        if (steps > 400) { done = true; }
+        paint();
+        return !done;
+      }
+
+      q(el, "#fcPick").onchange = e => { fi = +e.target.value; load(); };
+      q(el, "#fcStep").onclick = () => step();
+      q(el, "#fcRun").onclick = () => { let guard = 0; while (step() && guard++ < 400) {} };
+      q(el, "#fcReset").onclick = reset;
+      q(el, "#fcIn").onchange = reset;
+
+      function load() {
+        const fc = FLOWCHARTS[fi];
+        q(el, "#fcAbout").textContent = fc.about;
+        q(el, "#fcIn").value = fc.inputs.join(", ");
+        reset();
+      }
+      load();
+    }
+  };
+
+  return { convert, binlab, runner, scenario, filesize, charcodes, parity, fde, journey, logic, flowchart, sql, trace, threats, drill };
 })();

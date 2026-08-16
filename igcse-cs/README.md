@@ -17,7 +17,7 @@ USB stick, an email attachment or `file://` with no server and no internet conne
 - **212 exam-style questions**, at least five per subtopic. Multiple choice is marked automatically;
   written questions show a full mark scheme and model answer for you to mark yourself against.
   There are also 30 minute timed mocks for each paper.
-- **Fourteen interactive labs**, for the parts of the syllabus that only click when you can poke them:
+- **Fifteen interactive labs**, for the parts of the syllabus that only click when you can poke them:
 
   | Lab | Covers |
   |---|---|
@@ -26,12 +26,13 @@ USB stick, an email attachment or `file://` with no server and no internet conne
   | **Parity block check** | 2.2 find the corrupted bit from the row and column parity |
   | **Journey of a web page** | 5.1 step through DNS lookup to rendered page |
   | **Threat and defence drill** | 5.3 name the threat, then match the defence |
+  | **Flowchart tracer** | 7.2 step through a real flowchart, watching the variables change |
   | Number converter | 1.1 denary, binary and hex with live place value working |
   | Binary maths lab | 1.1 addition with carries and overflow, logical shifts, two's complement |
   | File size calculator | 1.2 image and sound sizes, every division shown |
   | Character codes | 1.2 text to ASCII, binary and hex |
   | Fetch decode execute | 3.1 step through the cycle, register by register |
-  | Logic lab | 10.1 truth tables from any expression, with intermediate gate columns |
+  | Logic lab | 10.1 **draws the circuit diagram** and the truth table from any expression |
   | SQL lab | 9.1 real queries against two sample tables, with tasks |
   | Trace table trainer | 7.3 fill in a trace table and get it checked cell by cell |
   | Speed drill | 1.1 sixty seconds of timed conversions |
@@ -44,6 +45,11 @@ USB stick, an email attachment or `file://` with no server and no internet conne
 - **Built for keyboard use**: `/` to search, `?` for the shortcut list, `g` then a letter to jump
   between sections, `j` and `k` to step through subtopics, `t` to switch theme. Long note pages get
   a contents rail, a reading progress bar and a copy button on every code block.
+- **Printable notes.** Any subtopic prints as clean revision notes, with the navigation, buttons
+  and tabs stripped out.
+- **Progress backup.** Progress lives in one browser, so the progress page gives you a backup code
+  to copy and paste onto another device. It is copy and paste rather than a file download because
+  some embedded viewers block a page from starting a download.
 
 ## Layout
 
@@ -57,7 +63,7 @@ igcse-cs/
     data/questions.js     the question bank
     store.js          progress, streak and card scheduling in localStorage
     pseudocode.js     tokeniser, parser, interpreter and static analysis for pseudocode
-    tools.js          the fourteen labs
+    tools.js          the fifteen labs
     quiz.js           quiz engine
     cards.js          flashcards
     app.js            router, chrome and pages
