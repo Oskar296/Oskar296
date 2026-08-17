@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>IGCSE Physics · Edexcel 4PH1 Study App</title>
+<meta name="description" content="A revision app covering the whole Pearson Edexcel International GCSE Physics (4PH1) specification: syllabus checklist, equations, core practicals, definitions, flashcards and quizzes."/>
+<meta name="theme-color" content="#0b1016"/>
+<link rel="stylesheet" href="./css/styles.css"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚛️</text></svg>"/>
+</head>
+<body>
+
+<!-- Shared arrowhead markers for the inline SVG diagrams. Markers do not inherit
+     the referencing element's stroke, so each is given its own colour in CSS. -->
+<svg id="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+    <marker id="ah-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+    <marker id="ah-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+  </defs>
+</svg>
+
+<header id="hdr">
+  <div class="hdr-in">
+    <div class="brand">
+      <span class="logo">⚛</span>
+      <span class="btxt">
+        <b>IGCSE Physics</b>
+        <i>Pearson Edexcel 4PH1 · Year 10</i>
+      </span>
+    </div>
+    <div class="hdr-prog" id="hdrProg" title="Overall progress"></div>
+    <div class="hdr-tools">
+      <input id="search" type="search" placeholder="Search the whole spec…" autocomplete="off" spellcheck="false"/>
+      <button class="ibtn" id="themeBtn" title="Switch light / dark">◐</button>
+    </div>
+  </div>
+  <nav id="tabs"></nav>
+</header>
+
+<main id="view"></main>
+
+<footer id="ftr">
+  <p>Content follows the Pearson Edexcel International GCSE Physics specification (4PH1, first teaching 2017). Always check the official specification and your most recent past papers for the definitive wording. Progress is saved in this browser only.</p>
+  <p><button class="linkbtn" id="resetBtn">Reset all progress</button></p>
+</footer>
+
+<div id="toast"></div>
+
+<script src="./js/data/spec-core.js"></script>
+<script src="./js/data/spec-1.js"></script>
+<script src="./js/data/spec-2.js"></script>
+<script src="./js/data/spec-3.js"></script>
+<script src="./js/data/spec-4.js"></script>
+<script src="./js/data/spec-5.js"></script>
+<script src="./js/data/spec-6.js"></script>
+<script src="./js/data/spec-7.js"></script>
+<script src="./js/data/spec-8.js"></script>
+<script src="./js/data/equations.js"></script>
+<script src="./js/data/practicals.js"></script>
+<script src="./js/data/glossary.js"></script>
+<script src="./js/data/questions.js"></script>
+<script src="./js/data/questions-2.js"></script>
+<script src="./js/data/exam-1-4.js"></script>
+<script src="./js/data/exam-5-8.js"></script>
+<script src="./js/data/technique.js"></script>
+<script src="./js/data/drills.js"></script>
+<script src="./js/data/diagrams.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
