@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>IGCSE Business Studies 0450 · Revision</title>
+<meta name="description" content="Revision app for Cambridge IGCSE Business Studies 0450: syllabus notes, flashcards, quizzes, exam technique and finance calculators."/>
+<meta name="theme-color" content="#0f172a"/>
+<link rel="stylesheet" href="./css/styles.css"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>"/>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header id="topbar">
+  <button id="navToggle" class="icon-btn" aria-label="Menu" aria-expanded="false">☰</button>
+  <a class="brand" href="#/">
+    <span class="brand-mark">0450</span>
+    <span class="brand-text">Business Studies</span>
+  </a>
+  <div class="spacer"></div>
+  <button id="searchBtn" class="icon-btn" aria-label="Search" title="Search (press /)">🔎</button>
+  <button id="themeBtn" class="icon-btn" aria-label="Toggle theme" title="Light / dark">◐</button>
+</header>
+
+<div id="shell">
+  <nav id="sidebar" aria-label="Sections">
+    <div class="nav-group">
+      <a href="#/" data-nav="home">🏠 <span>Dashboard</span></a>
+      <a href="#/notes" data-nav="notes">📖 <span>Notes</span></a>
+      <a href="#/cards" data-nav="cards">🗂 <span>Flashcards</span></a>
+      <a href="#/quiz" data-nav="quiz">✍️ <span>Quiz</span></a>
+      <a href="#/rush" data-nav="rush">⚡ <span>Exam Rush</span></a>
+      <a href="#/written" data-nav="written">📝 <span>Written practice</span></a>
+      <a href="#/cases" data-nav="cases">📋 <span>Case studies</span></a>
+      <a href="#/exam" data-nav="exam">🎯 <span>Exam technique</span></a>
+      <a href="#/tools" data-nav="tools">🧮 <span>Calculators</span></a>
+      <a href="#/glossary" data-nav="glossary">🔤 <span>Glossary</span></a>
+      <a href="#/achievements" data-nav="achievements">🏅 <span>Achievements</span></a>
+    </div>
+    <div class="nav-head">Syllabus</div>
+    <div class="nav-group" id="unitNav"></div>
+    <div class="nav-foot">
+      <button id="resetBtn" class="linkish">Reset my progress</button>
+    </div>
+  </nav>
+  <div id="scrim"></div>
+
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<div id="searchModal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Search">
+    <input id="searchInput" type="search" placeholder="Search notes, terms, topics…" autocomplete="off"/>
+    <div id="searchResults"></div>
+    <div class="modal-hint">Enter to open first result · Esc to close</div>
+  </div>
+</div>
+
+<script src="./js/store.js"></script>
+<script src="./js/diagrams.js"></script>
+<script src="./js/notes/u1.js"></script>
+<script src="./js/notes/u2.js"></script>
+<script src="./js/notes/u3.js"></script>
+<script src="./js/notes/u4.js"></script>
+<script src="./js/notes/u5.js"></script>
+<script src="./js/notes/u6.js"></script>
+<script src="./js/syllabus.js"></script>
+<script src="./js/glossary.js"></script>
+<script src="./js/quizbank.js"></script>
+<script src="./js/written.js"></script>
+<script src="./js/cases.js"></script>
+<script src="./js/exam.js"></script>
+<script src="./js/game.js"></script>
+<script src="./js/render.js"></script>
+<script src="./js/views-notes.js"></script>
+<script src="./js/views-cards.js"></script>
+<script src="./js/views-quiz.js"></script>
+<script src="./js/views-written.js"></script>
+<script src="./js/views-cases.js"></script>
+<script src="./js/views-game.js"></script>
+<script src="./js/views-tools.js"></script>
+<script src="./js/views-home.js"></script>
+<script src="./js/main.js"></script>
+</body>
+</html>

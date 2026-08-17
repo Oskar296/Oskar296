@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>IGCSE Revision</title>
+<meta name="description" content="Revision apps for Cambridge IGCSE subjects: syllabus notes, flashcards, quizzes and exam technique."/>
+<meta name="theme-color" content="#0e1220"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>"/>
+<style>
+:root{
+  --bg:#f6f7fb; --surface:#fff; --border:#dfe3ec; --text:#1a1f2b; --muted:#5c6478;
+  --accent:#2f5fe0; --accent-soft:#e6ecfd;
+  --shadow:0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0e1220; --surface:#161b2c; --border:#2a3149; --text:#e8ebf4; --muted:#a0a8bf;
+    --accent:#7b9cff; --accent-soft:#1d2745;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6}
+.wrap{max-width:880px;margin:0 auto;padding:56px 20px 90px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:34px;line-height:1.2;margin:6px 0 10px;letter-spacing:-.02em}
+.lead{color:var(--muted);font-size:17px;max-width:60ch;margin:0 0 34px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:38px 0 14px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+a.card{
+  display:block;text-decoration:none;color:inherit;background:var(--surface);
+  border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow);
+  transition:border-color .15s, transform .15s;
+}
+a.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card .ico{font-size:26px;line-height:1}
+.card .t{font-size:18px;font-weight:650;margin:10px 0 4px;letter-spacing:-.01em}
+.card .code{font-size:12.5px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+.card .d{font-size:14px;color:var(--muted);margin-top:8px}
+.card .pill{
+  display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-top:12px;
+}
+.soon{background:var(--surface);border:1px dashed var(--border);border-radius:16px;padding:20px 22px;opacity:.72}
+.soon .t{font-size:16px;font-weight:600;margin:8px 0 2px}
+.foot{margin-top:52px;font-size:13.5px;color:var(--muted)}
+.foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Cambridge IGCSE</div>
+  <h1>Revision, one subject at a time</h1>
+  <p class="lead">Syllabus-mapped notes, spaced-repetition flashcards, quizzes with worked explanations,
+  exam technique and calculators. Everything runs in the browser and saves your progress locally —
+  no account, no internet needed once loaded.</p>
+
+  <h2>Ready now</h2>
+  <div class="grid">
+    <a class="card" href="./business/">
+      <div class="ico">📊</div>
+      <div class="t">Business Studies</div>
+      <div class="code">0450 · Cambridge IGCSE</div>
+      <div class="d">All six units and 25 topics, with 242 key terms, 10 drawn diagrams,
+      120 quiz questions, 27 written questions with mark schemes, two full 80-mark case
+      studies, and break-even and ratio calculators.</div>
+      <div class="pill">Open</div>
+    </a>
+  </div>
+
+  <h2>Planned</h2>
+  <div class="grid">
+    <div class="soon"><div class="ico">🧮</div><div class="t">Mathematics</div><div class="code">0580</div></div>
+    <div class="soon"><div class="ico">⚗️</div><div class="t">Chemistry</div><div class="code">0620</div></div>
+    <div class="soon"><div class="ico">🧬</div><div class="t">Biology</div><div class="code">0610</div></div>
+    <div class="soon"><div class="ico">🔭</div><div class="t">Physics</div><div class="code">0625</div></div>
+    <div class="soon"><div class="ico">💹</div><div class="t">Economics</div><div class="code">0455</div></div>
+    <div class="soon"><div class="ico">💻</div><div class="t">Computer Science</div><div class="code">0478</div></div>
+    <div class="soon"><div class="ico">📚</div><div class="t">English Language</div><div class="code">0500</div></div>
+    <div class="soon"><div class="ico">🌍</div><div class="t">Geography</div><div class="code">0460</div></div>
+  </div>
+
+  <p class="foot">Written to match the published Cambridge syllabus, but it is not an official Cambridge
+  resource. Always check the current syllabus for your exam series at
+  <a href="https://www.cambridgeinternational.org/">cambridgeinternational.org</a>.</p>
+
+</div>
+</body>
+</html>
