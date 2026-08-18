@@ -2,17 +2,110 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta http-equiv="refresh" content="0; url=./xenoscope/"/>
-<title>XENOSCOPE</title>
-<link rel="canonical" href="./xenoscope/"/>
-<style>
-  html,body{margin:0;height:100%;background:#04090d;color:#5ef2d6;
-    font-family:ui-monospace,Menlo,Consolas,monospace;display:grid;place-items:center}
-  a{color:#7effc0}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Revision Desk · every IGCSE study app in one place</title>
+<meta name="description" content="One front door for the IGCSE revision apps: Biology 4BI1, Chemistry 0620, Physics 4PH1, Geography 0460, Computer Science 0478 and Business Studies 0450. Shows what you have done in each and what to revise next."/>
+<meta name="theme-color" content="#0d1117"/>
+<meta name="color-scheme" content="light dark"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>"/>
+<link rel="stylesheet" href="hub/css/styles.css"/>
 </head>
 <body>
-  <p>Loading <b>XENOSCOPE</b>… if it doesn't redirect, <a href="./xenoscope/">click here to play</a>.</p>
-  <script>location.replace('./xenoscope/');</script>
+<a class="skip" href="#subjects">Skip to the subjects</a>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <span class="brand">
+      <span class="brand-mark" aria-hidden="true">📚</span>
+      <span class="brand-text">
+        <b>Revision Desk</b>
+        <small>IGCSE · every app in one place</small>
+      </span>
+    </span>
+    <div class="top-actions">
+      <button type="button" id="backupBtn" class="btn ghost">Backup</button>
+      <button type="button" id="themeBtn" class="btn ghost icon" aria-label="Switch between light and dark">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M12 5a7 7 0 0 0 0 14z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <h1 id="greeting">Six subjects, one desk.</h1>
+    <p class="lead">
+      Every revision app built for these exams, with the progress each one has
+      saved in this browser. Pick a subject, or start with what the desk thinks
+      is furthest behind.
+    </p>
+    <div class="totals" id="totals"></div>
+  </section>
+
+  <section class="next" id="next" hidden></section>
+
+  <h2 id="subjects">Subjects</h2>
+  <div class="grid" id="grid"></div>
+
+  <section class="tail">
+    <h2>Also here</h2>
+    <a class="side-card" href="xenoscope/">
+      <span class="side-mark" aria-hidden="true">🔬</span>
+      <span class="side-text">
+        <b>Xenoscope</b>
+        <small>Not revision. A field xenobiology game: culture alien organisms, run assays, keep the survey log.</small>
+      </span>
+      <span class="side-go" aria-hidden="true">→</span>
+    </a>
+  </section>
+
+  <footer class="foot">
+    <p>
+      <b>Where the numbers come from.</b> Each app saves your progress in this
+      browser, on this device. The desk reads those saves to fill in the cards;
+      it never sends anything anywhere, and it does not change an app's progress
+      unless you restore a backup here.
+    </p>
+    <p>
+      A different browser, a private window, or another device starts empty.
+      <button type="button" class="linkish" data-open-backup>Take a backup</button>
+      to carry your progress across.
+    </p>
+    <p class="keys">
+      Keys: <kbd>1</kbd>–<kbd>6</kbd> open a subject · <kbd>T</kbd> switches theme
+    </p>
+  </footer>
+</main>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">Backup and restore</h2>
+      <button type="button" class="btn ghost icon" id="sheetClose" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p>
+        One file holds the progress from all six apps. Save it somewhere you keep
+        things, then restore it in any browser to pick up where you left off.
+      </p>
+      <div class="sheet-row">
+        <button type="button" class="btn primary" id="exportBtn">Download backup</button>
+        <button type="button" class="btn" id="importBtn">Restore from file</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden/>
+      </div>
+      <p class="warn">
+        Restoring replaces the progress of every subject in the file. It cannot be undone.
+      </p>
+      <p class="sheet-note" id="sheetNote" role="status"></p>
+    </div>
+  </div>
+</div>
+
+<script src="hub/js/registry.js"></script>
+<script src="hub/js/main.js"></script>
 </body>
 </html>
