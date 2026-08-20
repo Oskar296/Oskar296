@@ -444,6 +444,29 @@ tr:last-child td{border-bottom:none}
 }
 ul.earn li{margin:7px 0}
 
+/* ---------- definitions: creditable elements ---------- */
+.g-def{font-size:14.5px;line-height:1.55}
+.g-keys{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline}
+.k-lab{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;
+  color:var(--good);flex:0 0 auto;
+}
+.k-chip{
+  display:inline-block;font-size:12.5px;padding:2px 9px;border-radius:999px;
+  background:var(--good-soft);color:var(--good);border:1px solid transparent;
+}
+.k-note{
+  margin-top:8px;font-size:12.5px;color:var(--warn);line-height:1.5;
+}
+.deck .keys{
+  margin:16px auto 0;max-width:46ch;text-align:left;padding:12px 15px;
+  background:var(--good-soft);border-radius:10px;
+}
+.deck .keys .k-lab{display:block;margin-bottom:6px}
+.deck .keys ul{margin:0;padding-left:19px}
+.deck .keys li{font-size:14px;color:var(--good);margin:3px 0}
+.deck .k-note{max-width:46ch;margin:12px auto 0;text-align:left}
+
 /* ---------- written practice ---------- */
 .stem{
   background:var(--surface-2); border-left:4px solid var(--muted);

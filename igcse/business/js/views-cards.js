@@ -108,6 +108,11 @@ V.afterCards = function (root) {
     } else {
       h += '<div class="side">Definition</div><div class="front" style="font-size:19px">' + R.esc(g.t) + '</div>' +
         '<div class="back">' + R.esc(g.d) + '</div>';
+      if (g.keys && g.keys.length) {
+        h += '<div class="keys"><span class="k-lab">Your answer must contain</span><ul>' +
+          g.keys.map(function (k) { return '<li>' + R.esc(k) + '</li>'; }).join('') + '</ul></div>';
+      }
+      if (g.note) h += '<div class="k-note">⚠ ' + R.esc(g.note) + '</div>';
     }
     h += '</div>';
     if (state.flipped) {

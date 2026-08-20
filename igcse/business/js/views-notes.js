@@ -76,7 +76,13 @@ V.topic = function (id) {
     if (terms.length) {
       h += '<h2>Key terms in this topic</h2><div class="twrap"><table><tbody>';
       terms.forEach(function (g) {
-        h += '<tr><th style="width:30%">' + R.esc(g.t) + '</th><td>' + R.esc(g.d) + '</td></tr>';
+        var cell = '<div class="g-def">' + R.esc(g.d) + '</div>';
+        if (g.keys && g.keys.length) {
+          cell += '<div class="g-keys"><span class="k-lab">Must contain</span> ' +
+            g.keys.map(function (k) { return '<span class="k-chip">' + R.esc(k) + '</span>'; }).join(' ') + '</div>';
+        }
+        if (g.note) cell += '<div class="k-note">\u26a0 ' + R.esc(g.note) + '</div>';
+        h += '<tr><th style="width:26%">' + R.esc(g.t) + '</th><td>' + cell + '</td></tr>';
       });
       h += '</tbody></table></div>';
       h += '<div class="btnrow"><a class="btn sm" href="#/cards?topic=' + t.id + '">Drill these as flashcards</a>' +
@@ -153,8 +159,8 @@ V.afterTopic = function (root) {
 
 V.glossary = function () {
   var h = '<div class="eyebrow">Reference</div><h1>Glossary</h1>' +
-    '<p class="lead">' + BS.glossary.length + ' key terms. Definitions are written the way an examiner wants to read them — ' +
-    'short, precise, and using the exact wording the mark scheme looks for.</p>';
+    '<p class="lead">' + BS.glossary.length + ' key terms, written the way an examiner wants to read them: one precise sentence, ' +
+    'no padding. Under each is the list of elements a mark scheme credits — include all of them and the definition cannot be marked down.</p>';
 
   h += '<div class="field"><input id="glosSearch" type="search" placeholder="Search terms and definitions…" autocomplete="off"/></div>';
   h += '<div class="chips" id="glosChips"><button class="chip" data-u="0" aria-pressed="true">All units</button>';
@@ -189,9 +195,15 @@ V.afterGlossary = function (root) {
       if (!byUnit[u.n]) return;
       h += '<h2>' + u.n + '. ' + R.esc(u.title) + '</h2><div class="twrap"><table><tbody>';
       byUnit[u.n].forEach(function (g) {
-        h += '<tr><th style="width:30%">' + R.esc(g.t) +
+        var cell = '<div class="g-def">' + R.esc(g.d) + '</div>';
+        if (g.keys && g.keys.length) {
+          cell += '<div class="g-keys"><span class="k-lab">Must contain</span> ' +
+            g.keys.map(function (k) { return '<span class="k-chip">' + R.esc(k) + '</span>'; }).join(' ') + '</div>';
+        }
+        if (g.note) cell += '<div class="k-note">\u26a0 ' + R.esc(g.note) + '</div>';
+        h += '<tr><th style="width:26%">' + R.esc(g.t) +
           '<div style="font-weight:400"><a class="small" href="#/notes/' + g.tp + '">' + g.tp + '</a></div></th>' +
-          '<td>' + R.esc(g.d) + '</td></tr>';
+          '<td>' + cell + '</td></tr>';
       });
       h += '</tbody></table></div>';
     });
