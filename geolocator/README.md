@@ -19,6 +19,14 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ## Try it without installing anything
 
+**[Read a photo's location in the browser](https://claude.ai/code/artifact/c0d24141-796a-4272-aa0b-23fed54f8d14)** —
+drop in a photo and it pulls the GPS tag straight out of the file, names the
+coordinates against an embedded gazetteer and plots them. Entirely client-side:
+nothing is uploaded. Only works on photos that still carry their metadata.
+
+For everything else the models have to look at the picture itself, which needs a
+GPU and a couple of gigabytes of weights:
+
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Oskar296/Oskar296/blob/claude%2Flocation-guessing-ai-w2wzzx/geolocator/notebooks/Geolocator.ipynb)
 
 Opens a notebook that installs itself, loads the models on a free GPU and lets
@@ -215,6 +223,7 @@ geolocator/
   server.py      stdlib web server
   cli.py         command line
   web/index.html drag-and-drop UI
+  web/exif.js    browser-side EXIF GPS parser
 notebooks/       run it in Colab, no install
 ```
 
