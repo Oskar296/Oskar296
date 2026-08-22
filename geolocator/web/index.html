@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geolocator</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #fff; --ink: #1a1a19; --muted: #6b6b66;
+    --line: #e2e2dd; --accent: #b4513a; --shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --panel: #1f1e1c; --ink: #ececea; --muted: #9a9a93;
+      --line: #302e2b; --accent: #e08a70; --shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  #drop {
+    border: 1.5px dashed var(--line); border-radius: 12px; background: var(--panel);
+    padding: 44px 20px; text-align: center; cursor: pointer; transition: .15s;
+  }
+  #drop:hover, #drop.over { border-color: var(--accent); }
+  #drop.over { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+  #drop p { margin: 0; color: var(--muted); }
+  #drop strong { color: var(--ink); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 22px; margin-top: 20px; box-shadow: var(--shadow);
+  }
+  .place { font-size: 21px; font-weight: 600; margin: 0 0 2px; }
+  .coords { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 14px; }
+  .band { margin-top: 10px; font-size: 14px; color: var(--muted); }
+  .meter { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .meter > i { display: block; height: 100%; background: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td:first-child { color: var(--muted); width: 34%; padding-right: 14px; }
+  tr:last-child td { border-bottom: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+       color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  .grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; margin-top: 20px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  iframe { width: 100%; height: 260px; border: 0; border-radius: 8px; background: var(--line); }
+  .rationale { white-space: pre-wrap; font-size: 14px; color: var(--ink); margin: 0; }
+  a { color: var(--accent); }
+  .warn { color: var(--muted); font-size: 13px; margin-top: 14px; }
+  .err { color: var(--accent); }
+  #preview { max-width: 100%; max-height: 220px; border-radius: 8px; display: block; }
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--line);
+             border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
+             vertical-align: -2px; margin-right: 7px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Geolocator</h1>
+  <p class="sub">Estimate where a photograph was taken.</p>
+
+  <div id="drop" tabindex="0" role="button" aria-label="Choose or drop an image">
+    <p><strong>Drop a photo here</strong> or click to choose one</p>
+  </div>
+  <input id="file" type="file" accept="image/*" class="hidden">
+
+  <div id="status" class="card hidden"></div>
+  <div id="out"></div>
+</div>
+
+<script>
+const drop = document.getElementById('drop');
+const file = document.getElementById('file');
+const status = document.getElementById('status');
+const out = document.getElementById('out');
+
+drop.addEventListener('click', () => file.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('over');
+  if (e.dataTransfer.files.length) send(e.dataTransfer.files[0]);
+});
+file.addEventListener('change', () => { if (file.files.length) send(file.files[0]); });
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function show(msg, isError) {
+  status.className = 'card' + (isError ? ' err' : '');
+  status.innerHTML = msg;
+}
+
+async function send(f) {
+  if (!f.type.startsWith('image/')) { show('That file is not an image.', true); out.innerHTML = ''; return; }
+  out.innerHTML = '';
+  show('<span class="spinner"></span>Reading the image&hellip;');
+  const url = URL.createObjectURL(f);
+  try {
+    const res = await fetch('/api/locate', {
+      method: 'POST',
+      headers: { 'Content-Type': f.type },
+      body: f
+    });
+    const data = await res.json();
+    if (!res.ok) { show(esc(data.error || 'Something went wrong.'), true); return; }
+    status.className = 'hidden';
+    render(data, url);
+  } catch (err) {
+    show(esc('Request failed: ' + err.message), true);
+  }
+}
+
+function render(d, previewUrl) {
+  const conf = Math.round((d.confidence || 0) * 100);
+  const alts = (d.alternatives || []).map(a =>
+    `<tr><td>${Math.round((a.weight || 0) * 100)}%</td><td>${esc(a.label || (a.lat.toFixed(3) + ', ' + a.lon.toFixed(3)))}</td></tr>`
+  ).join('');
+
+  const cues = [];
+  for (const h of d.heads || []) {
+    const c = (h.evidence || {}).cues;
+    if (!c) continue;
+    for (const [k, v] of Object.entries(c)) {
+      const text = Array.isArray(v) ? v.join(', ') : v;
+      if (!text || text === 'unknown' || text === 'none') continue;
+      cues.push(`<tr><td>${esc(k.replace(/_/g, ' '))}</td><td>${esc(text)}</td></tr>`);
+    }
+  }
+
+  // A small bbox around the point; the embed needs a box, not a centre.
+  const pad = Math.max(0.05, Math.min(12, (d.radius_km || 100) / 111));
+  const bbox = [d.lon - pad, d.lat - pad, d.lon + pad, d.lat + pad].join('%2C');
+
+  out.innerHTML = `
+    <div class="card">
+      <p class="place">${esc(d.description || 'Unnamed location')}</p>
+      <div class="coords">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</div>
+      <div class="band">within roughly ${Math.round(d.radius_km).toLocaleString()} km &middot; ${conf}% confidence inside 200 km</div>
+      <div class="meter"><i style="width:${conf}%"></i></div>
+      <div class="band"><a href="https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=11/${d.lat}/${d.lon}" target="_blank" rel="noopener">Open in OpenStreetMap</a></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Map</h2>
+        <iframe loading="lazy" title="Map of the predicted location"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${d.lat}%2C${d.lon}"></iframe>
+      </div>
+      <div class="card">
+        <h2>Your image</h2>
+        <img id="preview" src="${previewUrl}" alt="The photograph you supplied">
+      </div>
+    </div>
+
+    ${alts ? `<div class="card"><h2>Other possibilities</h2><table>${alts}</table></div>` : ''}
+    ${cues.length ? `<div class="card"><h2>Visual evidence</h2><table>${cues.join('')}</table></div>` : ''}
+    ${d.rationale ? `<div class="card"><h2>Reasoning</h2><p class="rationale">${esc(d.rationale)}</p></div>` : ''}
+    ${(d.warnings || []).length ? `<p class="warn">${d.warnings.map(esc).join('<br>')}</p>` : ''}
+  `;
+}
+</script>
+</body>
+</html>

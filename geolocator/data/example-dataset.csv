@@ -1,0 +1,6 @@
+# Ground-truth dataset for `geolocate eval`.
+# Paths are relative to this file. Replace these rows with your own.
+image,lat,lon
+images/rome-trastevere.jpg,41.8893,12.4692
+images/stockholm-gamlastan.jpg,59.3251,18.0711
+images/kyoto-gion.jpg,35.0037,135.7788
