@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from . import exif, places
+from . import exif, places, rerank
 from .fusion import FusionConfig, fuse
+from .rerank import RerankConfig, apply_country_prior
 from .retrieval import ModelUnavailable, RetrievalConfig, RetrievalHead, load_image
 from .reasoner import ReasonerConfig, ReasonerHead, ReasonerUnavailable
 from .types import HeadOutput, Prediction
@@ -18,6 +19,7 @@ class PredictorConfig:
     # Off unless credentials exist; the caller can force it on.
     use_reasoner: bool | None = None
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+    rerank: RerankConfig = field(default_factory=RerankConfig)
     reasoner: ReasonerConfig = field(default_factory=ReasonerConfig)
     fusion: FusionConfig = field(default_factory=FusionConfig)
 
@@ -70,15 +72,22 @@ class Geolocator:
             if found is not None:
                 heads.append(found)
 
+        want_reasoner = self._reasoner_enabled()
+
+        retrieval_out: HeadOutput | None = None
         if self.config.use_retrieval:
             try:
-                heads.append(self.retrieval_head.predict(image))
+                # Pull a deeper pool when the reasoner may re-rank it; there is
+                # no point promoting a candidate that was never retrieved.
+                k = self.config.retrieval.pool_k if want_reasoner else None
+                retrieval_out = self.retrieval_head.predict(image, k=k)
             except ModelUnavailable as exc:
                 self.warnings.append(f"retrieval head unavailable: {exc}")
 
-        if self._reasoner_enabled():
+        reasoner_out: HeadOutput | None = None
+        if want_reasoner:
             try:
-                heads.append(self.reasoner_head.predict(image))
+                reasoner_out = self.reasoner_head.predict(image)
             except ReasonerUnavailable as exc:
                 self.warnings.append(f"reasoning head unavailable: {exc}")
         else:
@@ -86,6 +95,24 @@ class Geolocator:
                 "reasoning head disabled: set ANTHROPIC_API_KEY to enable it "
                 "(it is the single largest accuracy gain in this pipeline)"
             )
+
+        if retrieval_out is not None:
+            if reasoner_out is not None:
+                retrieval_out, report = apply_country_prior(
+                    retrieval_out, reasoner_out, self.config.rerank
+                )
+                if not report.get("applied"):
+                    retrieval_out.candidates = retrieval_out.candidates[
+                        : self.config.retrieval.top_k
+                    ]
+            else:
+                retrieval_out.candidates = retrieval_out.candidates[
+                    : self.config.retrieval.top_k
+                ]
+            heads.append(retrieval_out)
+
+        if reasoner_out is not None:
+            heads.append(reasoner_out)
 
         if not heads:
             raise RuntimeError(

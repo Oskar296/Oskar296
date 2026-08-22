@@ -14,7 +14,8 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_INDEX = os.path.normpath(os.path.join(_HERE, "..", "web", "index.html"))
+# Shipped inside the package: a pip install has no repo root to look up into.
+_INDEX = os.path.join(_HERE, "web", "index.html")
 
 # 25 MB: comfortably above any phone photo, low enough to bound memory.
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024

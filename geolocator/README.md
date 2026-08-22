@@ -17,6 +17,16 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ---
 
+## Try it without installing anything
+
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Oskar296/Oskar296/blob/claude%2Flocation-guessing-ai-w2wzzx/geolocator/notebooks/Geolocator.ipynb)
+
+Opens a notebook that installs itself, loads the models on a free GPU and lets
+you drop in a photo. Nothing touches your machine. Add an `ANTHROPIC_API_KEY`
+in Colab's Secrets panel to switch the reasoning head on.
+
+---
+
 ## Install
 
 ```bash
@@ -199,11 +209,13 @@ geolocator/
   reasoner.py    Claude vision head (cue extraction, structured output)
   exif.py        GPS metadata head
   places.py      offline reverse geocoding
+  rerank.py      country-prior re-ranking of retrieval candidates
   predictor.py   orchestration and graceful degradation
   evaluate.py    IM2GPS metrics, GeoGuessr scoring, calibration
   server.py      stdlib web server
   cli.py         command line
-web/index.html   drag-and-drop UI
+  web/index.html drag-and-drop UI
+notebooks/       run it in Colab, no install
 ```
 
 Copyright © 2026 Oskar Lindström. All rights reserved — matching the licence

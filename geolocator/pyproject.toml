@@ -32,5 +32,8 @@ geolocate = "geolocator.cli:main"
 [tool.setuptools]
 packages = ["geolocator"]
 
+[tool.setuptools.package-data]
+geolocator = ["web/*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

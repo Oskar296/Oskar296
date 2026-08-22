@@ -22,8 +22,9 @@ class _FakeHead:
         self.out = out
         self.calls = 0
 
-    def predict(self, image):
+    def predict(self, image, k=None):
         self.calls += 1
+        self.pool_k = k
         if isinstance(self.out, Exception):
             raise self.out
         return self.out
@@ -139,3 +140,51 @@ def test_prediction_serialises_to_json():
     text = json.dumps(payload)  # must not raise
     assert json.loads(text)["place"]["country_code"] == "SE"
     assert set(payload) >= {"lat", "lon", "radius_km", "confidence", "alternatives", "heads"}
+
+
+def test_deep_pool_requested_only_when_the_reasoner_can_rerank():
+    """Pulling 256 candidates is only worth it if something will re-rank them."""
+    loc = _locator(
+        retrieval=_head("retrieval", *STOCKHOLM),
+        reasoner=_head("reasoner", *STOCKHOLM),
+        use_reasoner=True,
+    )
+    loc.locate_image(Image.new("RGB", (32, 32)))
+    assert loc._retrieval.pool_k == 256
+
+    solo = _locator(retrieval=_head("retrieval", *STOCKHOLM), use_reasoner=False)
+    solo.locate_image(Image.new("RGB", (32, 32)))
+    assert solo._retrieval.pool_k is None
+
+
+def test_country_prior_moves_the_answer_end_to_end():
+    """Retrieval slightly favours Finland; the reasoner has read Swedish."""
+    retrieval = HeadOutput(
+        "retrieval",
+        [
+            GeoCandidate(60.17, 24.94, 0.55, 50.0, "retrieval"),  # Helsinki
+            GeoCandidate(59.33, 18.06, 0.45, 50.0, "retrieval"),  # Stockholm
+        ],
+    )
+    reasoner = HeadOutput(
+        "reasoner",
+        [GeoCandidate(59.0, 17.5, 1.0, 400.0, "reasoner")],
+        evidence={"countries": [{"name": "Sweden", "iso2": "SE", "probability": 0.95}]},
+    )
+    loc = _locator(retrieval=retrieval, reasoner=reasoner, use_reasoner=True)
+    pred = loc.locate_image(Image.new("RGB", (32, 32)))
+    assert pred.place.country_code == "SE"
+    head = next(h for h in pred.heads if h.name == "retrieval")
+    assert head.evidence["country_rerank"]["applied"] is True
+
+
+def test_untrimmed_pool_is_cut_back_when_the_reasoner_dies():
+    """A 256-candidate pool must not leak into fusion if re-ranking never ran."""
+    pool = HeadOutput(
+        "retrieval",
+        [GeoCandidate(59.0 + i * 0.01, 18.0, 1.0 / 300, 50.0, "retrieval") for i in range(300)],
+    )
+    loc = _locator(retrieval=pool, reasoner=ReasonerUnavailable("down"), use_reasoner=True)
+    pred = loc.locate_image(Image.new("RGB", (32, 32)))
+    head = next(h for h in pred.heads if h.name == "retrieval")
+    assert len(head.candidates) == 24

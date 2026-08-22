@@ -32,6 +32,9 @@ class ModelUnavailable(RuntimeError):
 @dataclass
 class RetrievalConfig:
     top_k: int = 24
+    # Deeper pool pulled before cross-head re-ranking, which can only promote a
+    # candidate it was actually given. Trimmed back to top_k afterwards.
+    pool_k: int = 256
     # >1 flattens the peaked gallery softmax into something fusable.
     temperature: float = 2.0
     # Centre crop plus four corners, each optionally flipped.
@@ -191,7 +194,7 @@ class RetrievalHead:
             mean = torch.nn.functional.normalize(feats.mean(dim=0, keepdim=True), dim=1)
         return mean
 
-    def predict(self, image) -> HeadOutput:
+    def predict(self, image, k: int | None = None) -> HeadOutput:
         import torch
 
         self.load()
@@ -200,7 +203,7 @@ class RetrievalHead:
         logits = logit_scale * (embedding @ self._gallery_feats.t())
         probs = torch.softmax(logits / max(1e-6, self.config.temperature), dim=-1)[0]
 
-        k = min(self.config.top_k, probs.shape[0])
+        k = min(k or self.config.top_k, probs.shape[0])
         top = torch.topk(probs, k)
         candidates: list[GeoCandidate] = []
         for prob, idx in zip(top.values.tolist(), top.indices.tolist()):

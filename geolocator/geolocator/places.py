@@ -29,6 +29,40 @@ def _load_country_names() -> dict[str, str]:
     return _COUNTRIES
 
 
+def reverse_many(coords: list[tuple[float, float]]) -> list[Place]:
+    """Reverse geocode many points in one query.
+
+    reverse_geocoder builds a KD-tree over the whole gazetteer, so one batched
+    call costs barely more than a single lookup and far less than N of them.
+    """
+    global _SEARCH
+    if not coords:
+        return []
+    try:
+        import reverse_geocoder as rg
+
+        if _SEARCH is None:
+            _SEARCH = rg.RGeocoder(mode=1, verbose=False)
+        hits = _SEARCH.query(list(coords))
+    except Exception:  # noqa: BLE001
+        return [Place() for _ in coords]
+
+    names = _load_country_names()
+    out: list[Place] = []
+    for hit in hits:
+        cc = hit.get("cc", "")
+        out.append(
+            Place(
+                name=hit.get("name", ""),
+                admin1=hit.get("admin1", ""),
+                admin2=hit.get("admin2", ""),
+                country_code=cc,
+                country=names.get(cc, cc),
+            )
+        )
+    return out
+
+
 def reverse(lat: float, lon: float) -> Place:
     """Nearest populated place to a coordinate. Returns an empty Place on failure."""
     global _SEARCH
