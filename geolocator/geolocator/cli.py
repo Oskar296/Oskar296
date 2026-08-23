@@ -117,6 +117,35 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_benchmark(args) -> int:
+    """Download a labelled set from Street View, then optionally score against it."""
+    from .benchmark import BenchmarkConfig, BenchmarkError, build
+
+    cfg = BenchmarkConfig(
+        n=args.count, seed=args.seed, radius_m=args.radius, api_key=args.google_key or ""
+    )
+
+    def progress(done, total, pano):
+        print(f"  [{done}/{total}] {pano['lat']:.4f}, {pano['lon']:.4f}", file=sys.stderr)
+
+    try:
+        csv_path = build(args.out, cfg, progress)
+    except BenchmarkError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"\nwrote {csv_path}")
+    if not args.score:
+        print(f"score it with: geolocate eval {csv_path}")
+        return 0
+
+    args.dataset = str(csv_path)
+    args.limit = 0
+    args.quiet = False
+    args.out = args.report
+    return cmd_eval(args)
+
+
 def cmd_key(args) -> int:
     """Save an API key, so nobody has to work out where the file goes."""
     import getpass
@@ -196,6 +225,21 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--quiet", action="store_true")
     e.set_defaults(func=cmd_eval)
 
+    bm = sub.add_parser(
+        "benchmark",
+        help="build a labelled test set from Street View and score against it",
+        parents=[common],
+    )
+    bm.add_argument("--out", default="benchmark", help="directory to write into")
+    bm.add_argument("-n", "--count", type=int, default=50, help="how many images")
+    bm.add_argument("--seed", type=int, default=0)
+    bm.add_argument("--radius", type=int, default=50000,
+                    help="metres a sampled point may snap to find a panorama")
+    bm.add_argument("--google-key", default=None, help="overrides GOOGLE_MAPS_API_KEY")
+    bm.add_argument("--score", action="store_true", help="run the evaluation straight after")
+    bm.add_argument("--report", default="", help="write the JSON report here")
+    bm.set_defaults(func=cmd_benchmark)
+
     k = sub.add_parser("key", help="save your Anthropic API key", parents=[common])
     k.add_argument("--show", action="store_true", help="report whether a key is set")
     k.set_defaults(func=cmd_key)
@@ -217,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
 
     # Allow `geolocate photo.jpg` as shorthand for `geolocate predict photo.jpg`.
-    commands = {"predict", "eval", "serve", "key"}
+    commands = {"predict", "eval", "serve", "key", "benchmark"}
     if argv and not argv[0].startswith("-") and argv[0] not in commands:
         argv.insert(0, "predict")
 

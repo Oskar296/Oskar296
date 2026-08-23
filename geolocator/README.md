@@ -121,6 +121,30 @@ Runner-up modes are reported as alternatives instead.
 
 ---
 
+## Measuring it
+
+Guessing at one photo tells you nothing. Build a real labelled set from Street
+View and score against it:
+
+```bash
+# in .env, alongside your Anthropic key
+GOOGLE_MAPS_API_KEY=...
+
+geolocate benchmark -n 100 --score
+```
+
+That samples random points over the globe with equal area, snaps each to the
+nearest panorama, and writes the images out with **the panorama's own
+coordinates** as ground truth, so the labels are exact. Then it reports
+accuracy at the IM2GPS thresholds and checks whether the uncertainty radius is
+honest.
+
+The metadata lookups used to find panoramas are free; only the image requests
+are billed. Enable *Street View Static API* on the key.
+
+To re-score an existing set, or to score your own photos, put them in a CSV
+with `image,lat,lon` columns and run `geolocate eval mydata.csv`.
+
 ## Accuracy — what to actually expect
 
 Planet-scale geolocation is not solved, and no system reaches street level
@@ -223,6 +247,7 @@ geolocator/
   evaluate.py    IM2GPS metrics, GeoGuessr scoring, calibration
   server.py      stdlib web server
   env.py         .env loading
+  benchmark.py   builds a labelled set from Street View
   cli.py         command line
   web/index.html drag-and-drop UI
   web/exif.js    browser-side EXIF GPS parser
