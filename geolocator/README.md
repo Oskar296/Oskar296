@@ -29,9 +29,14 @@ GPU and a couple of gigabytes of weights:
 
 [![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Oskar296/Oskar296/blob/claude%2Flocation-guessing-ai-w2wzzx/geolocator/notebooks/Geolocator.ipynb)
 
-Opens a notebook that installs itself, loads the models on a free GPU and lets
-you drop in a photo. Nothing touches your machine. Add an `ANTHROPIC_API_KEY`
-in Colab's Secrets panel to switch the reasoning head on.
+Press **Runtime > Run all**, wait about two minutes, then upload your photo in
+the bottom cell. Runs the real models on a free GPU; nothing touches your
+machine. Add an `ANTHROPIC_API_KEY` in Colab's Secrets panel to switch the
+reasoning head on — that is the half that reads signage, and it is where most
+of the accuracy comes from.
+
+Locally, `geolocate serve` gives you the same drag-and-drop box at
+`localhost:8000` with the full pipeline behind it.
 
 ---
 
