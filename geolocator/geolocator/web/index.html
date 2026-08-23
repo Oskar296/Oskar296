@@ -6,166 +6,177 @@
 <title>Geolocator</title>
 <style>
   :root {
-    --bg: #f6f6f4; --panel: #fff; --ink: #1a1a19; --muted: #6b6b66;
-    --line: #e2e2dd; --accent: #b4513a; --shadow: 0 1px 3px rgba(0,0,0,.06);
+    --paper:#e9edee; --raised:#f4f7f7; --ink:#16242b; --muted:#5c7079;
+    --line:#c9d3d6; --accent:#a8722c; --accent-soft:rgba(168,114,44,.10);
+    --bad:#9b3a2f;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161614; --panel: #1f1e1c; --ink: #ececea; --muted: #9a9a93;
-      --line: #302e2b; --accent: #e08a70; --shadow: 0 1px 3px rgba(0,0,0,.3);
-    }
+  @media (prefers-color-scheme:dark){
+    :root{--paper:#0e181c;--raised:#16242a;--ink:#dce5e7;--muted:#8fa4ac;
+      --line:#26363c;--accent:#d69a4e;--accent-soft:rgba(214,154,78,.12);--bad:#e0806e;}
   }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
-  }
-  .wrap { max-width: 940px; margin: 0 auto; padding: 40px 20px 80px; }
-  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -.01em; }
-  .sub { color: var(--muted); margin: 0 0 28px; }
-  #drop {
-    border: 1.5px dashed var(--line); border-radius: 12px; background: var(--panel);
-    padding: 44px 20px; text-align: center; cursor: pointer; transition: .15s;
-  }
-  #drop:hover, #drop.over { border-color: var(--accent); }
-  #drop.over { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
-  #drop p { margin: 0; color: var(--muted); }
-  #drop strong { color: var(--ink); }
-  .card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-    padding: 20px 22px; margin-top: 20px; box-shadow: var(--shadow);
-  }
-  .place { font-size: 21px; font-weight: 600; margin: 0 0 2px; }
-  .coords { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); font-size: 14px; }
-  .band { margin-top: 10px; font-size: 14px; color: var(--muted); }
-  .meter { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 8px; }
-  .meter > i { display: block; height: 100%; background: var(--accent); }
-  table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
-  td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  td:first-child { color: var(--muted); width: 34%; padding-right: 14px; }
-  tr:last-child td { border-bottom: 0; }
-  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
-       color: var(--muted); margin: 0 0 8px; font-weight: 600; }
-  .grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; margin-top: 20px; }
-  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-  iframe { width: 100%; height: 260px; border: 0; border-radius: 8px; background: var(--line); }
-  .rationale { white-space: pre-wrap; font-size: 14px; color: var(--ink); margin: 0; }
-  a { color: var(--accent); }
-  .warn { color: var(--muted); font-size: 13px; margin-top: 14px; }
-  .err { color: var(--accent); }
-  #preview { max-width: 100%; max-height: 220px; border-radius: 8px; display: block; }
-  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--line);
-             border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite;
-             vertical-align: -2px; margin-right: 7px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .hidden { display: none; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:820px;margin:0 auto;padding:36px 20px 80px}
+  h1{font-size:26px;margin:0 0 3px;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin:0 0 22px;font-size:15px}
+
+  .banner{border:1px solid var(--line);border-left:2px solid var(--accent);
+    background:var(--accent-soft);padding:14px 16px;margin:0 0 18px;font-size:14.5px}
+  .banner code{font-family:var(--mono);font-size:13px;background:var(--raised);
+    padding:1px 5px;border-radius:2px}
+  .banner b{font-weight:600}
+
+  #drop{border:1.5px dashed var(--line);background:var(--raised);border-radius:4px;
+    padding:38px 20px;text-align:center;cursor:pointer;transition:.15s;
+    width:100%;font:inherit;color:inherit;display:block}
+  #drop:hover,#drop.over{border-color:var(--accent);background:var(--accent-soft)}
+  #drop:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  #drop .big{font-weight:600;display:block;margin-bottom:4px}
+  #drop .small{color:var(--muted);font-size:14px}
+
+  .card{border:1px solid var(--line);background:var(--raised);margin-top:18px}
+  .pad{padding:20px 22px}
+  .place{font-size:24px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  .coord{font-family:var(--mono);font-size:14px;color:var(--muted);margin:0}
+  .band{color:var(--muted);font-size:14px;margin:12px 0 0}
+  .meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px}
+  .meter>i{display:block;height:100%;background:var(--accent)}
+
+  iframe{width:100%;height:300px;border:0;border-top:1px solid var(--line);display:block}
+  h2{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);
+    margin:0 0 10px;font-weight:600;font-family:var(--mono)}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  td:first-child{color:var(--muted);width:33%;padding-right:14px}
+  tr:last-child td{border-bottom:0}
+  .why{white-space:pre-wrap;font-size:14.5px;margin:0}
+  .split{border-top:1px solid var(--line)}
+  .shot{max-width:100%;max-height:200px;border-radius:2px;display:block}
+  a{color:var(--accent)}
+  .err{color:var(--bad)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);
+    border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;
+    vertical-align:-2px;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Geolocator</h1>
-  <p class="sub">Estimate where a photograph was taken.</p>
+  <p class="sub">Find where a photo was taken.</p>
 
-  <div id="drop" tabindex="0" role="button" aria-label="Choose or drop an image">
-    <p><strong>Drop a photo here</strong> or click to choose one</p>
-  </div>
+  <div id="setup" class="banner hidden"></div>
+
+  <button id="drop" type="button">
+    <span class="big">Drop a photo, or click to choose</span>
+    <span class="small">JPEG, PNG, HEIC &middot; analysed on this machine</span>
+  </button>
   <input id="file" type="file" accept="image/*" class="hidden">
 
-  <div id="status" class="card hidden"></div>
+  <div id="status" class="card pad hidden"></div>
   <div id="out"></div>
 </div>
 
 <script>
-const drop = document.getElementById('drop');
-const file = document.getElementById('file');
-const status = document.getElementById('status');
-const out = document.getElementById('out');
+const $ = (id) => document.getElementById(id);
+const drop = $("drop"), fileInput = $("file"), status = $("status"), out = $("out");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-drop.addEventListener('click', () => file.click());
-drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } });
-drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-drop.addEventListener('drop', e => {
-  e.preventDefault(); drop.classList.remove('over');
-  if (e.dataTransfer.files.length) send(e.dataTransfer.files[0]);
+// Tell people the key is missing before they upload, not after it fails.
+fetch("/api/status").then((r) => r.json()).then((s) => {
+  if (s.reasoner) return;
+  $("setup").innerHTML =
+    '<b>No API key set, so the AI is off.</b> Right now it can only read GPS metadata. ' +
+    'Stop the server, run <code>export ANTHROPIC_API_KEY=sk-ant-...</code>, and start it again.';
+  $("setup").classList.remove("hidden");
+}).catch(() => {});
+
+drop.addEventListener("click", () => fileInput.click());
+["dragenter","dragover"].forEach((e) =>
+  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach((e) =>
+  drop.addEventListener(e, () => drop.classList.remove("over")));
+drop.addEventListener("drop", (ev) => {
+  ev.preventDefault();
+  if (ev.dataTransfer.files.length) send(ev.dataTransfer.files[0]);
 });
-file.addEventListener('change', () => { if (file.files.length) send(file.files[0]); });
+fileInput.addEventListener("change", () => {
+  if (fileInput.files.length) send(fileInput.files[0]);
+});
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
-  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-function show(msg, isError) {
-  status.className = 'card' + (isError ? ' err' : '');
-  status.innerHTML = msg;
+function say(html, isErr) {
+  status.className = "card pad" + (isErr ? " err" : "");
+  status.innerHTML = html;
 }
 
 async function send(f) {
-  if (!f.type.startsWith('image/')) { show('That file is not an image.', true); out.innerHTML = ''; return; }
-  out.innerHTML = '';
-  show('<span class="spinner"></span>Reading the image&hellip;');
+  if (!f.type.startsWith("image/") && !/\.(heic|heif)$/i.test(f.name)) {
+    out.innerHTML = ""; say("That is not an image.", true); return;
+  }
+  out.innerHTML = "";
+  say('<span class="spin"></span>Looking at the picture&hellip; this takes a few seconds.');
   const url = URL.createObjectURL(f);
   try {
-    const res = await fetch('/api/locate', {
-      method: 'POST',
-      headers: { 'Content-Type': f.type },
-      body: f
+    const res = await fetch("/api/locate", {
+      method: "POST", headers: { "Content-Type": f.type || "image/jpeg" }, body: f,
     });
     const data = await res.json();
-    if (!res.ok) { show(esc(data.error || 'Something went wrong.'), true); return; }
-    status.className = 'hidden';
+    if (!res.ok) { say(esc(data.error || "Something went wrong."), true); return; }
+    status.className = "hidden";
     render(data, url);
   } catch (err) {
-    show(esc('Request failed: ' + err.message), true);
+    say("Request failed: " + esc(err.message), true);
   }
 }
 
-function render(d, previewUrl) {
+function render(d, preview) {
   const conf = Math.round((d.confidence || 0) * 100);
-  const alts = (d.alternatives || []).map(a =>
-    `<tr><td>${Math.round((a.weight || 0) * 100)}%</td><td>${esc(a.label || (a.lat.toFixed(3) + ', ' + a.lon.toFixed(3)))}</td></tr>`
-  ).join('');
+  const radius = d.radius_km < 1
+    ? Math.round(d.radius_km * 1000) + " m"
+    : Math.round(d.radius_km).toLocaleString() + " km";
 
   const cues = [];
   for (const h of d.heads || []) {
     const c = (h.evidence || {}).cues;
     if (!c) continue;
     for (const [k, v] of Object.entries(c)) {
-      const text = Array.isArray(v) ? v.join(', ') : v;
-      if (!text || text === 'unknown' || text === 'none') continue;
-      cues.push(`<tr><td>${esc(k.replace(/_/g, ' '))}</td><td>${esc(text)}</td></tr>`);
+      const t = Array.isArray(v) ? v.join(", ") : v;
+      if (!t || t === "unknown" || t === "none") continue;
+      cues.push(`<tr><td>${esc(k.replace(/_/g," "))}</td><td>${esc(t)}</td></tr>`);
     }
   }
+  const alts = (d.alternatives || [])
+    .map((a) => esc(a.label || a.lat.toFixed(3) + ", " + a.lon.toFixed(3)))
+    .join(" &middot; ");
 
-  // A small bbox around the point; the embed needs a box, not a centre.
-  const pad = Math.max(0.05, Math.min(12, (d.radius_km || 100) / 111));
-  const bbox = [d.lon - pad, d.lat - pad, d.lon + pad, d.lat + pad].join('%2C');
+  const pad = Math.max(0.04, Math.min(14, (d.radius_km || 60) / 111));
+  const bbox = [d.lon-pad, d.lat-pad, d.lon+pad, d.lat+pad].join("%2C");
 
   out.innerHTML = `
     <div class="card">
-      <p class="place">${esc(d.description || 'Unnamed location')}</p>
-      <div class="coords">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</div>
-      <div class="band">within roughly ${Math.round(d.radius_km).toLocaleString()} km &middot; ${conf}% confidence inside 200 km</div>
-      <div class="meter"><i style="width:${conf}%"></i></div>
-      <div class="band"><a href="https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=11/${d.lat}/${d.lon}" target="_blank" rel="noopener">Open in OpenStreetMap</a></div>
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <h2>Map</h2>
-        <iframe loading="lazy" title="Map of the predicted location"
-          src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${d.lat}%2C${d.lon}"></iframe>
+      <div class="pad">
+        <p class="place">${esc(d.description || "Unnamed location")}</p>
+        <p class="coord">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</p>
+        <p class="band">within about ${radius} &middot; ${conf}% confidence inside 200 km</p>
+        <div class="meter"><i style="width:${conf}%"></i></div>
       </div>
-      <div class="card">
-        <h2>Your image</h2>
-        <img id="preview" src="${previewUrl}" alt="The photograph you supplied">
+      <iframe title="Map" loading="lazy"
+        src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${d.lat}%2C${d.lon}"></iframe>
+      <div class="pad split">
+        <a href="https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=13/${d.lat}/${d.lon}"
+           target="_blank" rel="noopener">Open in OpenStreetMap</a>
       </div>
     </div>
-
-    ${alts ? `<div class="card"><h2>Other possibilities</h2><table>${alts}</table></div>` : ''}
-    ${cues.length ? `<div class="card"><h2>Visual evidence</h2><table>${cues.join('')}</table></div>` : ''}
-    ${d.rationale ? `<div class="card"><h2>Reasoning</h2><p class="rationale">${esc(d.rationale)}</p></div>` : ''}
-    ${(d.warnings || []).length ? `<p class="warn">${d.warnings.map(esc).join('<br>')}</p>` : ''}
-  `;
+    ${cues.length ? `<div class="card pad"><h2>What it saw</h2><table>${cues.join("")}</table></div>` : ""}
+    ${d.rationale ? `<div class="card pad"><h2>Why</h2><p class="why">${esc(d.rationale)}</p></div>` : ""}
+    ${alts ? `<div class="card pad"><h2>Also considered</h2><p class="why">${alts}</p></div>` : ""}
+    <div class="card pad"><h2>Your photo</h2><img class="shot" src="${preview}" alt="The photo you chose"></div>
+    ${(d.warnings||[]).length ? `<div class="card pad"><h2>Notes</h2><p class="why">${d.warnings.map(esc).join("\n")}</p></div>` : ""}`;
 }
 </script>
 </body>

@@ -10,20 +10,25 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
 
+# The web app needs only these two: the reasoning head is an API call, so it
+# needs no GPU and no model weights.
 dependencies = [
-    "torch>=2.0",
-    "geoclip>=1.2",
-    "transformers>=4.30",
+    "anthropic>=1.0",
     "pillow>=9.0",
-    "numpy>=1.24",
-    "reverse_geocoder>=1.5",
-    "pycountry>=22.0",
 ]
 
 [project.optional-dependencies]
-# The vision reasoning head. Worth installing: it is the largest single
-# accuracy gain in the pipeline.
-reasoning = ["anthropic>=1.0"]
+# GeoCLIP retrieval. A large download, and optional: it adds a second opinion
+# from visual similarity, which helps most where there is nothing to read.
+retrieval = [
+    "torch>=2.0",
+    "geoclip>=1.2",
+    "transformers>=4.30",
+    "numpy>=1.24",
+]
+# Offline reverse geocoding, for naming coordinates without a network call.
+naming = ["reverse_geocoder>=1.5", "pycountry>=22.0"]
+all = ["geolocator[retrieval,naming]"]
 dev = ["pytest>=7.0"]
 
 [project.scripts]

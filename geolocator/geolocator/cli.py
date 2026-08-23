@@ -15,7 +15,7 @@ from .retrieval import RetrievalConfig
 def _build_locator(args) -> Geolocator:
     cfg = PredictorConfig(
         use_exif=not args.no_exif,
-        use_retrieval=not args.no_retrieval,
+        use_retrieval=False if args.no_retrieval else None,
         use_reasoner=False if args.no_reasoner else (True if args.reasoner else None),
         retrieval=RetrievalConfig(device=args.device, top_k=args.top_k),
         reasoner=ReasonerConfig(model=args.model, extra_hint=getattr(args, "hint", "")),

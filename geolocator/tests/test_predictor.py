@@ -188,3 +188,37 @@ def test_untrimmed_pool_is_cut_back_when_the_reasoner_dies():
     pred = loc.locate_image(Image.new("RGB", (32, 32)))
     head = next(h for h in pred.heads if h.name == "retrieval")
     assert len(head.candidates) == 24
+
+
+def test_retrieval_auto_disables_without_torch(monkeypatch):
+    """The heavy extra is optional: the app must not try to use what is absent."""
+    import geolocator.predictor as mod
+
+    monkeypatch.setattr(mod, "retrieval_available", lambda: False)
+    loc = Geolocator(PredictorConfig(fusion=FAST_FUSION, use_reasoner=True))
+    loc._retrieval = _FakeHead(_head("retrieval", *STOCKHOLM))
+    loc._reasoner = _FakeHead(_head("reasoner", *STOCKHOLM))
+    loc.locate_image(Image.new("RGB", (32, 32)))
+    assert loc._retrieval.calls == 0
+
+    monkeypatch.setattr(mod, "retrieval_available", lambda: True)
+    loc2 = Geolocator(PredictorConfig(fusion=FAST_FUSION, use_reasoner=True))
+    loc2._retrieval = _FakeHead(_head("retrieval", *STOCKHOLM))
+    loc2._reasoner = _FakeHead(_head("reasoner", *STOCKHOLM))
+    loc2.locate_image(Image.new("RGB", (32, 32)))
+    assert loc2._retrieval.calls == 1
+
+
+def test_names_the_place_from_the_model_when_no_gazetteer(monkeypatch):
+    """With the offline geocoder absent, the reasoner's own label is the name."""
+    import geolocator.places as places_mod
+    from geolocator.types import Place
+
+    monkeypatch.setattr(places_mod, "reverse", lambda lat, lon: Place())
+    reasoner = HeadOutput(
+        "reasoner",
+        [GeoCandidate(59.33, 18.06, 1.0, 5.0, "reasoner", "Stockholm, Sweden")],
+    )
+    loc = _locator(reasoner=reasoner, use_reasoner=True, use_retrieval=False)
+    pred = loc.locate_image(Image.new("RGB", (32, 32)))
+    assert pred.place.describe() == "Stockholm, Sweden"

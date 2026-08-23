@@ -9,13 +9,15 @@ from .fusion import FusionConfig, fuse
 from .rerank import RerankConfig, apply_country_prior
 from .retrieval import ModelUnavailable, RetrievalConfig, RetrievalHead, load_image
 from .reasoner import ReasonerConfig, ReasonerHead, ReasonerUnavailable
-from .types import HeadOutput, Prediction
+from .types import HeadOutput, Place, Prediction
 
 
 @dataclass
 class PredictorConfig:
     use_exif: bool = True
-    use_retrieval: bool = True
+    # None = use the retrieval head only if torch and geoclip are installed.
+    # It is a large optional extra; the app is fully useful without it.
+    use_retrieval: bool | None = None
     # Off unless credentials exist; the caller can force it on.
     use_reasoner: bool | None = None
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
@@ -50,6 +52,11 @@ class Geolocator:
             self._reasoner = ReasonerHead(self.config.reasoner)
         return self._reasoner
 
+    def _retrieval_enabled(self) -> bool:
+        if self.config.use_retrieval is not None:
+            return self.config.use_retrieval
+        return retrieval_available()
+
     def _reasoner_enabled(self) -> bool:
         if self.config.use_reasoner is not None:
             return self.config.use_reasoner
@@ -57,7 +64,7 @@ class Geolocator:
 
     def warm_up(self) -> None:
         """Load model weights ahead of the first request."""
-        if self.config.use_retrieval:
+        if self._retrieval_enabled():
             self.retrieval_head.load()
 
     def locate(self, image_path: str) -> Prediction:
@@ -75,7 +82,7 @@ class Geolocator:
         want_reasoner = self._reasoner_enabled()
 
         retrieval_out: HeadOutput | None = None
-        if self.config.use_retrieval:
+        if self._retrieval_enabled():
             try:
                 # Pull a deeper pool when the reasoner may re-rank it; there is
                 # no point promoting a candidate that was never retrieved.
@@ -126,16 +133,45 @@ class Geolocator:
             if not alt.label:
                 alt.label = places.reverse(alt.lat, alt.lon).describe()
 
+        place = places.reverse(lat, lon)
+        if not place.describe():
+            # No offline gazetteer installed: the reasoner names its own
+            # candidates, so use the label of whichever one we landed on.
+            place = _place_from_labels(lat, lon, heads)
+
         return Prediction(
             lat=lat,
             lon=lon,
             radius_km=radius_km,
             confidence=confidence,
-            place=places.reverse(lat, lon),
+            place=place,
             alternatives=alternatives,
             heads=heads,
             rationale=_combine_rationales(heads),
         )
+
+
+def retrieval_available() -> bool:
+    """Whether the optional GeoCLIP extra is installed."""
+    from importlib.util import find_spec
+
+    return find_spec("torch") is not None and find_spec("geoclip") is not None
+
+
+def _place_from_labels(lat: float, lon: float, heads: list[HeadOutput]) -> "Place":
+    """Fall back to the nearest labelled candidate's own name."""
+    from .geo import haversine_km
+    from .types import Place
+
+    labelled = [
+        (haversine_km(lat, lon, c.lat, c.lon), c.label)
+        for h in heads
+        for c in h.candidates
+        if c.label
+    ]
+    if not labelled:
+        return Place()
+    return Place(name=min(labelled)[1])
 
 
 def _combine_rationales(heads: list[HeadOutput]) -> str:

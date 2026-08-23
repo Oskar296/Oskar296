@@ -51,8 +51,15 @@ def _handler_factory(locator):
                     return
                 self._send(200, body, "text/html; charset=utf-8")
                 return
-            if self.path == "/api/health":
-                self._send_json(200, {"ok": True})
+            if self.path in ("/api/health", "/api/status"):
+                from .predictor import retrieval_available
+                from .reasoner import ReasonerHead
+
+                self._send_json(200, {
+                    "ok": True,
+                    "reasoner": ReasonerHead.is_configured(),
+                    "retrieval": retrieval_available(),
+                })
                 return
             self._send(404, b"not found", "text/plain")
 
