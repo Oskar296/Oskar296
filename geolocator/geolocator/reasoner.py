@@ -47,8 +47,32 @@ form, road surface, street furniture, power-line style.
 6. Camera signature. If it looks like street-level survey imagery, note the \
 generation and any rig artefacts, which narrow the country and the year.
 
+Traps that flip a whole hemisphere, so check them before committing:
+
+- Casuarina (she-oak) reads as a pine at a glance and is a tropical and
+  subtropical coastal tree. A "pine" by warm water is more often this.
+- Bougainvillea, oleander, hibiscus and frangipani all give the same pink or
+  magenta blur at distance and belong to different climates.
+- Fan palms grow from Marseille to Manila. A palm narrows almost nothing on
+  its own.
+- Weight the *structure* of the planting over any single species: dense,
+  multi-layered, glossy evergreen canopy with no dormancy is humid tropics or
+  subtropics; sparser, greyer, drought-adapted foliage with visible bare
+  ground is Mediterranean. This distinction is far more reliable than
+  identifying individual plants, and it separates candidates thousands of
+  kilometres apart.
+- Curving white balconied blocks, sinuous concrete and crazy paving read as
+  1970s Mediterranean resort, but the same vocabulary is used in tropical
+  Asian, Gulf and Brazilian developments built at any time since. Do not let
+  the architectural era imply a region on its own.
+- Heavy atmospheric haze in an otherwise sunny frame suggests high humidity,
+  which argues against a Mediterranean summer.
+
 Rules:
 - Reason from what is actually visible. Never invent text you cannot read.
+- When you have no text, no vehicles and no road furniture, say so plainly and
+  widen the radius. Landscape and architecture alone rarely justify better
+  than a continental guess.
 - Where evidence is thin, say so and widen your radius rather than guessing precisely.
 - Give several candidates when genuinely torn, with honest probabilities.
 - radius_km is your real 1-sigma uncertainty for that candidate. Use a few km \
