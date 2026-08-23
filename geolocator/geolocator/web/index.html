@@ -2,182 +2,318 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Geolocator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23ffb757' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23ffb757'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <style>
-  :root {
-    --paper:#e9edee; --raised:#f4f7f7; --ink:#16242b; --muted:#5c7079;
-    --line:#c9d3d6; --accent:#a8722c; --accent-soft:rgba(168,114,44,.10);
-    --bad:#9b3a2f;
-    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-  }
-  @media (prefers-color-scheme:dark){
-    :root{--paper:#0e181c;--raised:#16242a;--ink:#dce5e7;--muted:#8fa4ac;
-      --line:#26363c;--accent:#d69a4e;--accent-soft:rgba(214,154,78,.12);--bad:#e0806e;}
+  /* Committed to a single dark treatment: this is a tool you stare at, and the
+     amber-phosphor terminal read is the point. */
+  :root{
+    --void:#07090b; --panel:#0d1215; --raised:#121a1e;
+    --ink:#c5d2d3; --muted:#5c7075; --line:#1c272b;
+    --amber:#ffb757; --cyan:#5ad1e6; --bad:#ff6b5a;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--paper);color:var(--ink);
-    font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;}
-  .wrap{max-width:820px;margin:0 auto;padding:36px 20px 80px}
-  h1{font-size:26px;margin:0 0 3px;letter-spacing:-.01em}
-  .sub{color:var(--muted);margin:0 0 22px;font-size:15px}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--void);color:var(--ink);
+    font-family:var(--mono);font-size:14px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
 
-  .banner{border:1px solid var(--line);border-left:2px solid var(--accent);
-    background:var(--accent-soft);padding:14px 16px;margin:0 0 18px;font-size:14.5px}
-  .banner code{font-family:var(--mono);font-size:13px;background:var(--raised);
-    padding:1px 5px;border-radius:2px}
-  .banner b{font-weight:600}
+  /* faint graticule + slow scan sweep */
+  .bg{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .bg::before{
+    content:"";position:absolute;inset:0;
+    background-image:
+      repeating-linear-gradient(to right,rgba(197,210,211,.035) 0 1px,transparent 1px 64px),
+      repeating-linear-gradient(to bottom,rgba(197,210,211,.035) 0 1px,transparent 1px 64px);
+  }
+  .bg::after{
+    content:"";position:absolute;left:0;right:0;height:38vh;
+    background:linear-gradient(to bottom,transparent,rgba(255,183,87,.045),transparent);
+    animation:sweep 9s linear infinite;
+  }
+  @keyframes sweep{0%{top:-40vh}100%{top:100vh}}
 
-  #drop{border:1.5px dashed var(--line);background:var(--raised);border-radius:4px;
-    padding:38px 20px;text-align:center;cursor:pointer;transition:.15s;
-    width:100%;font:inherit;color:inherit;display:block}
-  #drop:hover,#drop.over{border-color:var(--accent);background:var(--accent-soft)}
-  #drop:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-  #drop .big{font-weight:600;display:block;margin-bottom:4px}
-  #drop .small{color:var(--muted);font-size:14px}
-
-  .card{border:1px solid var(--line);background:var(--raised);margin-top:18px}
-  .pad{padding:20px 22px}
-  .place{font-size:24px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
-  .coord{font-family:var(--mono);font-size:14px;color:var(--muted);margin:0}
-  .band{color:var(--muted);font-size:14px;margin:12px 0 0}
-  .meter{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:8px}
-  .meter>i{display:block;height:100%;background:var(--accent)}
-
-  iframe{width:100%;height:300px;border:0;border-top:1px solid var(--line);display:block}
-  h2{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);
-    margin:0 0 10px;font-weight:600;font-family:var(--mono)}
-  table{width:100%;border-collapse:collapse;font-size:14.5px}
-  td{padding:6px 0;border-bottom:1px solid var(--line);vertical-align:top}
-  td:first-child{color:var(--muted);width:33%;padding-right:14px}
-  tr:last-child td{border-bottom:0}
-  .why{white-space:pre-wrap;font-size:14.5px;margin:0}
-  .split{border-top:1px solid var(--line)}
-  .shot{max-width:100%;max-height:200px;border-radius:2px;display:block}
-  a{color:var(--accent)}
-  .err{color:var(--bad)}
-  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);
-    border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite;
-    vertical-align:-2px;margin-right:8px}
-  @keyframes s{to{transform:rotate(360deg)}}
+  :root{--banner-h:0px}
+  body.has-banner{--banner-h:43px}
+  .screen{position:relative;z-index:1;min-height:calc(100dvh - var(--banner-h));display:flex;
+    flex-direction:column;justify-content:center;align-items:center;padding:32px 20px}
   .hidden{display:none!important}
-  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ---------- idle: the whole viewport is the target ---------- */
+  #idle{cursor:pointer;text-align:center;gap:0}
+  .brand{font-size:11px;letter-spacing:.34em;color:var(--muted);
+    text-transform:uppercase;margin:0 0 auto;padding-top:8px}
+  .idle-mid{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:18px}
+  .reticle{width:74px;height:74px;position:relative;opacity:.85}
+  .reticle svg{width:100%;height:100%;display:block}
+  .reticle circle{transform-origin:50% 50%;animation:pulse 3.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35;transform:scale(.94)}50%{opacity:1;transform:scale(1)}}
+  .prompt{font-size:clamp(19px,3.6vw,29px);font-weight:700;letter-spacing:-.01em;margin:0}
+  .prompt .caret{color:var(--amber);animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .hintline{color:var(--muted);font-size:12.5px;margin:0;letter-spacing:.04em}
+  .foot{margin:auto 0 0;color:var(--muted);font-size:11px;letter-spacing:.1em;padding-bottom:6px}
+  body.dragging{background:#0a1013}
+  body.dragging .prompt{color:var(--amber)}
+  body.dragging .bg::before{background-image:
+    repeating-linear-gradient(to right,rgba(255,183,87,.10) 0 1px,transparent 1px 64px),
+    repeating-linear-gradient(to bottom,rgba(255,183,87,.10) 0 1px,transparent 1px 64px)}
+
+  /* ---------- working ---------- */
+  #busy{gap:22px}
+  .log{width:min(560px,100%);font-size:13px}
+  .log div{display:flex;gap:12px;padding:3px 0;color:var(--muted);
+    opacity:0;animation:in .3s ease forwards}
+  @keyframes in{to{opacity:1}}
+  .log .on{color:var(--ink)}
+  .log .tick{color:var(--amber);width:12px;flex:none}
+  .elapsed{color:var(--muted);font-size:12px;letter-spacing:.12em}
+
+  /* ---------- result ---------- */
+  #done{justify-content:flex-start;padding:0}
+  .sheet{width:min(1080px,100%);margin:0 auto;padding:26px 22px 72px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;
+    gap:16px;margin-bottom:26px;flex-wrap:wrap}
+  .again{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    background:transparent;border:1px solid var(--line);color:var(--ink);
+    padding:9px 15px;cursor:pointer;transition:.15s}
+  .again:hover{border-color:var(--amber);color:var(--amber)}
+  .again:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  .hero{border:1px solid var(--line);background:var(--panel);padding:26px 26px 24px;margin-bottom:16px}
+  .place{font-size:clamp(22px,4vw,34px);font-weight:700;margin:0 0 14px;
+    letter-spacing:-.015em;line-height:1.15}
+  .coords{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:22px}
+  .coord-item .k{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block}
+  .coord-item .v{font-size:clamp(18px,3vw,25px);color:var(--cyan);font-weight:500;
+    font-variant-numeric:tabular-nums}
+
+  .conf-row{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
+  .conf-row b{color:var(--amber);font-size:15px;letter-spacing:0;font-weight:700}
+  .bar{height:3px;background:var(--line);position:relative;overflow:hidden}
+  .bar>i{position:absolute;inset:0 auto 0 0;background:var(--amber);
+    animation:grow .8s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes grow{from{width:0!important}}
+
+  .grid{display:grid;gap:16px}
+  @media(min-width:860px){.grid{grid-template-columns:1.35fr 1fr}}
+  .box{border:1px solid var(--line);background:var(--panel);min-width:0}
+  .box h2{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);
+    margin:0;padding:14px 20px;border-bottom:1px solid var(--line);font-weight:500}
+  .box .body{padding:18px 20px}
+  .why{font-family:var(--sans);font-size:15px;line-height:1.62;margin:0;color:var(--ink)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td:first-child{color:var(--muted);width:42%;padding-right:14px;
+    text-transform:uppercase;font-size:10.5px;letter-spacing:.13em}
+  td:last-child{color:var(--ink)}
+  /* OSM tiles are light; invert them into the dark treatment. */
+  .map{border:0;width:100%;height:270px;display:block;
+    filter:invert(1) hue-rotate(180deg) saturate(.62) brightness(.92) contrast(1.05)}
+  .shot{max-width:100%;max-height:260px;display:block;margin:0 auto}
+  .also{color:var(--muted);font-size:13px;margin:0}
+  a{color:var(--amber);text-underline-offset:3px}
+
+  .banner{position:relative;z-index:3;
+    background:var(--raised);border-bottom:1px solid var(--line);
+    padding:11px 18px;font-size:12.5px;color:var(--ink);text-align:center}
+  .banner b{color:var(--amber)}
+  .banner code{color:var(--cyan)}
+  .err{color:var(--bad)}
+
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Geolocator</h1>
-  <p class="sub">Find where a photo was taken.</p>
+<div class="bg"></div>
 
-  <div id="setup" class="banner hidden"></div>
+<div id="setup" class="banner hidden"></div>
 
-  <button id="drop" type="button">
-    <span class="big">Drop a photo, or click to choose</span>
-    <span class="small">JPEG, PNG, HEIC &middot; analysed on this machine</span>
-  </button>
-  <input id="file" type="file" accept="image/*" class="hidden">
+<main>
+  <section id="idle" class="screen" tabindex="0" role="button" aria-label="Choose a photo to locate">
+    <p class="brand">Geolocator</p>
+    <div class="idle-mid">
+      <div class="reticle">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" aria-hidden="true">
+          <circle cx="50" cy="50" r="30" stroke="var(--amber)" stroke-width="1.5"/>
+          <circle cx="50" cy="50" r="44" stroke="var(--line)" stroke-width="1"/>
+          <path d="M50 2v14M50 84v14M2 50h14M84 50h14" stroke="var(--amber)" stroke-width="1.5"/>
+          <circle cx="50" cy="50" r="3" fill="var(--amber)" stroke="none"/>
+        </svg>
+      </div>
+      <p class="prompt">Drop a photo<span class="caret">_</span></p>
+      <p class="hintline">or click anywhere &middot; or paste an image</p>
+    </div>
+    <p class="foot">FINDS WHERE IT WAS TAKEN</p>
+  </section>
 
-  <div id="status" class="card pad hidden"></div>
-  <div id="out"></div>
-</div>
+  <section id="busy" class="screen hidden">
+    <div class="log" id="log"></div>
+    <p class="elapsed" id="elapsed">0.0s</p>
+  </section>
+
+  <section id="done" class="screen hidden"><div class="sheet" id="sheet"></div></section>
+</main>
+
+<input id="file" type="file" accept="image/*" class="hidden">
 
 <script>
 const $ = (id) => document.getElementById(id);
-const drop = $("drop"), fileInput = $("file"), status = $("status"), out = $("out");
+const idle = $("idle"), busy = $("busy"), done = $("done"), fileInput = $("file");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-// Tell people the key is missing before they upload, not after it fails.
-fetch("/api/status").then((r) => r.json()).then((s) => {
+function screen(el){ for (const s of [idle,busy,done]) s.classList.toggle("hidden", s!==el); }
+
+fetch("/api/status").then(r=>r.json()).then(s=>{
   if (s.reasoner) return;
-  $("setup").innerHTML =
-    '<b>No API key set, so the AI is off.</b> Right now it can only read GPS metadata. ' +
-    'Stop the server, run <code>export ANTHROPIC_API_KEY=sk-ant-...</code>, and start it again.';
+  $("setup").innerHTML = '<b>No API key — the model is off.</b> Only GPS metadata can be read. '
+    + 'Restart with <code>export ANTHROPIC_API_KEY=sk-ant-...</code>';
   $("setup").classList.remove("hidden");
-}).catch(() => {});
+  document.body.classList.add("has-banner");
+}).catch(()=>{});
 
-drop.addEventListener("click", () => fileInput.click());
-["dragenter","dragover"].forEach((e) =>
-  drop.addEventListener(e, (ev) => { ev.preventDefault(); drop.classList.add("over"); }));
-["dragleave","drop"].forEach((e) =>
-  drop.addEventListener(e, () => drop.classList.remove("over")));
-drop.addEventListener("drop", (ev) => {
-  ev.preventDefault();
-  if (ev.dataTransfer.files.length) send(ev.dataTransfer.files[0]);
+// The whole window is the drop target, not just a box.
+let depth = 0;
+addEventListener("dragenter", (e)=>{ e.preventDefault(); if(++depth===1) document.body.classList.add("dragging"); });
+addEventListener("dragover", (e)=>e.preventDefault());
+addEventListener("dragleave", ()=>{ if(--depth<=0){depth=0; document.body.classList.remove("dragging");} });
+addEventListener("drop", (e)=>{
+  e.preventDefault(); depth=0; document.body.classList.remove("dragging");
+  if (e.dataTransfer.files.length) run(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener("change", () => {
-  if (fileInput.files.length) send(fileInput.files[0]);
+addEventListener("paste", (e)=>{
+  for (const item of e.clipboardData.files) if (item.type.startsWith("image/")) return run(item);
 });
+idle.addEventListener("click", ()=>fileInput.click());
+idle.addEventListener("keydown", (e)=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();fileInput.click();} });
+fileInput.addEventListener("change", ()=>{ if(fileInput.files.length) run(fileInput.files[0]); });
 
-function say(html, isErr) {
-  status.className = "card pad" + (isErr ? " err" : "");
-  status.innerHTML = html;
+let timer = null;
+function step(text, done){
+  const row = document.createElement("div");
+  row.innerHTML = `<span class="tick">${done?"✓":"›"}</span><span>${esc(text)}</span>`;
+  if (done) row.className = "on";
+  $("log").appendChild(row);
+  return row;
 }
 
-async function send(f) {
+async function run(f){
   if (!f.type.startsWith("image/") && !/\.(heic|heif)$/i.test(f.name)) {
-    out.innerHTML = ""; say("That is not an image.", true); return;
+    screen(busy); $("log").innerHTML=""; step("that file is not an image");
+    $("log").lastChild.classList.add("err"); return;
   }
-  out.innerHTML = "";
-  say('<span class="spin"></span>Looking at the picture&hellip; this takes a few seconds.');
-  const url = URL.createObjectURL(f);
+  screen(busy);
+  $("log").innerHTML = "";
+  step(`${f.name} · ${(f.size/1024).toFixed(0)} KB`, true);
+  step("checking metadata", true);
+  const thinking = step("analysing the picture");
+
+  const t0 = performance.now();
+  clearInterval(timer);
+  timer = setInterval(()=>{ $("elapsed").textContent = ((performance.now()-t0)/1000).toFixed(1)+"s"; }, 100);
+
+  const preview = URL.createObjectURL(f);
   try {
     const res = await fetch("/api/locate", {
-      method: "POST", headers: { "Content-Type": f.type || "image/jpeg" }, body: f,
+      method:"POST", headers:{"Content-Type": f.type || "image/jpeg"}, body:f,
     });
     const data = await res.json();
-    if (!res.ok) { say(esc(data.error || "Something went wrong."), true); return; }
-    status.className = "hidden";
-    render(data, url);
+    clearInterval(timer);
+    if (!res.ok){
+      thinking.className = "err";
+      thinking.innerHTML = `<span class="tick">✗</span><span>${esc(data.error||"failed")}</span>`;
+      step("click anywhere to try another photo");
+      idleAgain();
+      return;
+    }
+    render(data, preview, (performance.now()-t0)/1000);
   } catch (err) {
-    say("Request failed: " + esc(err.message), true);
+    clearInterval(timer);
+    thinking.className = "err";
+    thinking.innerHTML = `<span class="tick">✗</span><span>${esc(err.message)}</span>`;
+    idleAgain();
   }
 }
 
-function render(d, preview) {
-  const conf = Math.round((d.confidence || 0) * 100);
+function idleAgain(){
+  const back = () => { screen(idle); removeEventListener("click", back); };
+  setTimeout(()=>addEventListener("click", back), 400);
+}
+
+function render(d, preview, secs){
+  const conf = Math.round((d.confidence||0)*100);
   const radius = d.radius_km < 1
-    ? Math.round(d.radius_km * 1000) + " m"
-    : Math.round(d.radius_km).toLocaleString() + " km";
+    ? Math.round(d.radius_km*1000)+" m"
+    : Math.round(d.radius_km).toLocaleString()+" km";
 
   const cues = [];
-  for (const h of d.heads || []) {
-    const c = (h.evidence || {}).cues;
-    if (!c) continue;
-    for (const [k, v] of Object.entries(c)) {
-      const t = Array.isArray(v) ? v.join(", ") : v;
-      if (!t || t === "unknown" || t === "none") continue;
+  for (const h of d.heads||[]){
+    const c = (h.evidence||{}).cues; if (!c) continue;
+    for (const [k,v] of Object.entries(c)){
+      const t = Array.isArray(v)? v.join(", ") : v;
+      if (!t || t==="unknown" || t==="none") continue;
       cues.push(`<tr><td>${esc(k.replace(/_/g," "))}</td><td>${esc(t)}</td></tr>`);
     }
   }
-  const alts = (d.alternatives || [])
-    .map((a) => esc(a.label || a.lat.toFixed(3) + ", " + a.lon.toFixed(3)))
-    .join(" &middot; ");
+  const also = (d.alternatives||[]).map(a=>esc(a.label||a.lat.toFixed(2)+", "+a.lon.toFixed(2))).join("  ·  ");
+  const pad = Math.max(.04, Math.min(14, (d.radius_km||60)/111));
+  const bbox = [d.lon-pad,d.lat-pad,d.lon+pad,d.lat+pad].join("%2C");
 
-  const pad = Math.max(0.04, Math.min(14, (d.radius_km || 60) / 111));
-  const bbox = [d.lon-pad, d.lat-pad, d.lon+pad, d.lat+pad].join("%2C");
-
-  out.innerHTML = `
-    <div class="card">
-      <div class="pad">
-        <p class="place">${esc(d.description || "Unnamed location")}</p>
-        <p class="coord">${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}</p>
-        <p class="band">within about ${radius} &middot; ${conf}% confidence inside 200 km</p>
-        <div class="meter"><i style="width:${conf}%"></i></div>
-      </div>
-      <iframe title="Map" loading="lazy"
-        src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${d.lat}%2C${d.lon}"></iframe>
-      <div class="pad split">
-        <a href="https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=13/${d.lat}/${d.lon}"
-           target="_blank" rel="noopener">Open in OpenStreetMap</a>
-      </div>
+  $("sheet").innerHTML = `
+    <div class="topbar">
+      <p class="brand" style="margin:0;padding:0">Geolocator &middot; ${secs.toFixed(1)}s</p>
+      <button class="again" id="again">Another photo</button>
     </div>
-    ${cues.length ? `<div class="card pad"><h2>What it saw</h2><table>${cues.join("")}</table></div>` : ""}
-    ${d.rationale ? `<div class="card pad"><h2>Why</h2><p class="why">${esc(d.rationale)}</p></div>` : ""}
-    ${alts ? `<div class="card pad"><h2>Also considered</h2><p class="why">${alts}</p></div>` : ""}
-    <div class="card pad"><h2>Your photo</h2><img class="shot" src="${preview}" alt="The photo you chose"></div>
-    ${(d.warnings||[]).length ? `<div class="card pad"><h2>Notes</h2><p class="why">${d.warnings.map(esc).join("\n")}</p></div>` : ""}`;
+
+    <div class="hero">
+      <p class="place">${esc(d.description || "Unnamed location")}</p>
+      <div class="coords">
+        <div class="coord-item"><span class="k">Latitude</span><span class="v">${d.lat.toFixed(5)}</span></div>
+        <div class="coord-item"><span class="k">Longitude</span><span class="v">${d.lon.toFixed(5)}</span></div>
+        <div class="coord-item"><span class="k">Radius</span><span class="v">${radius}</span></div>
+      </div>
+      <div class="conf-row"><span>Confidence within 200 km</span><b>${conf}%</b></div>
+      <div class="bar"><i style="width:${conf}%"></i></div>
+    </div>
+
+    <div class="grid">
+      <div style="display:grid;gap:16px;min-width:0;align-content:start">
+        ${d.rationale ? `<div class="box"><h2>Reasoning</h2><div class="body">
+          <p class="why">${esc(d.rationale)}</p></div></div>` : ""}
+        <div class="box"><h2>Location</h2>
+          <iframe class="map" title="Map" loading="lazy"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&marker=${d.lat}%2C${d.lon}"></iframe>
+          <div class="body"><a href="https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=13/${d.lat}/${d.lon}"
+            target="_blank" rel="noopener">Open in OpenStreetMap</a></div></div>
+      </div>
+      <div style="display:grid;gap:16px;min-width:0;align-content:start">
+        ${cues.length ? `<div class="box"><h2>Evidence</h2><div class="body">
+          <table>${cues.join("")}</table></div></div>` : ""}
+        ${also ? `<div class="box"><h2>Also considered</h2><div class="body">
+          <p class="also">${also}</p></div></div>` : ""}
+        <div class="box"><h2>Image</h2><div class="body"><img class="shot" src="${preview}" alt="The photo you supplied"></div></div>
+        ${(d.warnings||[]).length ? `<div class="box"><h2>Notes</h2><div class="body">
+          <p class="also">${d.warnings.map(esc).join("<br><br>")}</p></div></div>` : ""}
+      </div>
+    </div>`;
+
+  screen(done);
+  scrollTo(0,0);
+  $("again").addEventListener("click", ()=>{ fileInput.value=""; screen(idle); });
 }
+
+addEventListener("keydown", (e)=>{ if(e.key==="Escape") screen(idle); });
 </script>
 </body>
 </html>

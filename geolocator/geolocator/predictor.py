@@ -175,5 +175,8 @@ def _place_from_labels(lat: float, lon: float, heads: list[HeadOutput]) -> "Plac
 
 
 def _combine_rationales(heads: list[HeadOutput]) -> str:
-    parts = [f"[{h.name}] {h.rationale}" for h in heads if h.rationale]
-    return "\n\n".join(parts)
+    spoke = [h for h in heads if h.rationale]
+    if len(spoke) == 1:
+        # Naming the head adds nothing when it is the only one talking.
+        return spoke[0].rationale
+    return "\n\n".join(f"[{h.name}] {h.rationale}" for h in spoke)
