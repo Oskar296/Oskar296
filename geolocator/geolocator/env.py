@@ -76,3 +76,43 @@ def load(path: str | os.PathLike[str] | None = None) -> Path | None:
             os.environ.setdefault(key, value)
         return candidate
     return None
+
+
+def write_key(key: str, path: str | os.PathLike[str] | None = None) -> Path:
+    """Save an API key into a .env, replacing any existing line for it.
+
+    The file is created 0600: it holds a credential, and a world-readable one
+    on a shared machine is a leak waiting to happen.
+    """
+    target = Path(path).expanduser() if path else preferred_path()
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    lines: list[str] = []
+    if target.is_file():
+        lines = target.read_text(encoding="utf-8").splitlines()
+
+    replaced = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("ANTHROPIC_API_KEY=") or stripped.startswith(
+            "export ANTHROPIC_API_KEY="
+        ):
+            lines[i] = f"ANTHROPIC_API_KEY={key}"
+            replaced = True
+            break
+    if not replaced:
+        lines.append(f"ANTHROPIC_API_KEY={key}")
+
+    target.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
+    try:
+        target.chmod(0o600)
+    except OSError:
+        pass  # Windows and some mounts do not support it; not worth failing over.
+    return target
+
+
+def mask(key: str) -> str:
+    """A key fragment safe to print."""
+    if len(key) <= 12:
+        return "set"
+    return f"{key[:11]}...{key[-4:]}"

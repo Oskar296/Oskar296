@@ -117,6 +117,39 @@ def cmd_eval(args) -> int:
     return 0
 
 
+def cmd_key(args) -> int:
+    """Save an API key, so nobody has to work out where the file goes."""
+    import getpass
+
+    existing = os.environ.get("ANTHROPIC_API_KEY")
+    if args.show:
+        if existing:
+            print(f"key is set: {env.mask(existing)}")
+            print(f"read from:  {env.load() or 'the environment'}")
+        else:
+            print("no key set")
+            print(f"run 'geolocate key' to save one to {env.preferred_path()}")
+        return 0
+
+    print("Paste your Anthropic API key (nothing is echoed).")
+    print("Get one from https://console.anthropic.com/settings/keys\n")
+    try:
+        key = getpass.getpass("Key: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print("\ncancelled")
+        return 1
+    if not key:
+        print("nothing entered; no change made")
+        return 1
+    if not key.startswith("sk-ant-"):
+        print("warning: Anthropic keys normally start with 'sk-ant-'. Saving it anyway.")
+
+    path = env.write_key(key)
+    print(f"\nSaved to {path}")
+    print("That file is gitignored. Now run: geolocate serve")
+    return 0
+
+
 def cmd_serve(args) -> int:
     from .server import serve
 
@@ -163,6 +196,10 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--quiet", action="store_true")
     e.set_defaults(func=cmd_eval)
 
+    k = sub.add_parser("key", help="save your Anthropic API key", parents=[common])
+    k.add_argument("--show", action="store_true", help="report whether a key is set")
+    k.set_defaults(func=cmd_key)
+
     s = sub.add_parser("serve", help="run the local web interface", parents=[common])
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
@@ -180,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
 
     # Allow `geolocate photo.jpg` as shorthand for `geolocate predict photo.jpg`.
-    commands = {"predict", "eval", "serve"}
+    commands = {"predict", "eval", "serve", "key"}
     if argv and not argv[0].startswith("-") and argv[0] not in commands:
         argv.insert(0, "predict")
 

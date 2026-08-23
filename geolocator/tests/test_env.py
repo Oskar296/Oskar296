@@ -89,3 +89,58 @@ def test_unreadable_file_is_skipped(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(env.Path, "home", staticmethod(lambda: tmp_path / "nohome"))
     assert env.load() is None
+
+
+def test_write_key_creates_the_file(tmp_path):
+    target = tmp_path / ".env"
+    got = env.write_key("sk-ant-abc123", target)
+    assert got == target
+    assert target.read_text() == "ANTHROPIC_API_KEY=sk-ant-abc123\n"
+
+
+def test_write_key_replaces_an_existing_line_and_keeps_the_rest(tmp_path):
+    target = tmp_path / ".env"
+    target.write_text("# my keys\nOTHER=keep-me\nANTHROPIC_API_KEY=old\nTRAILING=also-keep\n")
+    env.write_key("sk-ant-new", target)
+    text = target.read_text()
+    assert "ANTHROPIC_API_KEY=sk-ant-new" in text
+    assert "old" not in text
+    assert "OTHER=keep-me" in text
+    assert "TRAILING=also-keep" in text
+    assert "# my keys" in text
+    # exactly one key line, never a duplicate
+    assert sum(1 for l in text.splitlines() if l.startswith("ANTHROPIC_API_KEY=")) == 1
+
+
+def test_write_key_replaces_an_exported_line(tmp_path):
+    target = tmp_path / ".env"
+    target.write_text("export ANTHROPIC_API_KEY=old\n")
+    env.write_key("sk-ant-new", target)
+    assert target.read_text() == "ANTHROPIC_API_KEY=sk-ant-new\n"
+
+
+def test_write_key_appends_when_absent(tmp_path):
+    target = tmp_path / ".env"
+    target.write_text("OTHER=value\n")
+    env.write_key("sk-ant-new", target)
+    assert target.read_text() == "OTHER=value\nANTHROPIC_API_KEY=sk-ant-new\n"
+
+
+def test_written_file_is_not_world_readable(tmp_path):
+    """It holds a credential; 0600 or the mode is a bug."""
+    target = env.write_key("sk-ant-abc", tmp_path / ".env")
+    assert (target.stat().st_mode & 0o077) == 0
+
+
+def test_write_key_round_trips_through_the_loader(tmp_path, monkeypatch):
+    target = env.write_key("sk-ant-roundtrip", tmp_path / ".env")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    env.load(target)
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-roundtrip"
+
+
+def test_mask_never_shows_the_whole_key():
+    masked = env.mask("sk-ant-api03-SECRETSECRETSECRET-tail")
+    assert "SECRETSECRET" not in masked
+    assert masked.startswith("sk-ant-api")
+    assert env.mask("short") == "set"
