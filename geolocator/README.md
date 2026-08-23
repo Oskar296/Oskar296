@@ -21,12 +21,28 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ```bash
 pip install "git+https://github.com/Oskar296/Oskar296.git@claude/location-guessing-ai-w2wzzx#subdirectory=geolocator"
-export ANTHROPIC_API_KEY=sk-ant-...      # from console.anthropic.com
-geolocate serve                          # opens localhost:8000
+```
+
+Put your key in a file called `.env` in the directory you run from:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Get one from [console.anthropic.com](https://console.anthropic.com/settings/keys).
+Copy `.env.example` to `.env` if you want the annotated version. Then:
+
+```bash
+geolocate serve      # opens localhost:8000
 ```
 
 Drop a photo in, get a location. About 20 seconds to install; no GPU and no
 model weights, because the reasoning head is an API call.
+
+`.env` is gitignored, and an exported `ANTHROPIC_API_KEY` still takes
+precedence over it. `GEOLOCATOR_ENV=/path/to/file` points somewhere else.
+**Never commit a key or paste one into a chat** — if one leaks, revoke it in
+the console.
 
 Optional extras, neither of which is needed to get an answer:
 
@@ -206,6 +222,7 @@ geolocator/
   predictor.py   orchestration and graceful degradation
   evaluate.py    IM2GPS metrics, GeoGuessr scoring, calibration
   server.py      stdlib web server
+  env.py         .env loading
   cli.py         command line
   web/index.html drag-and-drop UI
   web/exif.js    browser-side EXIF GPS parser

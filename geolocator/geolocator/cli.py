@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
+from . import env
 from .evaluate import evaluate, format_summary, load_dataset
 from .predictor import Geolocator, PredictorConfig
 from .reasoner import ReasonerConfig
@@ -18,7 +20,10 @@ def _build_locator(args) -> Geolocator:
         use_retrieval=False if args.no_retrieval else None,
         use_reasoner=False if args.no_reasoner else (True if args.reasoner else None),
         retrieval=RetrievalConfig(device=args.device, top_k=args.top_k),
-        reasoner=ReasonerConfig(model=args.model, extra_hint=getattr(args, "hint", "")),
+        reasoner=ReasonerConfig(
+            model=args.model or os.environ.get("GEOLOCATOR_MODEL") or ReasonerConfig.model,
+            extra_hint=getattr(args, "hint", ""),
+        ),
     )
     return Geolocator(cfg)
 
@@ -132,7 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument(
         "--reasoner", action="store_true", help="force the Claude vision head on"
     )
-    common.add_argument("--model", default=ReasonerConfig.model, help="Claude model id")
+    common.add_argument("--model", default=None, help="Claude model id")
     common.add_argument("--device", default="cpu", help="torch device, e.g. cuda")
     common.add_argument("--top-k", type=int, default=24, help="gallery candidates to retain")
 
@@ -167,6 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Before anything reads os.environ, so a .env beats nothing and an explicit
+    # export still beats the .env.
+    env.load()
+
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = build_parser()
 

@@ -52,6 +52,7 @@ def _handler_factory(locator):
                 self._send(200, body, "text/html; charset=utf-8")
                 return
             if self.path in ("/api/health", "/api/status"):
+                from .env import preferred_path
                 from .predictor import retrieval_available
                 from .reasoner import ReasonerHead
 
@@ -59,6 +60,7 @@ def _handler_factory(locator):
                     "ok": True,
                     "reasoner": ReasonerHead.is_configured(),
                     "retrieval": retrieval_available(),
+                    "env_file": str(preferred_path()),
                 })
                 return
             self._send(404, b"not found", "text/plain")

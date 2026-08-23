@@ -15,6 +15,8 @@
     --void:#07090b; --panel:#0d1215; --raised:#121a1e;
     --ink:#c5d2d3; --muted:#5c7075; --line:#1c272b;
     --amber:#ffb757; --cyan:#5ad1e6; --bad:#ff6b5a;
+    /* semantic scale for confidence, read independently of the accent */
+    --sure:#4fc9a6; --maybe:#ffb757; --unsure:#ef7a63;
     --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
@@ -41,9 +43,7 @@
   }
   @keyframes sweep{0%{top:-40vh}100%{top:100vh}}
 
-  :root{--banner-h:0px}
-  body.has-banner{--banner-h:43px}
-  .screen{position:relative;z-index:1;min-height:calc(100dvh - var(--banner-h));display:flex;
+  .screen{position:relative;z-index:1;min-height:100dvh;display:flex;
     flex-direction:column;justify-content:center;align-items:center;padding:32px 20px}
   .hidden{display:none!important}
 
@@ -88,19 +88,29 @@
   .again:hover{border-color:var(--amber);color:var(--amber)}
   .again:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 
-  .hero{border:1px solid var(--line);background:var(--panel);padding:26px 26px 24px;margin-bottom:16px}
+  .hero{--level:var(--maybe);border:1px solid var(--line);background:var(--panel);
+    padding:26px 26px 24px;margin-bottom:16px}
+  .hero.sure{--level:var(--sure)} .hero.unsure{--level:var(--unsure)}
+  .caution{color:var(--unsure);font-size:12.5px;margin:12px 0 0;font-family:var(--sans)}
   .place{font-size:clamp(22px,4vw,34px);font-weight:700;margin:0 0 14px;
     letter-spacing:-.015em;line-height:1.15}
   .coords{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:22px}
   .coord-item .k{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;display:block}
   .coord-item .v{font-size:clamp(18px,3vw,25px);color:var(--cyan);font-weight:500;
     font-variant-numeric:tabular-nums}
+  .copy{margin-left:2px;background:none;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    padding:6px 10px;cursor:pointer;transition:.15s;align-self:center}
+  .copy:hover{border-color:var(--cyan);color:var(--cyan)}
+  .copy:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .copy.done{border-color:var(--sure);color:var(--sure)}
 
   .conf-row{display:flex;justify-content:space-between;align-items:baseline;
     font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:7px}
-  .conf-row b{color:var(--amber);font-size:15px;letter-spacing:0;font-weight:700}
+  .conf-row b{color:var(--level);font-size:15px;letter-spacing:0;font-weight:700}
+  .conf-row .lvl{color:var(--level);letter-spacing:.18em}
   .bar{height:3px;background:var(--line);position:relative;overflow:hidden}
-  .bar>i{position:absolute;inset:0 auto 0 0;background:var(--amber);
+  .bar>i{position:absolute;inset:0 auto 0 0;background:var(--level);
     animation:grow .8s cubic-bezier(.2,.8,.2,1) forwards}
   @keyframes grow{from{width:0!important}}
 
@@ -124,9 +134,15 @@
   .also{color:var(--muted);font-size:13px;margin:0}
   a{color:var(--amber);text-underline-offset:3px}
 
-  .banner{position:relative;z-index:3;
-    background:var(--raised);border-bottom:1px solid var(--line);
-    padding:11px 18px;font-size:12.5px;color:var(--ink);text-align:center}
+  .setup{width:min(560px,100%);border:1px solid var(--line);background:var(--panel);
+    padding:18px 20px;text-align:left;margin-top:8px}
+  .setup h3{font-size:13px;margin:0 0 4px;color:var(--amber);letter-spacing:.02em}
+  .setup p{font-family:var(--sans);font-size:13.5px;color:var(--muted);margin:0 0 12px}
+  .setup .cmd{font-family:var(--mono);font-size:11.5px;line-height:1.8;
+    background:var(--void);border:1px solid var(--line);padding:11px 13px;margin:0;
+    overflow-x:auto;white-space:pre;-webkit-user-select:all;user-select:all}
+  .setup .cmd .c{color:var(--muted);user-select:none}
+  .setup .cmd b{color:var(--cyan);font-weight:400}
   .banner b{color:var(--amber)}
   .banner code{color:var(--cyan)}
   .err{color:var(--bad)}
@@ -136,8 +152,6 @@
 </head>
 <body>
 <div class="bg"></div>
-
-<div id="setup" class="banner hidden"></div>
 
 <main>
   <section id="idle" class="screen" tabindex="0" role="button" aria-label="Choose a photo to locate">
@@ -153,6 +167,7 @@
       </div>
       <p class="prompt">Drop a photo<span class="caret">_</span></p>
       <p class="hintline">or click anywhere &middot; or paste an image</p>
+      <div id="setup" class="setup hidden"></div>
     </div>
     <p class="foot">FINDS WHERE IT WAS TAKEN</p>
   </section>
@@ -177,10 +192,15 @@ function screen(el){ for (const s of [idle,busy,done]) s.classList.toggle("hidde
 
 fetch("/api/status").then(r=>r.json()).then(s=>{
   if (s.reasoner) return;
-  $("setup").innerHTML = '<b>No API key — the model is off.</b> Only GPS metadata can be read. '
-    + 'Restart with <code>export ANTHROPIC_API_KEY=sk-ant-...</code>';
+  const envFile = s.env_file || ".env";
+  $("setup").innerHTML =
+    '<h3>No API key yet</h3>'
+    + '<p>Without one it can only read GPS metadata. Put your key in a file called '
+    + '<b>.env</b> next to where you run it, then restart.</p>'
+    + '<div class="cmd"><span class="c"># ' + esc(envFile) + '</span>\n'
+    + 'ANTHROPIC_API_KEY=<b>sk-ant-...</b></div>';
   $("setup").classList.remove("hidden");
-  document.body.classList.add("has-banner");
+  $("setup").addEventListener("click", (e)=>e.stopPropagation());
 }).catch(()=>{});
 
 // The whole window is the drop target, not just a box.
@@ -270,21 +290,30 @@ function render(d, preview, secs){
   const pad = Math.max(.04, Math.min(14, (d.radius_km||60)/111));
   const bbox = [d.lon-pad,d.lat-pad,d.lon+pad,d.lat+pad].join("%2C");
 
+  const level = conf >= 70 ? "sure" : conf >= 35 ? "" : "unsure";
+  const levelWord = conf >= 70 ? "high" : conf >= 35 ? "moderate" : "low";
+
   $("sheet").innerHTML = `
     <div class="topbar">
       <p class="brand" style="margin:0;padding:0">Geolocator &middot; ${secs.toFixed(1)}s</p>
       <button class="again" id="again">Another photo</button>
     </div>
 
-    <div class="hero">
+    <div class="hero ${level}">
       <p class="place">${esc(d.description || "Unnamed location")}</p>
       <div class="coords">
         <div class="coord-item"><span class="k">Latitude</span><span class="v">${d.lat.toFixed(5)}</span></div>
         <div class="coord-item"><span class="k">Longitude</span><span class="v">${d.lon.toFixed(5)}</span></div>
         <div class="coord-item"><span class="k">Radius</span><span class="v">${radius}</span></div>
+        <button class="copy" id="copy" type="button">Copy</button>
       </div>
-      <div class="conf-row"><span>Confidence within 200 km</span><b>${conf}%</b></div>
+      <div class="conf-row">
+        <span>Confidence within 200 km &middot; <span class="lvl">${levelWord}</span></span>
+        <b>${conf}%</b>
+      </div>
       <div class="bar"><i style="width:${conf}%"></i></div>
+      ${conf < 35 ? `<p class="caution">The picture does not pin this down. Treat the
+        radius as the answer, not the point.</p>` : ""}
     </div>
 
     <div class="grid">
@@ -311,6 +340,22 @@ function render(d, preview, secs){
   screen(done);
   scrollTo(0,0);
   $("again").addEventListener("click", ()=>{ fileInput.value=""; screen(idle); });
+
+  const copy = $("copy");
+  copy.addEventListener("click", async ()=>{
+    const text = `${d.lat.toFixed(5)}, ${d.lon.toFixed(5)}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      copy.textContent = "Copied"; copy.classList.add("done");
+    } catch {
+      // Clipboard can be blocked; select the text so it can still be copied.
+      copy.textContent = "Press ctrl+C";
+      const r = document.createRange();
+      r.selectNodeContents(document.querySelector(".coords"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
+    setTimeout(()=>{ copy.textContent="Copy"; copy.classList.remove("done"); }, 1800);
+  });
 }
 
 addEventListener("keydown", (e)=>{ if(e.key==="Escape") screen(idle); });
