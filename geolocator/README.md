@@ -17,48 +17,28 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ---
 
-## Try it without installing anything
-
-**[Read a photo's location in the browser](https://claude.ai/code/artifact/c0d24141-796a-4272-aa0b-23fed54f8d14)** —
-drop in a photo and it pulls the GPS tag straight out of the file, names the
-coordinates against an embedded gazetteer and plots them. Entirely client-side:
-nothing is uploaded. Only works on photos that still carry their metadata.
-
-For everything else the models have to look at the picture itself, which needs a
-GPU and a couple of gigabytes of weights:
-
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Oskar296/Oskar296/blob/claude%2Flocation-guessing-ai-w2wzzx/geolocator/notebooks/Geolocator.ipynb)
-
-Press **Runtime > Run all**, wait about two minutes, then upload your photo in
-the bottom cell. Runs the real models on a free GPU; nothing touches your
-machine. Add an `ANTHROPIC_API_KEY` in Colab's Secrets panel to switch the
-reasoning head on — that is the half that reads signage, and it is where most
-of the accuracy comes from.
-
-Locally, `geolocate serve` gives you the same drag-and-drop box at
-`localhost:8000` with the full pipeline behind it.
-
----
-
-## Install
+## Run it
 
 ```bash
-pip install -e .            # core: EXIF + retrieval
-pip install -e '.[reasoning]'   # adds the Claude vision head
+pip install "git+https://github.com/Oskar296/Oskar296.git@claude/location-guessing-ai-w2wzzx#subdirectory=geolocator"
+export ANTHROPIC_API_KEY=sk-ant-...      # from console.anthropic.com
+geolocate serve                          # opens localhost:8000
 ```
 
-First run downloads the CLIP ViT-L/14 backbone (~1.7 GB) from Hugging Face.
-Pre-fetch it on a machine with access if your environment blocks that host:
+Drop a photo in, get a location. About 20 seconds to install; no GPU and no
+model weights, because the reasoning head is an API call.
+
+Optional extras, neither of which is needed to get an answer:
 
 ```bash
-huggingface-cli download openai/clip-vit-large-patch14
+pip install "geolocator[naming]"      # offline reverse geocoding
+pip install "geolocator[retrieval]"   # GeoCLIP, a second opinion from visual
+                                      # similarity (large: torch + weights)
 ```
 
-The reasoning head is enabled automatically when credentials are present:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
+There is also a page that reads a photo's GPS tag entirely in the browser, for
+photos that still have one:
+<https://claude.ai/code/artifact/c0d24141-796a-4272-aa0b-23fed54f8d14>
 
 ## Use
 
@@ -229,7 +209,6 @@ geolocator/
   cli.py         command line
   web/index.html drag-and-drop UI
   web/exif.js    browser-side EXIF GPS parser
-notebooks/       run it in Colab, no install
 ```
 
 Copyright © 2026 Oskar Lindström. All rights reserved — matching the licence
