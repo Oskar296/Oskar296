@@ -144,3 +144,37 @@ def test_mask_never_shows_the_whole_key():
     assert "SECRETSECRET" not in masked
     assert masked.startswith("sk-ant-api")
     assert env.mask("short") == "set"
+
+
+def test_write_key_creates_a_private_file(tmp_path):
+    target = tmp_path / ".env"
+    got = env.write_key("sk-ant-test", target)
+    assert got == target
+    assert target.read_text() == "ANTHROPIC_API_KEY=sk-ant-test\n"
+    # A credential must not be world-readable on a shared machine.
+    assert oct(target.stat().st_mode)[-3:] == "600"
+
+
+def test_write_key_replaces_rather_than_appends(tmp_path):
+    target = tmp_path / ".env"
+    target.write_text("OTHER=keep\nANTHROPIC_API_KEY=old\nTAIL=keep\n")
+    env.write_key("new", target)
+    text = target.read_text()
+    assert "ANTHROPIC_API_KEY=new" in text
+    assert "old" not in text
+    assert text.count("ANTHROPIC_API_KEY") == 1
+    assert "OTHER=keep" in text and "TAIL=keep" in text
+
+
+def test_write_key_replaces_an_exported_form_too(tmp_path):
+    target = tmp_path / ".env"
+    target.write_text("export ANTHROPIC_API_KEY=old\n")
+    env.write_key("new", target)
+    assert target.read_text() == "ANTHROPIC_API_KEY=new\n"
+
+
+def test_mask_never_shows_the_whole_key():
+    masked = env.mask("sk-ant-api03-abcdefghijklmnop-tail")
+    assert "abcdefghijklmnop" not in masked
+    assert masked.startswith("sk-ant-api")
+    assert env.mask("short") == "set"

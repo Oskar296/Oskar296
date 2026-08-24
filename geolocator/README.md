@@ -23,14 +23,14 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 pip install "git+https://github.com/Oskar296/Oskar296.git@claude/location-guessing-ai-w2wzzx#subdirectory=geolocator"
 ```
 
-Put your key in a file called `.env` in the directory you run from:
+Then save your key — this prompts for it and writes the file for you:
 
-```
-ANTHROPIC_API_KEY=sk-ant-...
+```bash
+geolocate key
 ```
 
 Get one from [console.anthropic.com](https://console.anthropic.com/settings/keys).
-Copy `.env.example` to `.env` if you want the annotated version. Then:
+(`geolocate key --show` reports whether one is set.) Then:
 
 ```bash
 geolocate serve      # opens localhost:8000
