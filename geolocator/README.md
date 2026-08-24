@@ -17,7 +17,20 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ---
 
-## Run it
+## No terminal? Open one file
+
+Download **[Geolocator.html](Geolocator.html)** and double-click it. It runs in
+your browser with nothing installed: paste an API key once, drop a photo in.
+
+The key is kept in that browser's local storage on your own machine and is sent
+only to Anthropic, which permits direct browser calls. Photos with a GPS tag are
+read locally and never leave the machine at all.
+
+A single file has limits: no GeoCLIP retrieval, and each photo is one API call
+straight from the page. The server below is the better setup if you have a
+terminal.
+
+## Run it (server)
 
 Two commands, in a terminal on your own machine. This runs a small web server
 there — nothing is hosted for you.
