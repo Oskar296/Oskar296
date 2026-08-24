@@ -19,37 +19,33 @@ somewhere"; the reasoner reads `Apotek` on a shopfront and says "Sweden".
 
 ## Run it
 
+Two commands, in a terminal on your own machine. This runs a small web server
+there — nothing is hosted for you.
+
 ```bash
 pip install "git+https://github.com/Oskar296/Oskar296.git@claude/location-guessing-ai-w2wzzx#subdirectory=geolocator"
+geolocate serve
 ```
 
-Then save your key — this prompts for it and writes the file for you:
+The first run asks for an Anthropic API key, saves it to `.env` for you, and
+opens `localhost:8000` in your browser. Get a key from
+[console.anthropic.com](https://console.anthropic.com/settings/keys).
 
-```bash
-geolocate key
-```
+Then drop a photo in. About 20 seconds to install; no GPU and no model weights,
+because the reasoning head is an API call.
 
-Get one from [console.anthropic.com](https://console.anthropic.com/settings/keys).
-(`geolocate key --show` reports whether one is set.) Then:
+- `geolocate key` changes the saved key later; `geolocate key --show` reports whether one is set.
+- `.env` is gitignored and written 0600. An exported `ANTHROPIC_API_KEY` beats it;
+  `GEOLOCATOR_ENV=/path/to/file` points somewhere else.
+- **Never commit a key or paste one into a chat.** If one leaks, revoke it in the console.
+- `geolocate serve --no-open` skips the browser; `--no-reasoner` runs without a key
+  (GPS metadata only).
 
-```bash
-geolocate serve      # opens localhost:8000
-```
-
-Drop a photo in, get a location. About 20 seconds to install; no GPU and no
-model weights, because the reasoning head is an API call.
-
-`.env` is gitignored, and an exported `ANTHROPIC_API_KEY` still takes
-precedence over it. `GEOLOCATOR_ENV=/path/to/file` points somewhere else.
-**Never commit a key or paste one into a chat** — if one leaks, revoke it in
-the console.
-
-Optional extras, neither of which is needed to get an answer:
+Optional extras, neither needed to get an answer:
 
 ```bash
 pip install "geolocator[naming]"      # offline reverse geocoding
-pip install "geolocator[retrieval]"   # GeoCLIP, a second opinion from visual
-                                      # similarity (large: torch + weights)
+pip install "geolocator[retrieval]"   # GeoCLIP second opinion (large: torch + weights)
 ```
 
 There is also a page that reads a photo's GPS tag entirely in the browser, for

@@ -146,6 +146,26 @@ def cmd_benchmark(args) -> int:
     return cmd_eval(args)
 
 
+def _prompt_for_key() -> str | None:
+    """Ask for a key and save it. Returns the key, or None if skipped."""
+    import getpass
+
+    print("Get one from https://console.anthropic.com/settings/keys")
+    print("Paste it here (nothing is echoed), or press Enter to skip.")
+    try:
+        key = getpass.getpass("Key: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    if not key:
+        return None
+    if not key.startswith("sk-ant-"):
+        print("warning: Anthropic keys normally start with 'sk-ant-'. Saving it anyway.")
+    path = env.write_key(key)
+    os.environ["ANTHROPIC_API_KEY"] = key
+    print(f"Saved to {path}\n")
+    return key
+
+
 def cmd_key(args) -> int:
     """Save an API key, so nobody has to work out where the file goes."""
     import getpass
@@ -160,29 +180,31 @@ def cmd_key(args) -> int:
             print(f"run 'geolocate key' to save one to {env.preferred_path()}")
         return 0
 
-    print("Paste your Anthropic API key (nothing is echoed).")
-    print("Get one from https://console.anthropic.com/settings/keys\n")
-    try:
-        key = getpass.getpass("Key: ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print("\ncancelled")
-        return 1
-    if not key:
+    if _prompt_for_key() is None:
         print("nothing entered; no change made")
         return 1
-    if not key.startswith("sk-ant-"):
-        print("warning: Anthropic keys normally start with 'sk-ant-'. Saving it anyway.")
-
-    path = env.write_key(key)
-    print(f"\nSaved to {path}")
     print("That file is gitignored. Now run: geolocate serve")
     return 0
 
 
 def cmd_serve(args) -> int:
+    from .reasoner import ReasonerHead
     from .server import serve
 
-    serve(_build_locator(args), host=args.host, port=args.port)
+    # Without a key the app can only read GPS tags, which is not what anyone
+    # started it for. Ask once, here, rather than let them find out later.
+    if not args.no_reasoner and not ReasonerHead.is_configured():
+        print("No API key saved yet -- the model needs one to read the picture.\n")
+        if _prompt_for_key() is None:
+            print("\nCarrying on without it: GPS metadata only.")
+            print("Run 'geolocate key' any time to add one.\n")
+
+    serve(
+        _build_locator(args),
+        host=args.host,
+        port=args.port,
+        open_browser=not args.no_open,
+    )
     return 0
 
 
@@ -247,6 +269,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("serve", help="run the local web interface", parents=[common])
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--no-open", action="store_true", help="do not open a browser")
     s.set_defaults(func=cmd_serve)
 
     return parser

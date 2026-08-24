@@ -105,14 +105,22 @@ def _handler_factory(locator):
     return Handler
 
 
-def serve(locator, host: str = "127.0.0.1", port: int = 8000) -> None:
+def serve(locator, host: str = "127.0.0.1", port: int = 8000, open_browser: bool = True) -> None:
     print("loading models...")
     try:
         locator.warm_up()
     except Exception as exc:  # noqa: BLE001
         print(f"  warning: {exc}")
     httpd = ThreadingHTTPServer((host, port), _handler_factory(locator))
-    print(f"\n  geolocator running at http://{host}:{port}\n  ctrl-c to stop\n")
+    url = f"http://{host}:{port}"
+    print(f"\n  geolocator running at {url}\n  ctrl-c to stop\n")
+
+    if open_browser:
+        # Opening it saves a step, and a headless box just fails quietly.
+        import threading
+        import webbrowser
+
+        threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
