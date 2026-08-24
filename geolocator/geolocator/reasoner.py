@@ -47,6 +47,13 @@ form, road surface, street furniture, power-line style.
 6. Camera signature. If it looks like street-level survey imagery, note the \
 generation and any rig artefacts, which narrow the country and the year.
 
+Before naming any country, commit to a climate zone and say what rules the
+others out. Skipping this step is what produces confident answers on the wrong
+continent: a lone palm and a pink flowering shrub will carry you to the
+Mediterranean from a humid tropical city if you let them, because that is the
+cliche the cues superficially match. State the zone, state the discriminator,
+then reason about countries within it.
+
 Traps that flip a whole hemisphere, so check them before committing:
 
 - Casuarina (she-oak) reads as a pine at a glance and is a tropical and
@@ -65,6 +72,13 @@ Traps that flip a whole hemisphere, so check them before committing:
   1970s Mediterranean resort, but the same vocabulary is used in tropical
   Asian, Gulf and Brazilian developments built at any time since. Do not let
   the architectural era imply a region on its own.
+- Heavy atmospheric haze that softens middle distance, combined with saturated
+  year-round green and immaculate irrigated planting, is humid-tropical urban
+  far more often than it is Mediterranean, where air is typically clearer and
+  the dry season leaves grass browned.
+- A view looking down from height through glass usually means a residential
+  tower, which concentrates the answer in dense, affluent, high-rise cities
+  rather than in low-rise resort coastline.
 - Heavy atmospheric haze in an otherwise sunny frame suggests high humidity,
   which argues against a Mediterranean summer.
 
@@ -84,6 +98,13 @@ thousands of km when you only have a biome.
 RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
+        "climate_zone": {
+            "type": "string",
+            "description": (
+                "The Koppen-style zone committed to before naming a country, "
+                "with the observation that rules out the neighbouring zones."
+            ),
+        },
         "cues": {
             "type": "object",
             "properties": {
@@ -153,7 +174,8 @@ RESPONSE_SCHEMA = {
         "reasoning": {"type": "string"},
         "evidence_strength": {"type": "string", "enum": ["strong", "moderate", "weak"]},
     },
-    "required": ["cues", "countries", "candidates", "reasoning", "evidence_strength"],
+    "required": ["climate_zone", "cues", "countries", "candidates", "reasoning",
+                 "evidence_strength"],
     "additionalProperties": False,
 }
 
