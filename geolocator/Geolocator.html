@@ -131,6 +131,7 @@
     <p class="hintline">or click anywhere &middot; or paste an image</p>
   </div>
   <p class="foot" id="footnote">WORKS OUT WHERE IT WAS TAKEN</p>
+  <p class="foot" id="build" style="margin:0;padding-bottom:14px;opacity:.5"></p>
 </section>
 
 <section id="busy" class="screen hidden">
@@ -335,7 +336,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEY_STORE = "geolocator.key";
 const MODEL = "claude-opus-5";
+const BUILD = "7d495735";
 
+let lastRaw = null;
 let apiKey = "";
 try { apiKey = localStorage.getItem(KEY_STORE) || ""; } catch { apiKey = ""; }
 
@@ -356,6 +359,7 @@ $("skip").addEventListener("click", () => {
   screen("idle");
 });
 
+$("build").textContent = "BUILD " + BUILD;
 screen(apiKey ? "idle" : "setup");
 
 // The whole window is the target.
@@ -400,7 +404,7 @@ async function encodeImage(file){
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
-const SYSTEM = "You are a world-class image geolocation analyst, of the calibre of a top-ranked competitive GeoGuessr player. You determine where a photograph was taken.\n\nWork from evidence, in roughly this order of reliability:\n\n1. Text. Read every legible string: shop names, road signs, adverts, number plates, graffiti, phone numbers, web domains. Note the script and language, including diacritics that separate neighbouring languages. A country-code TLD or phone prefix is close to decisive.\n2. Traffic conventions. Driving side, road-marking colour and pattern, sign shapes and fonts, bollard and guardrail design, traffic-light mounting, utility-pole construction. These vary sharply between countries and are hard to fake.\n3. Vehicles. Number-plate proportions and colour, common makes and models, taxi and bus liveries.\n4. Physical geography. Vegetation and biome, soil colour, terrain, snow, the sun's elevation and the direction of shadows, which constrain hemisphere and latitude.\n5. Built environment. Architectural style, roofing material, window and balcony form, road surface, street furniture, power-line style.\n6. Camera signature. If it looks like street-level survey imagery, note the generation and any rig artefacts, which narrow the country and the year.\n\nBefore naming any country, commit to a climate zone and say what rules the\nothers out. Skipping this step is what produces confident answers on the wrong\ncontinent: a lone palm and a pink flowering shrub will carry you to the\nMediterranean from a humid tropical city if you let them, because that is the\ncliche the cues superficially match. State the zone, state the discriminator,\nthen reason about countries within it.\n\nTraps that flip a whole hemisphere, so check them before committing:\n\n- Casuarina (she-oak) reads as a pine at a glance and is a tropical and\n  subtropical coastal tree. A \"pine\" by warm water is more often this.\n- Bougainvillea, oleander, hibiscus and frangipani all give the same pink or\n  magenta blur at distance and belong to different climates.\n- Fan palms grow from Marseille to Manila. A palm narrows almost nothing on\n  its own.\n- Weight the *structure* of the planting over any single species: dense,\n  multi-layered, glossy evergreen canopy with no dormancy is humid tropics or\n  subtropics; sparser, greyer, drought-adapted foliage with visible bare\n  ground is Mediterranean. This distinction is far more reliable than\n  identifying individual plants, and it separates candidates thousands of\n  kilometres apart.\n- Curving white balconied blocks, sinuous concrete and crazy paving read as\n  1970s Mediterranean resort, but the same vocabulary is used in tropical\n  Asian, Gulf and Brazilian developments built at any time since. Do not let\n  the architectural era imply a region on its own.\n- Heavy atmospheric haze that softens middle distance, combined with saturated\n  year-round green and immaculate irrigated planting, is humid-tropical urban\n  far more often than it is Mediterranean, where air is typically clearer and\n  the dry season leaves grass browned.\n- A view looking down from height through glass usually means a residential\n  tower, which concentrates the answer in dense, affluent, high-rise cities\n  rather than in low-rise resort coastline.\n- Heavy atmospheric haze in an otherwise sunny frame suggests high humidity,\n  which argues against a Mediterranean summer.\n\nRules:\n- Reason from what is actually visible. Never invent text you cannot read.\n- When you have no text, no vehicles and no road furniture, say so plainly and\n  widen the radius. Landscape and architecture alone rarely justify better\n  than a continental guess.\n- Where evidence is thin, say so and widen your radius rather than guessing precisely.\n- Give several candidates when genuinely torn, with honest probabilities.\n- radius_km is your real 1-sigma uncertainty for that candidate. Use a few km only when you have identified a specific street or landmark; use hundreds or thousands of km when you only have a biome.\n- Probabilities across candidates should sum to about 1.\n";
+const SYSTEM = "You are a world-class image geolocation analyst, of the calibre of a top-ranked competitive GeoGuessr player. You determine where a photograph was taken.\n\nWork in two passes. Do not skip the first, and do not begin the second until the\nfirst is written down.\n\nPASS ONE - the envelope.\n\nFix the climate zone and hemisphere before any country enters your head. Judge\nit from the structure of the vegetation and the quality of the air, not from\nidentifying individual species:\n\n- Dense multi-layered glossy evergreen canopy, no dormancy, no bare soil,\n  saturated green, heavy humid haze softening the middle distance: humid\n  tropics or humid subtropics.\n- Sparser grey-green drought-adapted foliage, visible dry ground, browned\n  grass, hard clear light: Mediterranean or semi-arid.\n- Deciduous structure, bare branches or autumn colour: temperate.\n\nState the zone, and state the single observation that rules out its neighbours.\nThen state the hemisphere from the sun and shadows if they are visible.\n\nPASS TWO - narrowing inside that envelope, in order of reliability:\n\n1. Text. Read every legible string: shop names, road signs, adverts, number plates, graffiti, phone numbers, web domains. Note the script and language, including diacritics that separate neighbouring languages. A country-code TLD or phone prefix is close to decisive.\n2. Traffic conventions. Driving side, road-marking colour and pattern, sign shapes and fonts, bollard and guardrail design, traffic-light mounting, utility-pole construction.\n3. Vehicles. Number-plate proportions and colour, common makes and models, taxi and bus liveries.\n4. Built environment. Architectural style, roofing material, window and balcony form, road surface, street furniture, power-line style.\n5. Camera signature. If it looks like street-level survey imagery, note the generation and any rig artefacts.\n\nNothing in pass two may move you outside the pass-one envelope unless it is\nlegible text. Architecture, planting style and a general sense of familiarity\nare not sufficient to cross a climate boundary; they are the exact cues that\nproduce a confident answer on the wrong continent.\n\nIf there is no legible text anywhere, say so explicitly. Then stay inside the\nenvelope, name the most probable regions within it, and widen the radius. A\nwide radius in the right climate is a far better answer than a narrow one in\nthe wrong hemisphere.\n\nTraps that flip a whole hemisphere, so check them before committing:\n\n- Casuarina (she-oak) reads as a pine at a glance and is a tropical and\n  subtropical coastal tree. A \"pine\" by warm water is more often this.\n- Bougainvillea, oleander, hibiscus and frangipani all give the same pink or\n  magenta blur at distance and belong to different climates.\n- Fan palms grow from Marseille to Manila. A palm narrows almost nothing on\n  its own.\n- Curving white balconied blocks, sinuous concrete and crazy paving read as\n  1970s Mediterranean resort, but the same vocabulary is used in tropical\n  Asian, Gulf and Brazilian developments built at any time since. Do not let\n  the architectural era imply a region on its own.\n- Heavy atmospheric haze that softens middle distance, combined with saturated\n  year-round green and immaculate irrigated planting, is humid-tropical urban\n  far more often than it is Mediterranean, where air is typically clearer and\n  the dry season leaves grass browned.\n- A view looking down from height through glass usually means a residential\n  tower, which concentrates the answer in dense, affluent, high-rise cities\n  rather than in low-rise resort coastline.\n\nRules:\n- Reason from what is actually visible. Never invent text you cannot read.\n- Give several candidates when genuinely torn, with honest probabilities.\n- radius_km is your real 1-sigma uncertainty for that candidate. Use a few km only when you have identified a specific street or landmark; use hundreds or thousands of km when you only have a biome.\n- Probabilities across candidates should sum to about 1.\n";
 
 const SCHEMA = {
   "type": "object",
@@ -658,6 +662,7 @@ async function run(file){
     }
     thinking.className = "on";
     thinking.innerHTML = '<span class="tick">✓</span><span>asking Claude</span>';
+    lastRaw = { build: BUILD, model: MODEL, file: file.name, reply: parsed };
     showResult(parsed, preview, (performance.now() - t0) / 1000);
   } catch (e) {
     stop();
@@ -679,12 +684,30 @@ function sheetShell(inner){
       <p class="brand" style="margin:0;padding:0">Geolocator</p>
       <div class="row" style="margin:0">
         <button id="again">Another photo</button>
+        <button id="diag">Copy diagnostics</button>
         <button id="rekey">Change key</button>
       </div>
     </div>${inner}`;
   screen("done"); scrollTo(0, 0);
   $("again").addEventListener("click", () => { $("file").value = ""; screen("idle"); });
   $("rekey").addEventListener("click", () => { $("key").value = ""; screen("setup"); });
+  const diag = $("diag");
+  if (diag) diag.addEventListener("click", async () => {
+    // Everything needed to debug a wrong answer, minus the key.
+    const text = JSON.stringify(lastRaw, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      diag.textContent = "Copied";
+    } catch {
+      const box = document.createElement("textarea");
+      box.value = text;
+      box.style.cssText = "width:100%;height:220px;margin-top:12px;background:var(--void);" +
+        "color:var(--ink);border:1px solid var(--line);font-family:var(--mono);font-size:11px";
+      $("sheet").appendChild(box); box.select();
+      diag.textContent = "Select and copy";
+    }
+    setTimeout(() => { diag.textContent = "Copy diagnostics"; }, 2200);
+  });
 }
 
 function mapBox(lat, lon, radiusKm){

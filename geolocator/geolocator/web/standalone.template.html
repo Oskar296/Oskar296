@@ -131,6 +131,7 @@
     <p class="hintline">or click anywhere &middot; or paste an image</p>
   </div>
   <p class="foot" id="footnote">WORKS OUT WHERE IT WAS TAKEN</p>
+  <p class="foot" id="build" style="margin:0;padding-bottom:14px;opacity:.5"></p>
 </section>
 
 <section id="busy" class="screen hidden">
@@ -158,7 +159,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEY_STORE = "geolocator.key";
 const MODEL = __MODEL__;
+const BUILD = __BUILD__;
 
+let lastRaw = null;
 let apiKey = "";
 try { apiKey = localStorage.getItem(KEY_STORE) || ""; } catch { apiKey = ""; }
 
@@ -179,6 +182,7 @@ $("skip").addEventListener("click", () => {
   screen("idle");
 });
 
+$("build").textContent = "BUILD " + BUILD;
 screen(apiKey ? "idle" : "setup");
 
 // The whole window is the target.
@@ -327,6 +331,7 @@ async function run(file){
     }
     thinking.className = "on";
     thinking.innerHTML = '<span class="tick">✓</span><span>asking Claude</span>';
+    lastRaw = { build: BUILD, model: MODEL, file: file.name, reply: parsed };
     showResult(parsed, preview, (performance.now() - t0) / 1000);
   } catch (e) {
     stop();
@@ -348,12 +353,30 @@ function sheetShell(inner){
       <p class="brand" style="margin:0;padding:0">Geolocator</p>
       <div class="row" style="margin:0">
         <button id="again">Another photo</button>
+        <button id="diag">Copy diagnostics</button>
         <button id="rekey">Change key</button>
       </div>
     </div>${inner}`;
   screen("done"); scrollTo(0, 0);
   $("again").addEventListener("click", () => { $("file").value = ""; screen("idle"); });
   $("rekey").addEventListener("click", () => { $("key").value = ""; screen("setup"); });
+  const diag = $("diag");
+  if (diag) diag.addEventListener("click", async () => {
+    // Everything needed to debug a wrong answer, minus the key.
+    const text = JSON.stringify(lastRaw, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      diag.textContent = "Copied";
+    } catch {
+      const box = document.createElement("textarea");
+      box.value = text;
+      box.style.cssText = "width:100%;height:220px;margin-top:12px;background:var(--void);" +
+        "color:var(--ink);border:1px solid var(--line);font-family:var(--mono);font-size:11px";
+      $("sheet").appendChild(box); box.select();
+      diag.textContent = "Select and copy";
+    }
+    setTimeout(() => { diag.textContent = "Copy diagnostics"; }, 2200);
+  });
 }
 
 function mapBox(lat, lon, radiusKm){

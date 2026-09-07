@@ -10,6 +10,7 @@ already been taught to avoid. Generating it removes the chance of that.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import pathlib
 import sys
@@ -29,8 +30,14 @@ def render() -> str:
     html = TEMPLATE.read_text(encoding="utf-8")
     # json.dumps gives a correctly escaped JS string literal, so a backtick or
     # a ${ in the prompt cannot break out of the template.
+    # A short stamp derived from the prompt and schema, so a stale copy of the
+    # file is identifiable on sight rather than guessed at.
+    build = hashlib.sha256(
+        (SYSTEM_PROMPT + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode()
+    ).hexdigest()[:8]
     return (
-        html.replace("__SYSTEM_PROMPT__", json.dumps(SYSTEM_PROMPT))
+        html.replace("__BUILD__", json.dumps(build))
+        .replace("__SYSTEM_PROMPT__", json.dumps(SYSTEM_PROMPT))
         .replace("__SCHEMA__", json.dumps(RESPONSE_SCHEMA, indent=2))
         .replace("__MODEL__", json.dumps(DEFAULT_MODEL))
         .replace("__EXIF_JS__", exif)
