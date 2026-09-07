@@ -111,7 +111,8 @@ class _StubClient:
 
 PAYLOAD = {
     "cues": {
-        "visible_text": ["Kungsgatan", "Apotek"],
+        "scene_text": ["Kungsgatan", "Apotek"],
+        "overlay_text": [],
         "script": "Latin",
         "languages": ["Swedish"],
         "driving_side": "right",
@@ -314,3 +315,26 @@ def test_agreement_uses_each_pass_best_guess_not_its_first_line():
     assert merged.evidence["agreement"] == 1.0
     assert merged.trust == pytest.approx(1.4, rel=1e-6)
     assert all("Singapore" in t["label"] for t in merged.evidence["per_sample_top"])
+
+
+def test_cues_separate_scene_text_from_overlays():
+    """A watermark names the publisher, not the place. It cost us a country."""
+    from geolocator.reasoner import RESPONSE_SCHEMA, SYSTEM_PROMPT
+
+    cues = RESPONSE_SCHEMA["properties"]["cues"]
+    assert "scene_text" in cues["required"]
+    assert "overlay_text" in cues["required"]
+    assert "visible_text" not in cues["properties"], "the ambiguous field must be gone"
+    assert "watermark" in SYSTEM_PROMPT.lower()
+    # Overlay text must be explicitly disqualified, not merely mentioned.
+    assert "must never move the answer" in SYSTEM_PROMPT
+
+
+def test_overlay_text_is_carried_through_as_evidence():
+    payload = dict(PAYLOAD)
+    payload["cues"] = dict(PAYLOAD["cues"],
+                           scene_text=["RIPTIDE ROCKET"],
+                           overlay_text=["GOtravel Malaysian Flavours"])
+    out = ReasonerHead(client=_StubClient(_Response(payload))).predict(Image.new("RGB", (8, 8)))
+    assert out.evidence["cues"]["overlay_text"] == ["GOtravel Malaysian Flavours"]
+    assert out.evidence["cues"]["scene_text"] == ["RIPTIDE ROCKET"]

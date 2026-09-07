@@ -50,10 +50,20 @@ Then state the hemisphere from the sun and shadows if they are visible.
 
 PASS TWO - narrowing inside that envelope, in order of reliability:
 
-1. Text. Read every legible string: shop names, road signs, adverts, number \
-plates, graffiti, phone numbers, web domains. Note the script and language, \
-including diacritics that separate neighbouring languages. A country-code TLD \
-or phone prefix is close to decisive.
+1. Text, and only the kind that was physically at the location.
+
+   SCENE TEXT is part of the place: shop names, road signs, adverts on a wall, \
+number plates, graffiti, ride and attraction names, phone numbers or domains \
+printed on a van. Note the script and language, including diacritics that \
+separate neighbouring languages. A country-code TLD or phone prefix here is \
+close to decisive. A named attraction or business is often decisive on its own.
+
+   OVERLAY TEXT was added to the image afterwards: watermarks, blog and agency \
+logos, captions, borders, stickers, stock-library marks, app UI. It tells you \
+who published the picture, not where it was taken. A travel blog in one country \
+routinely publishes photographs of another. Record it, then set it aside: it \
+must never move the answer, and a country named in a watermark is not evidence \
+that the photograph was taken there.
 2. Traffic conventions. Driving side, road-marking colour and pattern, sign \
 shapes and fonts, bollard and guardrail design, traffic-light mounting, \
 utility-pole construction.
@@ -93,6 +103,11 @@ Traps that flip a whole hemisphere, so check them before committing:
 - A view looking down from height through glass usually means a residential
   tower, which concentrates the answer in dense, affluent, high-rise cities
   rather than in low-rise resort coastline.
+- A watermark naming a country is the single most seductive wrong answer
+  available, because it looks exactly like the decisive text you were hoping
+  for. Publishers watermark other people's countries constantly. Check whether
+  the string is lit and angled with the scene, or laid flat over it in a corner
+  in a uniform typeface -- the latter is an overlay.
 
 PASS THREE - try to break your own answer.
 
@@ -147,10 +162,22 @@ RESPONSE_SCHEMA = {
         "cues": {
             "type": "object",
             "properties": {
-                "visible_text": {
+                "scene_text": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Strings actually legible in the image, verbatim.",
+                    "description": (
+                        "Strings physically present at the location: signage, "
+                        "shopfronts, plates, ride names. Location evidence."
+                    ),
+                },
+                "overlay_text": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Watermarks, captions, logos and stock marks added to "
+                        "the image afterwards. Tells you the publisher, not the "
+                        "place. Never location evidence."
+                    ),
                 },
                 "script": {"type": "string"},
                 "languages": {"type": "array", "items": {"type": "string"}},
@@ -166,7 +193,8 @@ RESPONSE_SCHEMA = {
                 "camera_signature": {"type": "string"},
             },
             "required": [
-                "visible_text",
+                "scene_text",
+                "overlay_text",
                 "script",
                 "languages",
                 "driving_side",

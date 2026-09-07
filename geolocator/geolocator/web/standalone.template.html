@@ -223,6 +223,7 @@ function mergePasses(list){
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const OVERLAY_NOTE = ' <span style="color:var(--muted)">&mdash; publisher, not location</span>';
 const KEY_STORE = "geolocator.key";
 const MODEL = __MODEL__;
 const BUILD = __BUILD__;
@@ -505,7 +506,13 @@ function showResult(d, preview, secs){
   const cues = Object.entries(d.cues || {}).filter(([, v]) => {
     const t = Array.isArray(v) ? v.join(", ") : v;
     return t && t !== "unknown" && t !== "none" && t !== "not visible";
-  }).map(([k, v]) => `<tr><td>${esc(k.replace(/_/g, " "))}</td><td>${esc(Array.isArray(v) ? v.join(", ") : v)}</td></tr>`).join("");
+  }).map(([k, v]) => {
+    const t = esc(Array.isArray(v) ? v.join(", ") : v);
+    // Show that a watermark was seen and deliberately disregarded, rather
+    // than leaving it looking like evidence that was used.
+    const note = k === "overlay_text" ? OVERLAY_NOTE : "";
+    return `<tr><td>${esc(k.replace(/_/g, " "))}</td><td>${t}${note}</td></tr>`;
+  }).join("");
 
   const others = ranked.slice(1).map(c =>
     `${esc(c.label)} (${Math.round((c.probability || 0) * 100)}%)`).join("  ·  ");
