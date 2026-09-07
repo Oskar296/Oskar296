@@ -276,3 +276,41 @@ def test_all_passes_failing_raises():
     head = ReasonerHead(ReasonerConfig(samples=2), client=_StubClient(RuntimeError("boom")))
     with pytest.raises(ReasonerUnavailable):
         head.predict(Image.new("RGB", (8, 8)))
+
+
+def test_candidates_come_back_ordered_by_probability():
+    """Nothing requires the model to list its best guess first, and several
+    things downstream assume the first one is the best."""
+    shuffled = dict(PAYLOAD, candidates=[
+        {"label": "Bangkok", "lat": 13.75, "lon": 100.50, "radius_km": 30, "probability": 0.2},
+        {"label": "Singapore", "lat": 1.29, "lon": 103.85, "radius_km": 8, "probability": 0.7},
+        {"label": "Jakarta", "lat": -6.21, "lon": 106.85, "radius_km": 40, "probability": 0.1},
+    ])
+    out = ReasonerHead(client=_StubClient(_Response(shuffled))).predict(Image.new("RGB", (8, 8)))
+    assert [c.label for c in out.candidates] == ["Singapore", "Bangkok", "Jakarta"]
+
+
+def test_agreement_uses_each_pass_best_guess_not_its_first_line():
+    """Three passes that all favour Singapore agree, even when one of them
+    happens to list a rival first."""
+    from geolocator.reasoner import ReasonerConfig, merge_samples
+    from geolocator.types import GeoCandidate, HeadOutput
+
+    def pass_with(order):
+        return HeadOutput(
+            "reasoner",
+            [GeoCandidate(lat, lon, w, 20.0, "reasoner", label) for lat, lon, w, label in order],
+            trust=1.4,
+            evidence={},
+        )
+
+    outs = [
+        pass_with([(1.29, 103.85, 0.7, "Singapore"), (13.75, 100.5, 0.3, "Bangkok")]),
+        # This pass agrees, but wrote the rival down first.
+        pass_with([(13.75, 100.5, 0.25, "Bangkok"), (1.30, 103.86, 0.75, "Singapore")]),
+        pass_with([(1.28, 103.84, 0.8, "Singapore"), (13.75, 100.5, 0.2, "Bangkok")]),
+    ]
+    merged = merge_samples(outs, ReasonerConfig())
+    assert merged.evidence["agreement"] == 1.0
+    assert merged.trust == pytest.approx(1.4, rel=1e-6)
+    assert all("Singapore" in t["label"] for t in merged.evidence["per_sample_top"])

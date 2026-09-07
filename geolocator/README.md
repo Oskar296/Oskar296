@@ -231,7 +231,9 @@ with the same keys.
 ## Tests
 
 ```bash
-pytest
+pytest                            # python
+node tests/web/exif.test.mjs      # browser EXIF parser
+node tests/web/merge.test.mjs     # multi-pass pooling in the standalone build
 ```
 
 57 tests. The geometry, fusion, EXIF, orchestration, server and evaluation

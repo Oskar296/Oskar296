@@ -414,6 +414,10 @@ class ReasonerHead:
         if not candidates:
             raise ReasonerUnavailable("the model proposed no usable coordinates")
 
+        # Nothing obliges the model to list its best guess first, and several
+        # things downstream take the first candidate as the answer.
+        candidates.sort(key=lambda c: c.weight, reverse=True)
+
         strength = str(payload.get("evidence_strength", "moderate")).lower()
         trust = cfg.trust_by_strength.get(strength, 1.0) * cfg.trust_scale
 
@@ -477,7 +481,9 @@ def merge_samples(outputs: list[HeadOutput], config: "ReasonerConfig") -> HeadOu
     if len(outputs) == 1:
         return outputs[0]
 
-    tops = [o.candidates[0] for o in outputs if o.candidates]
+    tops = [
+        max(o.candidates, key=lambda c: c.weight) for o in outputs if o.candidates
+    ]
     agreement = _agreement([(c.lat, c.lon) for c in tops])
 
     pooled: list[GeoCandidate] = []

@@ -168,7 +168,9 @@ function mergePasses(list){
   if (!list.length) return null;
   if (list.length === 1) return list[0];
 
-  const tops = list.map(r => (r.candidates || [])[0]).filter(Boolean);
+  const bestOf = (r) => (r.candidates || []).reduce(
+    (a, c) => ((c.probability || 0) > (a?.probability || -1) ? c : a), null);
+  const tops = list.map(bestOf).filter(Boolean);
   const spreads = [];
   for (let i = 0; i < tops.length; i++)
     for (let j = i + 1; j < tops.length; j++)
@@ -176,16 +178,32 @@ function mergePasses(list){
   spreads.sort((a, b) => a - b);
   const spread = spreads.length ? spreads[Math.floor(spreads.length / 2)] : 0;
 
-  const pooled = [];
+  const raw = [];
   for (const r of list) {
     const total = (r.candidates || []).reduce((s, c) => s + (c.probability || 0), 0) || 1;
     for (const c of r.candidates || [])
-      pooled.push({ ...c, probability: (c.probability || 0) / total / list.length });
+      raw.push({ ...c, probability: (c.probability || 0) / total / list.length });
+  }
+  raw.sort((a, b) => b.probability - a.probability);
+
+  // Passes naming the same place land a few km apart, so without merging them
+  // three passes agreeing on one city would each hold a third of the weight
+  // and the answer would read as *less* confident the more they agreed.
+  const CLUSTER_KM = 50;
+  const pooled = [];
+  for (const c of raw) {
+    const near = pooled.find(p => haversineKm(p.lat, p.lon, c.lat, c.lon) <= CLUSTER_KM);
+    if (near) {
+      near.probability += c.probability;
+      near.radius_km = Math.min(near.radius_km, c.radius_km);
+    } else {
+      pooled.push({ ...c });
+    }
   }
   pooled.sort((a, b) => b.probability - a.probability);
 
   const best = list.reduce((a, b) =>
-    ((b.candidates || [])[0]?.probability || 0) > ((a.candidates || [])[0]?.probability || 0) ? b : a);
+    (bestOf(b)?.probability || 0) > (bestOf(a)?.probability || 0) ? b : a);
 
   // Agreement caps how confident the pooled answer may claim to be.
   const factor = spread <= 50 ? 1 : spread >= 3000 ? 0.25
@@ -474,7 +492,9 @@ function showExif(gps, preview){
 }
 
 function showResult(d, preview, secs){
-  const best = d.candidates.slice().sort((a, b) => (b.probability || 0) - (a.probability || 0))[0];
+  const ranked = d.candidates.slice().sort(
+    (a, b) => (b.probability || 0) - (a.probability || 0));
+  const best = ranked[0];
   const conf = Math.round(Math.max(0, Math.min(1, best.probability || 0)) * 100);
   const level = conf >= 70 ? "sure" : conf >= 35 ? "" : "unsure";
   const word = conf >= 70 ? "high" : conf >= 35 ? "moderate" : "low";
@@ -487,7 +507,7 @@ function showResult(d, preview, secs){
     return t && t !== "unknown" && t !== "none" && t !== "not visible";
   }).map(([k, v]) => `<tr><td>${esc(k.replace(/_/g, " "))}</td><td>${esc(Array.isArray(v) ? v.join(", ") : v)}</td></tr>`).join("");
 
-  const others = d.candidates.slice(1).map(c =>
+  const others = ranked.slice(1).map(c =>
     `${esc(c.label)} (${Math.round((c.probability || 0) * 100)}%)`).join("  ·  ");
 
   sheetShell(`
