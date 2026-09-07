@@ -130,6 +130,26 @@ Runner-up modes are reported as alternatives instead.
 
 ---
 
+## When it gets one wrong
+
+Two things worth trying before assuming it cannot do better:
+
+```bash
+geolocate photo.jpg --samples 3 --explain
+```
+
+Three independent passes, pooled. Passes are the same model looking repeatedly,
+so they are combined as a mixture rather than multiplied — they are not
+independent evidence. What they legitimately give you is a **spread**: three
+answers within a city means something, three answers on three continents means
+the confidence was never real, and the merged trust is cut accordingly. The
+standalone file has the same thing behind a "Re-run 3 passes" button.
+
+The prompt also works in three passes: fix the climate envelope, narrow inside
+it, then try to break the answer by naming what you would expect to see and
+checking whether it is there. That last step exists because warnings alone do
+not stop anchoring — being made to name disconfirming evidence does.
+
 ## Measuring it
 
 Guessing at one photo tells you nothing. Build a real labelled set from Street

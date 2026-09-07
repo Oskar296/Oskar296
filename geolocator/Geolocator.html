@@ -330,15 +330,64 @@ function extractGps(buffer) {
 }
 
 
+function haversineKm(aLat, aLon, bLat, bLon){
+  const R = 6371.0088, rad = (d) => d * Math.PI / 180;
+  const p1 = rad(aLat), p2 = rad(bLat), dp = p2 - p1;
+  const dl = rad(((bLon - aLon + 180) % 360 + 360) % 360 - 180);
+  const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Several passes are the same model looking twice, so they are pooled as a
+// mixture rather than multiplied together. Their spread is what is worth
+// reporting: three answers on three continents should not read as confident.
+function mergePasses(list){
+  if (!list.length) return null;
+  if (list.length === 1) return list[0];
+
+  const tops = list.map(r => (r.candidates || [])[0]).filter(Boolean);
+  const spreads = [];
+  for (let i = 0; i < tops.length; i++)
+    for (let j = i + 1; j < tops.length; j++)
+      spreads.push(haversineKm(tops[i].lat, tops[i].lon, tops[j].lat, tops[j].lon));
+  spreads.sort((a, b) => a - b);
+  const spread = spreads.length ? spreads[Math.floor(spreads.length / 2)] : 0;
+
+  const pooled = [];
+  for (const r of list) {
+    const total = (r.candidates || []).reduce((s, c) => s + (c.probability || 0), 0) || 1;
+    for (const c of r.candidates || [])
+      pooled.push({ ...c, probability: (c.probability || 0) / total / list.length });
+  }
+  pooled.sort((a, b) => b.probability - a.probability);
+
+  const best = list.reduce((a, b) =>
+    ((b.candidates || [])[0]?.probability || 0) > ((a.candidates || [])[0]?.probability || 0) ? b : a);
+
+  // Agreement caps how confident the pooled answer may claim to be.
+  const factor = spread <= 50 ? 1 : spread >= 3000 ? 0.25
+    : 1 - (Math.log(spread / 50) / Math.log(3000 / 50)) * 0.75;
+  if (pooled[0]) pooled[0].probability = Math.min(pooled[0].probability, factor);
+
+  return {
+    ...best,
+    candidates: pooled.slice(0, 6),
+    __spreadKm: Math.round(spread),
+    __passes: list.length,
+    reasoning: list.map((r, i) => `Pass ${i + 1}: ${r.reasoning || ""}`).join("\n\n"),
+  };
+}
+
 // ---------------------------------------------------------------- app ----
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KEY_STORE = "geolocator.key";
 const MODEL = "claude-opus-5";
-const BUILD = "7d495735";
+const BUILD = "d539029b";
 
 let lastRaw = null;
+let lastFile = null;
 let apiKey = "";
 try { apiKey = localStorage.getItem(KEY_STORE) || ""; } catch { apiKey = ""; }
 
@@ -404,7 +453,7 @@ async function encodeImage(file){
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
-const SYSTEM = "You are a world-class image geolocation analyst, of the calibre of a top-ranked competitive GeoGuessr player. You determine where a photograph was taken.\n\nWork in two passes. Do not skip the first, and do not begin the second until the\nfirst is written down.\n\nPASS ONE - the envelope.\n\nFix the climate zone and hemisphere before any country enters your head. Judge\nit from the structure of the vegetation and the quality of the air, not from\nidentifying individual species:\n\n- Dense multi-layered glossy evergreen canopy, no dormancy, no bare soil,\n  saturated green, heavy humid haze softening the middle distance: humid\n  tropics or humid subtropics.\n- Sparser grey-green drought-adapted foliage, visible dry ground, browned\n  grass, hard clear light: Mediterranean or semi-arid.\n- Deciduous structure, bare branches or autumn colour: temperate.\n\nState the zone, and state the single observation that rules out its neighbours.\nThen state the hemisphere from the sun and shadows if they are visible.\n\nPASS TWO - narrowing inside that envelope, in order of reliability:\n\n1. Text. Read every legible string: shop names, road signs, adverts, number plates, graffiti, phone numbers, web domains. Note the script and language, including diacritics that separate neighbouring languages. A country-code TLD or phone prefix is close to decisive.\n2. Traffic conventions. Driving side, road-marking colour and pattern, sign shapes and fonts, bollard and guardrail design, traffic-light mounting, utility-pole construction.\n3. Vehicles. Number-plate proportions and colour, common makes and models, taxi and bus liveries.\n4. Built environment. Architectural style, roofing material, window and balcony form, road surface, street furniture, power-line style.\n5. Camera signature. If it looks like street-level survey imagery, note the generation and any rig artefacts.\n\nNothing in pass two may move you outside the pass-one envelope unless it is\nlegible text. Architecture, planting style and a general sense of familiarity\nare not sufficient to cross a climate boundary; they are the exact cues that\nproduce a confident answer on the wrong continent.\n\nIf there is no legible text anywhere, say so explicitly. Then stay inside the\nenvelope, name the most probable regions within it, and widen the radius. A\nwide radius in the right climate is a far better answer than a narrow one in\nthe wrong hemisphere.\n\nTraps that flip a whole hemisphere, so check them before committing:\n\n- Casuarina (she-oak) reads as a pine at a glance and is a tropical and\n  subtropical coastal tree. A \"pine\" by warm water is more often this.\n- Bougainvillea, oleander, hibiscus and frangipani all give the same pink or\n  magenta blur at distance and belong to different climates.\n- Fan palms grow from Marseille to Manila. A palm narrows almost nothing on\n  its own.\n- Curving white balconied blocks, sinuous concrete and crazy paving read as\n  1970s Mediterranean resort, but the same vocabulary is used in tropical\n  Asian, Gulf and Brazilian developments built at any time since. Do not let\n  the architectural era imply a region on its own.\n- Heavy atmospheric haze that softens middle distance, combined with saturated\n  year-round green and immaculate irrigated planting, is humid-tropical urban\n  far more often than it is Mediterranean, where air is typically clearer and\n  the dry season leaves grass browned.\n- A view looking down from height through glass usually means a residential\n  tower, which concentrates the answer in dense, affluent, high-rise cities\n  rather than in low-rise resort coastline.\n\nRules:\n- Reason from what is actually visible. Never invent text you cannot read.\n- Give several candidates when genuinely torn, with honest probabilities.\n- radius_km is your real 1-sigma uncertainty for that candidate. Use a few km only when you have identified a specific street or landmark; use hundreds or thousands of km when you only have a biome.\n- Probabilities across candidates should sum to about 1.\n";
+const SYSTEM = "You are a world-class image geolocation analyst, of the calibre of a top-ranked competitive GeoGuessr player. You determine where a photograph was taken.\n\nWork in two passes. Do not skip the first, and do not begin the second until the\nfirst is written down.\n\nPASS ONE - the envelope.\n\nFix the climate zone and hemisphere before any country enters your head. Judge\nit from the structure of the vegetation and the quality of the air, not from\nidentifying individual species:\n\n- Dense multi-layered glossy evergreen canopy, no dormancy, no bare soil,\n  saturated green, heavy humid haze softening the middle distance: humid\n  tropics or humid subtropics.\n- Sparser grey-green drought-adapted foliage, visible dry ground, browned\n  grass, hard clear light: Mediterranean or semi-arid.\n- Deciduous structure, bare branches or autumn colour: temperate.\n\nState the zone, and state the single observation that rules out its neighbours.\nThen state the hemisphere from the sun and shadows if they are visible.\n\nPASS TWO - narrowing inside that envelope, in order of reliability:\n\n1. Text. Read every legible string: shop names, road signs, adverts, number plates, graffiti, phone numbers, web domains. Note the script and language, including diacritics that separate neighbouring languages. A country-code TLD or phone prefix is close to decisive.\n2. Traffic conventions. Driving side, road-marking colour and pattern, sign shapes and fonts, bollard and guardrail design, traffic-light mounting, utility-pole construction.\n3. Vehicles. Number-plate proportions and colour, common makes and models, taxi and bus liveries.\n4. Built environment. Architectural style, roofing material, window and balcony form, road surface, street furniture, power-line style.\n5. Camera signature. If it looks like street-level survey imagery, note the generation and any rig artefacts.\n\nNothing in pass two may move you outside the pass-one envelope unless it is\nlegible text. Architecture, planting style and a general sense of familiarity\nare not sufficient to cross a climate boundary; they are the exact cues that\nproduce a confident answer on the wrong continent.\n\nIf there is no legible text anywhere, say so explicitly. Then stay inside the\nenvelope, name the most probable regions within it, and widen the radius. A\nwide radius in the right climate is a far better answer than a narrow one in\nthe wrong hemisphere.\n\nTraps that flip a whole hemisphere, so check them before committing:\n\n- Casuarina (she-oak) reads as a pine at a glance and is a tropical and\n  subtropical coastal tree. A \"pine\" by warm water is more often this.\n- Bougainvillea, oleander, hibiscus and frangipani all give the same pink or\n  magenta blur at distance and belong to different climates.\n- Fan palms grow from Marseille to Manila. A palm narrows almost nothing on\n  its own.\n- Curving white balconied blocks, sinuous concrete and crazy paving read as\n  1970s Mediterranean resort, but the same vocabulary is used in tropical\n  Asian, Gulf and Brazilian developments built at any time since. Do not let\n  the architectural era imply a region on its own.\n- Heavy atmospheric haze that softens middle distance, combined with saturated\n  year-round green and immaculate irrigated planting, is humid-tropical urban\n  far more often than it is Mediterranean, where air is typically clearer and\n  the dry season leaves grass browned.\n- A view looking down from height through glass usually means a residential\n  tower, which concentrates the answer in dense, affluent, high-rise cities\n  rather than in low-rise resort coastline.\n\nPASS THREE - try to break your own answer.\n\nBefore you commit, take your leading candidate and name three things you would\nexpect to see in this frame if it were true. Then say, for each, whether it is\nactually present, absent, or not checkable here. If two of the three are absent\nor uncheckable, your candidate is a guess dressed as a deduction: widen the\nradius, or promote a rival that survives the same test better.\n\nDo this against the strongest rival too, not only the favourite. The point is\nto find out which one fails, not to confirm the one you already like.\n\nRules:\n- Reason from what is actually visible. Never invent text you cannot read.\n- Give several candidates when genuinely torn, with honest probabilities.\n- radius_km is your real 1-sigma uncertainty for that candidate. Use a few km only when you have identified a specific street or landmark; use hundreds or thousands of km when you only have a biome.\n- Probabilities across candidates should sum to about 1.\n";
 
 const SCHEMA = {
   "type": "object",
@@ -412,6 +461,35 @@ const SCHEMA = {
     "climate_zone": {
       "type": "string",
       "description": "The Koppen-style zone committed to before naming a country, with the observation that rules out the neighbouring zones."
+    },
+    "verification": {
+      "type": "array",
+      "description": "For the leading candidate and its strongest rival: what you would expect to see, and whether it is actually there.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "candidate": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "present",
+              "absent",
+              "not checkable"
+            ]
+          }
+        },
+        "required": [
+          "candidate",
+          "expected",
+          "status"
+        ],
+        "additionalProperties": false
+      }
     },
     "cues": {
       "type": "object",
@@ -553,6 +631,7 @@ const SCHEMA = {
   },
   "required": [
     "climate_zone",
+    "verification",
     "cues",
     "countries",
     "candidates",
@@ -609,12 +688,13 @@ function extractJson(text){
   return null;
 }
 
-async function run(file){
+async function run(file, passes){
   if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) return;
   screen("busy");
   $("log").innerHTML = "";
   step(`${file.name} · ${(file.size / 1024).toFixed(0)} KB`, true);
 
+  lastFile = file;
   const preview = URL.createObjectURL(file);
   const t0 = performance.now();
   const timer = setInterval(() => {
@@ -641,20 +721,29 @@ async function run(file){
     return;
   }
 
-  const thinking = step("asking Claude");
+  const n = Math.max(1, passes || 1);
+  const thinking = step(n === 1 ? "asking Claude" : `asking Claude \u00d7 ${n}`);
   try {
     const b64 = await encodeImage(file);
-    let msg;
-    try {
-      msg = await askClaude(b64, true);
-    } catch (e) {
-      // Older API surfaces reject output_config; the plain call still works.
-      if (e.status === 400) { step("retrying without the schema", true); msg = await askClaude(b64, false); }
-      else throw e;
-    }
+
+    const once = async () => {
+      try {
+        return await askClaude(b64, true);
+      } catch (e) {
+        // Older API surfaces reject output_config; the plain call still works.
+        if (e.status === 400) return await askClaude(b64, false);
+        throw e;
+      }
+    };
+    // Independent passes run together; the spread between them is the useful
+    // part, so a slow one must not be dropped.
+    const replies = await Promise.all(Array.from({ length: n }, once));
     stop();
-    const parsed = extractJson(textOf(msg));
+
+    const all = replies.map(m => extractJson(textOf(m))).filter(Boolean);
+    const parsed = mergePasses(all);
     if (!parsed || !parsed.candidates || !parsed.candidates.length) {
+      const msg = replies[0];
       thinking.className = "err";
       thinking.innerHTML = '<span class="tick">✗</span><span>could not read the reply</span>';
       step(textOf(msg).slice(0, 300) || "empty response");
@@ -662,7 +751,8 @@ async function run(file){
     }
     thinking.className = "on";
     thinking.innerHTML = '<span class="tick">✓</span><span>asking Claude</span>';
-    lastRaw = { build: BUILD, model: MODEL, file: file.name, reply: parsed };
+    lastRaw = { build: BUILD, model: MODEL, file: file.name, passes: n,
+                agreementKm: parsed.__spreadKm, reply: parsed, allPasses: all };
     showResult(parsed, preview, (performance.now() - t0) / 1000);
   } catch (e) {
     stop();
@@ -684,6 +774,7 @@ function sheetShell(inner){
       <p class="brand" style="margin:0;padding:0">Geolocator</p>
       <div class="row" style="margin:0">
         <button id="again">Another photo</button>
+        <button id="passes">Re-run 3 passes</button>
         <button id="diag">Copy diagnostics</button>
         <button id="rekey">Change key</button>
       </div>
@@ -691,6 +782,9 @@ function sheetShell(inner){
   screen("done"); scrollTo(0, 0);
   $("again").addEventListener("click", () => { $("file").value = ""; screen("idle"); });
   $("rekey").addEventListener("click", () => { $("key").value = ""; screen("setup"); });
+  const rerun = $("passes");
+  if (rerun) rerun.addEventListener("click", () => { if (lastFile) run(lastFile, 3); });
+
   const diag = $("diag");
   if (diag) diag.addEventListener("click", async () => {
     // Everything needed to debug a wrong answer, minus the key.
@@ -785,6 +879,8 @@ function showResult(d, preview, secs){
         <div class="box"><h3>Run</h3><div class="body"><table>
           <tr><td>model</td><td>${MODEL}</td></tr>
           <tr><td>took</td><td>${secs.toFixed(1)}s</td></tr>
+          ${d.__passes ? `<tr><td>passes</td><td>${d.__passes}</td></tr>
+          <tr><td>spread</td><td>${d.__spreadKm.toLocaleString()} km between passes</td></tr>` : ""}
         </table></div></div>
       </div>
     </div>`);

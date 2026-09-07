@@ -94,6 +94,17 @@ Traps that flip a whole hemisphere, so check them before committing:
   tower, which concentrates the answer in dense, affluent, high-rise cities
   rather than in low-rise resort coastline.
 
+PASS THREE - try to break your own answer.
+
+Before you commit, take your leading candidate and name three things you would
+expect to see in this frame if it were true. Then say, for each, whether it is
+actually present, absent, or not checkable here. If two of the three are absent
+or uncheckable, your candidate is a guess dressed as a deduction: widen the
+radius, or promote a rival that survives the same test better.
+
+Do this against the strongest rival too, not only the favourite. The point is
+to find out which one fails, not to confirm the one you already like.
+
 Rules:
 - Reason from what is actually visible. Never invent text you cannot read.
 - Give several candidates when genuinely torn, with honest probabilities.
@@ -112,6 +123,26 @@ RESPONSE_SCHEMA = {
                 "The Koppen-style zone committed to before naming a country, "
                 "with the observation that rules out the neighbouring zones."
             ),
+        },
+        "verification": {
+            "type": "array",
+            "description": (
+                "For the leading candidate and its strongest rival: what you "
+                "would expect to see, and whether it is actually there."
+            ),
+            "items": {
+                "type": "object",
+                "properties": {
+                    "candidate": {"type": "string"},
+                    "expected": {"type": "string"},
+                    "status": {
+                        "type": "string",
+                        "enum": ["present", "absent", "not checkable"],
+                    },
+                },
+                "required": ["candidate", "expected", "status"],
+                "additionalProperties": False,
+            },
         },
         "cues": {
             "type": "object",
@@ -182,8 +213,8 @@ RESPONSE_SCHEMA = {
         "reasoning": {"type": "string"},
         "evidence_strength": {"type": "string", "enum": ["strong", "moderate", "weak"]},
     },
-    "required": ["climate_zone", "cues", "countries", "candidates", "reasoning",
-                 "evidence_strength"],
+    "required": ["climate_zone", "verification", "cues", "countries", "candidates",
+                 "reasoning", "evidence_strength"],
     "additionalProperties": False,
 }
 
@@ -206,6 +237,11 @@ class ReasonerConfig:
     timeout_s: float = 240.0
     extra_hint: str = ""
     max_candidates: int = 6
+    # Independent passes over the same image. Sampling more than once costs
+    # proportionally more, but disagreement between passes is the most honest
+    # uncertainty signal available: a model that answers Singapore three times
+    # knows something a model that answers Spain, Brazil and Thailand does not.
+    samples: int = 1
     trust_scale: float = 1.0
     trust_by_strength: dict = field(default_factory=lambda: dict(_TRUST_BY_STRENGTH))
 
@@ -303,6 +339,22 @@ class ReasonerHead:
         return client.messages.create(**kwargs)
 
     def predict(self, image) -> HeadOutput:
+        n = max(1, int(self.config.samples))
+        if n == 1:
+            return self._predict_once(image)
+
+        outputs: list[HeadOutput] = []
+        errors: list[str] = []
+        for _ in range(n):
+            try:
+                outputs.append(self._predict_once(image))
+            except ReasonerUnavailable as exc:
+                errors.append(str(exc))
+        if not outputs:
+            raise ReasonerUnavailable("; ".join(errors) or "no samples succeeded")
+        return merge_samples(outputs, self.config)
+
+    def _predict_once(self, image) -> HeadOutput:
         media_type, data = encode_image(image)
         try:
             response = self._request(media_type, data)
@@ -377,3 +429,92 @@ class ReasonerHead:
                 "cues": cues,
             },
         )
+
+
+# Spread between independent passes, in km, mapped onto a multiplier for how
+# much the merged head is trusted. Agreement inside a city keeps full trust;
+# answers scattered across continents should not be believed at face value.
+AGREEMENT_TIGHT_KM = 50.0
+AGREEMENT_LOOSE_KM = 3000.0
+AGREEMENT_FLOOR = 0.25
+
+
+def _agreement(points: list[tuple[float, float]]) -> float:
+    """1.0 when the passes land together, falling to a floor when they scatter."""
+    import math
+    import statistics
+
+    from .geo import haversine_km
+
+    if len(points) < 2:
+        return 1.0
+    spreads = [
+        haversine_km(*points[i], *points[j])
+        for i in range(len(points))
+        for j in range(i + 1, len(points))
+    ]
+    spread = statistics.median(spreads)
+    if spread <= AGREEMENT_TIGHT_KM:
+        return 1.0
+    if spread >= AGREEMENT_LOOSE_KM:
+        return AGREEMENT_FLOOR
+    # Interpolate on a log scale; the difference between 50 km and 200 km
+    # matters far more than between 2000 km and 2500 km.
+    t = math.log(spread / AGREEMENT_TIGHT_KM) / math.log(
+        AGREEMENT_LOOSE_KM / AGREEMENT_TIGHT_KM
+    )
+    return 1.0 - t * (1.0 - AGREEMENT_FLOOR)
+
+
+def merge_samples(outputs: list[HeadOutput], config: "ReasonerConfig") -> HeadOutput:
+    """Combine independent passes into one head.
+
+    The passes are a mixture, not a product: they are the same model looking
+    twice, so they are not independent evidence and must not be allowed to
+    sharpen each other. What they legitimately provide is a spread, which sets
+    how far the merged head is trusted.
+    """
+    if len(outputs) == 1:
+        return outputs[0]
+
+    tops = [o.candidates[0] for o in outputs if o.candidates]
+    agreement = _agreement([(c.lat, c.lon) for c in tops])
+
+    pooled: list[GeoCandidate] = []
+    for out in outputs:
+        for cand in out.normalized():
+            pooled.append(
+                GeoCandidate(
+                    lat=cand.lat,
+                    lon=cand.lon,
+                    weight=cand.weight / len(outputs),
+                    sigma_km=cand.sigma_km,
+                    source=cand.source,
+                    label=cand.label,
+                )
+            )
+    pooled.sort(key=lambda c: c.weight, reverse=True)
+    pooled = pooled[: config.max_candidates]
+    total = sum(c.weight for c in pooled) or 1.0
+    for c in pooled:
+        c.weight /= total
+
+    base_trust = sum(o.trust for o in outputs) / len(outputs)
+    rationale = "\n\n".join(
+        f"Pass {i + 1}: {o.rationale}" for i, o in enumerate(outputs) if o.rationale
+    )
+    return HeadOutput(
+        name=outputs[0].name,
+        candidates=pooled,
+        trust=base_trust * agreement,
+        rationale=rationale,
+        evidence={
+            "samples": len(outputs),
+            "agreement": round(agreement, 3),
+            "per_sample_top": [
+                {"lat": round(c.lat, 4), "lon": round(c.lon, 4), "label": c.label}
+                for c in tops
+            ],
+            **(outputs[0].evidence or {}),
+        },
+    )

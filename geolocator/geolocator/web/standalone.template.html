@@ -153,6 +153,54 @@
 
 __EXIF_JS__
 
+function haversineKm(aLat, aLon, bLat, bLon){
+  const R = 6371.0088, rad = (d) => d * Math.PI / 180;
+  const p1 = rad(aLat), p2 = rad(bLat), dp = p2 - p1;
+  const dl = rad(((bLon - aLon + 180) % 360 + 360) % 360 - 180);
+  const h = Math.sin(dp / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Several passes are the same model looking twice, so they are pooled as a
+// mixture rather than multiplied together. Their spread is what is worth
+// reporting: three answers on three continents should not read as confident.
+function mergePasses(list){
+  if (!list.length) return null;
+  if (list.length === 1) return list[0];
+
+  const tops = list.map(r => (r.candidates || [])[0]).filter(Boolean);
+  const spreads = [];
+  for (let i = 0; i < tops.length; i++)
+    for (let j = i + 1; j < tops.length; j++)
+      spreads.push(haversineKm(tops[i].lat, tops[i].lon, tops[j].lat, tops[j].lon));
+  spreads.sort((a, b) => a - b);
+  const spread = spreads.length ? spreads[Math.floor(spreads.length / 2)] : 0;
+
+  const pooled = [];
+  for (const r of list) {
+    const total = (r.candidates || []).reduce((s, c) => s + (c.probability || 0), 0) || 1;
+    for (const c of r.candidates || [])
+      pooled.push({ ...c, probability: (c.probability || 0) / total / list.length });
+  }
+  pooled.sort((a, b) => b.probability - a.probability);
+
+  const best = list.reduce((a, b) =>
+    ((b.candidates || [])[0]?.probability || 0) > ((a.candidates || [])[0]?.probability || 0) ? b : a);
+
+  // Agreement caps how confident the pooled answer may claim to be.
+  const factor = spread <= 50 ? 1 : spread >= 3000 ? 0.25
+    : 1 - (Math.log(spread / 50) / Math.log(3000 / 50)) * 0.75;
+  if (pooled[0]) pooled[0].probability = Math.min(pooled[0].probability, factor);
+
+  return {
+    ...best,
+    candidates: pooled.slice(0, 6),
+    __spreadKm: Math.round(spread),
+    __passes: list.length,
+    reasoning: list.map((r, i) => `Pass ${i + 1}: ${r.reasoning || ""}`).join("\n\n"),
+  };
+}
+
 // ---------------------------------------------------------------- app ----
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -162,6 +210,7 @@ const MODEL = __MODEL__;
 const BUILD = __BUILD__;
 
 let lastRaw = null;
+let lastFile = null;
 let apiKey = "";
 try { apiKey = localStorage.getItem(KEY_STORE) || ""; } catch { apiKey = ""; }
 
@@ -278,12 +327,13 @@ function extractJson(text){
   return null;
 }
 
-async function run(file){
+async function run(file, passes){
   if (!file.type.startsWith("image/") && !/\.(heic|heif)$/i.test(file.name)) return;
   screen("busy");
   $("log").innerHTML = "";
   step(`${file.name} · ${(file.size / 1024).toFixed(0)} KB`, true);
 
+  lastFile = file;
   const preview = URL.createObjectURL(file);
   const t0 = performance.now();
   const timer = setInterval(() => {
@@ -310,20 +360,29 @@ async function run(file){
     return;
   }
 
-  const thinking = step("asking Claude");
+  const n = Math.max(1, passes || 1);
+  const thinking = step(n === 1 ? "asking Claude" : `asking Claude \u00d7 ${n}`);
   try {
     const b64 = await encodeImage(file);
-    let msg;
-    try {
-      msg = await askClaude(b64, true);
-    } catch (e) {
-      // Older API surfaces reject output_config; the plain call still works.
-      if (e.status === 400) { step("retrying without the schema", true); msg = await askClaude(b64, false); }
-      else throw e;
-    }
+
+    const once = async () => {
+      try {
+        return await askClaude(b64, true);
+      } catch (e) {
+        // Older API surfaces reject output_config; the plain call still works.
+        if (e.status === 400) return await askClaude(b64, false);
+        throw e;
+      }
+    };
+    // Independent passes run together; the spread between them is the useful
+    // part, so a slow one must not be dropped.
+    const replies = await Promise.all(Array.from({ length: n }, once));
     stop();
-    const parsed = extractJson(textOf(msg));
+
+    const all = replies.map(m => extractJson(textOf(m))).filter(Boolean);
+    const parsed = mergePasses(all);
     if (!parsed || !parsed.candidates || !parsed.candidates.length) {
+      const msg = replies[0];
       thinking.className = "err";
       thinking.innerHTML = '<span class="tick">✗</span><span>could not read the reply</span>';
       step(textOf(msg).slice(0, 300) || "empty response");
@@ -331,7 +390,8 @@ async function run(file){
     }
     thinking.className = "on";
     thinking.innerHTML = '<span class="tick">✓</span><span>asking Claude</span>';
-    lastRaw = { build: BUILD, model: MODEL, file: file.name, reply: parsed };
+    lastRaw = { build: BUILD, model: MODEL, file: file.name, passes: n,
+                agreementKm: parsed.__spreadKm, reply: parsed, allPasses: all };
     showResult(parsed, preview, (performance.now() - t0) / 1000);
   } catch (e) {
     stop();
@@ -353,6 +413,7 @@ function sheetShell(inner){
       <p class="brand" style="margin:0;padding:0">Geolocator</p>
       <div class="row" style="margin:0">
         <button id="again">Another photo</button>
+        <button id="passes">Re-run 3 passes</button>
         <button id="diag">Copy diagnostics</button>
         <button id="rekey">Change key</button>
       </div>
@@ -360,6 +421,9 @@ function sheetShell(inner){
   screen("done"); scrollTo(0, 0);
   $("again").addEventListener("click", () => { $("file").value = ""; screen("idle"); });
   $("rekey").addEventListener("click", () => { $("key").value = ""; screen("setup"); });
+  const rerun = $("passes");
+  if (rerun) rerun.addEventListener("click", () => { if (lastFile) run(lastFile, 3); });
+
   const diag = $("diag");
   if (diag) diag.addEventListener("click", async () => {
     // Everything needed to debug a wrong answer, minus the key.
@@ -454,6 +518,8 @@ function showResult(d, preview, secs){
         <div class="box"><h3>Run</h3><div class="body"><table>
           <tr><td>model</td><td>${MODEL}</td></tr>
           <tr><td>took</td><td>${secs.toFixed(1)}s</td></tr>
+          ${d.__passes ? `<tr><td>passes</td><td>${d.__passes}</td></tr>
+          <tr><td>spread</td><td>${d.__spreadKm.toLocaleString()} km between passes</td></tr>` : ""}
         </table></div></div>
       </div>
     </div>`);

@@ -188,3 +188,91 @@ def test_encode_image_downscales_and_is_jpeg():
     import base64
     decoded = Image.open(io.BytesIO(base64.b64decode(data)))
     assert max(decoded.size) == 1568
+
+
+# --- self-consistency across passes -----------------------------------------
+
+def _out(points, trust=1.0, rationale="r"):
+    from geolocator.types import GeoCandidate, HeadOutput
+    return HeadOutput(
+        "reasoner",
+        [GeoCandidate(lat, lon, w, 20.0, "reasoner", label) for lat, lon, w, label in points],
+        trust=trust,
+        rationale=rationale,
+        evidence={"evidence_strength": "moderate"},
+    )
+
+
+def test_agreement_scores_spread_not_count():
+    from geolocator.reasoner import _agreement
+    assert _agreement([(1.25, 103.83)]) == 1.0
+    assert _agreement([(1.25, 103.83), (1.26, 103.84)]) == 1.0
+    scattered = _agreement([(1.25, 103.83), (40.4, -3.7), (-22.9, -43.2)])
+    partial = _agreement([(1.25, 103.83), (1.30, 103.90), (13.75, 100.50)])
+    assert scattered < partial < 1.0
+
+
+def test_merging_agreeing_passes_keeps_trust():
+    from geolocator.reasoner import ReasonerConfig, merge_samples
+    outs = [_out([(1.25, 103.83, 1.0, "Singapore")], trust=1.4) for _ in range(3)]
+    merged = merge_samples(outs, ReasonerConfig())
+    assert merged.trust == pytest.approx(1.4, rel=1e-6)
+    assert merged.evidence["agreement"] == 1.0
+    assert merged.evidence["samples"] == 3
+
+
+def test_merging_disagreeing_passes_cuts_trust():
+    """Three answers on three continents must not be believed at face value."""
+    from geolocator.reasoner import ReasonerConfig, merge_samples
+    outs = [
+        _out([(1.25, 103.83, 1.0, "Singapore")], trust=1.4),
+        _out([(40.4, -3.7, 1.0, "Madrid")], trust=1.4),
+        _out([(-22.9, -43.2, 1.0, "Rio")], trust=1.4),
+    ]
+    merged = merge_samples(outs, ReasonerConfig())
+    assert merged.trust < 0.5
+    assert merged.evidence["agreement"] < 0.3
+    # Every pass survives as a candidate, so fusion sees the real spread.
+    assert len(merged.candidates) == 3
+    assert sum(c.weight for c in merged.candidates) == pytest.approx(1.0)
+
+
+def test_merging_is_a_mixture_not_a_product():
+    """The same model looking twice is not independent evidence."""
+    from geolocator.reasoner import ReasonerConfig, merge_samples
+    one = _out([(1.25, 103.83, 1.0, "Singapore")], trust=1.0)
+    merged = merge_samples([one, _out([(1.25, 103.83, 1.0, "Singapore")], trust=1.0)],
+                           ReasonerConfig())
+    # Agreement must not push trust above what a single pass claimed.
+    assert merged.trust <= 1.0
+
+
+def test_multi_sample_predict_calls_the_api_repeatedly():
+    stub = _StubClient(_Response(PAYLOAD))
+    head = ReasonerHead(ReasonerConfig(samples=3), client=stub)
+    out = head.predict(Image.new("RGB", (32, 32)))
+    assert len(stub.messages.calls) == 3
+    assert out.evidence["samples"] == 3
+    assert len(out.evidence["per_sample_top"]) == 3
+
+
+def test_multi_sample_survives_a_failed_pass(monkeypatch):
+    head = ReasonerHead(ReasonerConfig(samples=3), client=_StubClient(_Response(PAYLOAD)))
+    calls = {"n": 0}
+    real = head._predict_once
+
+    def flaky(image):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise ReasonerUnavailable("transient")
+        return real(image)
+
+    head._predict_once = flaky
+    out = head.predict(Image.new("RGB", (32, 32)))
+    assert out.evidence["samples"] == 2
+
+
+def test_all_passes_failing_raises():
+    head = ReasonerHead(ReasonerConfig(samples=2), client=_StubClient(RuntimeError("boom")))
+    with pytest.raises(ReasonerUnavailable):
+        head.predict(Image.new("RGB", (8, 8)))

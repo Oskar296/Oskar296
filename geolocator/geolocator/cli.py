@@ -23,6 +23,7 @@ def _build_locator(args) -> Geolocator:
         reasoner=ReasonerConfig(
             model=args.model or os.environ.get("GEOLOCATOR_MODEL") or ReasonerConfig.model,
             extra_hint=getattr(args, "hint", ""),
+            samples=args.samples,
         ),
     )
     return Geolocator(cfg)
@@ -224,6 +225,9 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--model", default=None, help="Claude model id")
     common.add_argument("--device", default="cpu", help="torch device, e.g. cuda")
     common.add_argument("--top-k", type=int, default=24, help="gallery candidates to retain")
+    common.add_argument("--samples", type=int, default=1,
+                        help="independent reasoning passes; 3 trades cost for a "
+                             "genuine disagreement signal")
 
     parser = argparse.ArgumentParser(
         prog="geolocate",
