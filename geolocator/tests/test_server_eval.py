@@ -183,3 +183,46 @@ def test_load_dataset_skips_comments_and_blank_lines(tmp_path):
     ds.write_text("# a note\n\nimage,lat,lon\n# another\nx.jpg,1.0,2.0\n\n")
     items = load_dataset(str(ds))
     assert len(items) == 1 and items[0].lat == 1.0
+
+
+# --- Host header validation -------------------------------------------------
+
+def _request(url, path="/api/status", host=None, method="GET", data=None):
+    req = urllib.request.Request(url + path, data=data, method=method)
+    if host is not None:
+        req.add_header("Host", host)
+    if data is not None:
+        req.add_header("Content-Type", "image/jpeg")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read()
+
+
+def test_rejects_a_foreign_host_header(server):
+    """DNS rebinding: an attacker's domain re-pointed at loopback would
+    otherwise become same-origin with this server and read its replies."""
+    _, url = server(_FakeLocator(_prediction()))
+    status, _ = _request(url, host="evil.example")
+    assert status == 403
+
+    status, _ = _request(url, path="/api/locate", method="POST",
+                         data=_jpeg_bytes(), host="evil.example")
+    assert status == 403
+
+
+def test_allows_loopback_hosts(server):
+    _, url = server(_FakeLocator(_prediction()))
+    port = url.rsplit(":", 1)[1]
+    for host in (f"127.0.0.1:{port}", f"localhost:{port}", "localhost"):
+        status, _ = _request(url, host=host)
+        assert status == 200, host
+
+
+def test_status_is_not_readable_from_a_foreign_origin(server):
+    """The status route names the .env path, so it must be behind the check."""
+    _, url = server(_FakeLocator(_prediction()))
+    status, body = _request(url, host="attacker.test")
+    assert status == 403
+    assert b"env_file" not in body

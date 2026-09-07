@@ -21,8 +21,22 @@ _INDEX = os.path.join(_HERE, "web", "index.html")
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 
-def _handler_factory(locator):
+# Hostnames a request may claim to be addressing. A browser will happily send
+# a page's fetch to 127.0.0.1, and with a short DNS TTL an attacker's domain
+# can be re-pointed at the loopback so their page becomes same-origin with this
+# server and can read its replies. Checking Host is the standard defence, and
+# without it a local server that spends an API key is reachable from any site
+# the user happens to have open.
+def _allowed_hosts(bind_host: str) -> set[str]:
+    hosts = {"localhost", "127.0.0.1", "::1", "[::1]"}
+    if bind_host:
+        hosts.add(bind_host)
+    return hosts
+
+
+def _handler_factory(locator, allowed_hosts: set[str] | None = None):
     lock = threading.Lock()
+    allowed = allowed_hosts if allowed_hosts is not None else _allowed_hosts("127.0.0.1")
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "geolocator"
@@ -41,7 +55,25 @@ def _handler_factory(locator):
         def _send_json(self, code, payload: dict):
             self._send(code, json.dumps(payload).encode("utf-8"), "application/json")
 
+        def _host_allowed(self) -> bool:
+            raw = self.headers.get("Host", "")
+            if not raw:
+                # HTTP/1.1 requires Host; anything without it is not a browser.
+                return False
+            host = raw.rsplit(":", 1)[0] if raw.count(":") == 1 else raw
+            if host.startswith("[") and "]" in host:
+                host = host[: host.index("]") + 1]
+            return host.strip().lower() in allowed
+
+        def _reject_foreign_host(self) -> bool:
+            if self._host_allowed():
+                return False
+            self._send_json(403, {"error": "unrecognised Host header"})
+            return True
+
         def do_GET(self):
+            if self._reject_foreign_host():
+                return
             if self.path in ("/", "/index.html"):
                 try:
                     with open(_INDEX, "rb") as fh:
@@ -66,6 +98,8 @@ def _handler_factory(locator):
             self._send(404, b"not found", "text/plain")
 
         def do_POST(self):
+            if self._reject_foreign_host():
+                return
             if self.path != "/api/locate":
                 self._send(404, b"not found", "text/plain")
                 return
@@ -111,7 +145,9 @@ def serve(locator, host: str = "127.0.0.1", port: int = 8000, open_browser: bool
         locator.warm_up()
     except Exception as exc:  # noqa: BLE001
         print(f"  warning: {exc}")
-    httpd = ThreadingHTTPServer((host, port), _handler_factory(locator))
+    httpd = ThreadingHTTPServer(
+        (host, port), _handler_factory(locator, _allowed_hosts(host))
+    )
     url = f"http://{host}:{port}"
     print(f"\n  geolocator running at {url}\n  ctrl-c to stop\n")
 
